@@ -1,0 +1,177 @@
+{
+  "runtime": "v24.21.0",
+  "ready": {
+    "input": {
+      "schemaVersion": "case.v1",
+      "id": "example-hotel",
+      "revision": 0,
+      "name": "Örnek Otel",
+      "currency": "USD",
+      "period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31"
+      },
+      "minAdr": 130,
+      "maxAdr": 150,
+      "referenceAdr": 145,
+      "referenceOccupancy": 0.55,
+      "demand": {
+        "kind": "linear-sensitivity",
+        "modelVersion": "demand.v1",
+        "adrIncrease": 5,
+        "occupancyDecreasePp": 2,
+        "validMinAdr": 130,
+        "validMaxAdr": 150
+      }
+    },
+    "readiness": {
+      "status": "READY",
+      "missingFields": [],
+      "issues": [],
+      "warnings": [],
+      "caseSnapshot": {
+        "schemaVersion": "case.v1",
+        "id": "example-hotel",
+        "revision": 0,
+        "name": "Örnek Otel",
+        "currency": "USD",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "minAdr": 130,
+        "maxAdr": 150,
+        "referenceAdr": 145,
+        "referenceOccupancy": 0.55,
+        "demand": {
+          "kind": "linear-sensitivity",
+          "modelVersion": "demand.v1",
+          "adrIncrease": 5,
+          "occupancyDecreasePp": 2,
+          "validMinAdr": 130,
+          "validMaxAdr": 150
+        }
+      }
+    },
+    "selected": {
+      "adr": 141.25,
+      "occupancy": 0.5650000000000001,
+      "revpar": 79.80625,
+      "feasible": true,
+      "constraints": {
+        "valid": true,
+        "issues": [],
+        "bindingConstraints": []
+      }
+    }
+  },
+  "incomplete": {
+    "status": "INCOMPLETE",
+    "missingFields": [
+      {
+        "path": "demand",
+        "reason": "Fiyat değiştiğinde doluluğun nasıl değişeceğini belirlemek için talep modeli gerekli.",
+        "inputKind": "model"
+      }
+    ],
+    "issues": [],
+    "warnings": []
+  },
+  "blocked": {
+    "status": "BLOCKED",
+    "missingFields": [],
+    "issues": [
+      {
+        "code": "INVALID_OCCUPANCY",
+        "path": "demand",
+        "message": "Model analiz aralığında 0–1 dışında doluluk üretiyor; fiyat aralığını veya modeli düzeltin.",
+        "remediation": "Talep parametrelerini veya analiz fiyat aralığını düzeltin; doluluk 0–1 içinde kalmalı."
+      }
+    ],
+    "warnings": []
+  },
+  "infeasibilityWarning": {
+    "status": "READY",
+    "missingFields": [],
+    "issues": [],
+    "warnings": [
+      {
+        "code": "NO_FEASIBLE_OCCUPANCY",
+        "message": "Veri hazır, ancak bu talep modeliyle fiyat aralığındaki hiçbir fiyat minimum doluluk şartını karşılamıyor."
+      }
+    ],
+    "caseSnapshot": {
+      "schemaVersion": "case.v1",
+      "id": "example-hotel",
+      "revision": 0,
+      "name": "Örnek Otel",
+      "currency": "USD",
+      "period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31"
+      },
+      "minAdr": 130,
+      "maxAdr": 150,
+      "referenceAdr": 145,
+      "referenceOccupancy": 0.55,
+      "demand": {
+        "kind": "linear-sensitivity",
+        "modelVersion": "demand.v1",
+        "adrIncrease": 5,
+        "occupancyDecreasePp": 2,
+        "validMinAdr": 130,
+        "validMaxAdr": 150
+      },
+      "minOccupancy": 0.7
+    }
+  },
+  "selectedPriceViolation": {
+    "readiness": {
+      "status": "READY",
+      "missingFields": [],
+      "issues": [],
+      "warnings": [],
+      "caseSnapshot": {
+        "schemaVersion": "case.v1",
+        "id": "example-hotel",
+        "revision": 0,
+        "name": "Örnek Otel",
+        "currency": "USD",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "minAdr": 130,
+        "maxAdr": 150,
+        "referenceAdr": 145,
+        "referenceOccupancy": 0.55,
+        "demand": {
+          "kind": "linear-sensitivity",
+          "modelVersion": "demand.v1",
+          "adrIncrease": 5,
+          "occupancyDecreasePp": 2,
+          "validMinAdr": 130,
+          "validMaxAdr": 150
+        },
+        "minOccupancy": 0.6
+      }
+    },
+    "selected": {
+      "adr": 145,
+      "occupancy": 0.55,
+      "revpar": 79.75,
+      "feasible": false,
+      "constraints": {
+        "valid": false,
+        "issues": [
+          {
+            "code": "MIN_OCCUPANCY_VIOLATION",
+            "path": "occupancy",
+            "message": "Beklenen doluluk minimum doluluk şartını karşılamıyor."
+          }
+        ],
+        "bindingConstraints": []
+      }
+    }
+  }
+}

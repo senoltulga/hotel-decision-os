@@ -1,0 +1,1893 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hotel Decision Support Engine</title>
+  <style>
+    :root { color-scheme: light dark; --bg: light-dark(#f5f6f8,#151820); --panel: light-dark(#fff,#202530); --ink: light-dark(#192332,#edf2fa); --muted: light-dark(#536276,#bbc8da); --line: light-dark(#d7dfe8,#3d495d); --accent: light-dark(#245fc2,#8db6ff); --error: light-dark(#a52525,#ff9e9e); }
+    * { box-sizing: border-box; } body { margin:0; font:16px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    header, main { max-width:1180px; margin:auto; padding:24px; } header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; }
+    h1 { font-size:24px; margin:0; } h2 { font-size:21px; margin:0 0 12px; } h3 { font-size:17px; } p { margin:8px 0; } small,.muted { color:var(--muted); }
+    .toolbar,.actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; } section { margin-bottom:20px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:16px; }
+    label { display:grid; gap:6px; font-weight:500; } input,select,textarea,button { font:inherit; color:inherit; }
+    input,select,textarea { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:7px; background:var(--panel); } textarea { min-height:95px; }
+    button { padding:10px 15px; border:1px solid var(--line); border-radius:7px; background:var(--panel); cursor:pointer; } button.primary { background:var(--accent); color:light-dark(#fff,#0d2449); border-color:var(--accent); font-weight:600; }
+    button:disabled { opacity:.5; cursor:default; } :focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+    .step { color:var(--muted); } .status { padding:12px 0; } .error { color:var(--error); } [hidden] { display:none!important; }
+    details { margin:14px 0; } summary { cursor:pointer; } .cards { display:flex; flex-wrap:wrap; gap:12px; } .stat { flex:1 1 180px; background:var(--bg); padding:16px; border-radius:8px; } .stat strong { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
+    .table-wrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; margin:14px 0; } th,td { text-align:left; padding:10px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; } th { font-weight:600; }
+    .chart { display:block; width:100%; height:240px; } .chart text { fill:var(--ink); font-size:12px; } .banner { padding:12px 0; color:var(--muted); }
+    a { color:var(--accent); } .import { max-width:240px; } @media(max-width:600px) { header,main { padding:14px; } .panel { padding:16px; } .toolbar { width:100%; } }
+  </style>
+</head>
+<body>
+<header><div><h1>Hotel Decision Support Engine</h1><div class="muted">Varsayımlarını tanımla · seçenekleri karşılaştır · kararını açıkla</div></div>
+  <div class="toolbar"><button data-action="example">Örneği yükle</button><button data-action="save">Taslağı kaydet</button><button data-action="export">Case’i indir</button><label class="import">Case yükle<input type="file" accept="application/json,.json" data-action="import"></label></div>
+</header>
+<main id="hdse-workbench">
+  <div class="banner" data-part="notice" aria-live="polite"></div>
+  <section class="panel"><h2>Ne yapmak istiyorsunuz?</h2>
+    <div class="grid"><label>Amacını yaz<input data-field="intent" placeholder="Örn. oda fiyatını belirlemek"><small>Kural tabanlı rehber; hesaplamayı AI yapmaz.</small></label><label>Analiz aracı<select data-field="tool"></select></label></div>
+    <div data-part="recommendations"></div>
+    <div data-part="tool-description"></div>
+    <button class="primary" data-action="approve">Bu araçla devam et</button>
+  </section>
+  <section class="panel" data-part="inputs" hidden>
+    <div class="step">1. Case ve varsayımlar</div><h2>Analiz için gereken bilgiler</h2>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><input type="checkbox" data-action="missing-only" style="width:auto" checked>Yalnız eksik veya geçersiz Case alanlarını göster</label>
+    <div data-group="case"></div><div data-group="pricing"></div>
+    <div data-group="operating" hidden></div><div data-group="investment" hidden></div>
+    <div data-group="analysis"></div>
+    <div class="status" data-part="readiness" aria-live="polite"></div>
+    <div class="error" data-part="errors" role="alert"></div>
+    <div data-part="warnings"></div>
+    <button class="primary" data-action="review">Varsayımları gözden geçir</button>
+  </section>
+  <section class="panel" data-part="review" hidden><div class="step">2. Hesaplama öncesi onay</div><h2>Kullanılacak varsayımlar</h2><div data-part="summary"></div><button class="primary" data-action="run">Onayla ve hesapla</button></section>
+  <section class="panel" data-part="results" hidden><div class="step">3. Sonuç</div><h2 data-part="result-title"></h2><div class="cards" data-part="metrics"></div><div data-part="messages"></div><div data-part="result-table"></div><div data-part="plots"></div><div data-part="forecast"></div><details><summary>Hesaplama izi ve kullanılan varsayımlar</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere" data-part="trace"></pre></details><button data-action="download-result">Sonucu indir</button></section>
+  <p class="muted">Hesaplar girilen talep ve finans varsayımlarına bağlıdır. Örnek veriler piyasa verisi değildir. Sonuçlar gerçekleşecek talebi garanti etmez.</p>
+</main>
+<script>
+"use strict";
+(() => {
+  // src/domain/templates/analysis.templates.ts
+  var operatingGraph = ["Demand", "Capacity", "RevPAR", "RoomRevenue", "OtherRevenue", "TotalRevenue", "OPEX", "GOP", "EBITDA", "NOI", "ConstraintCheck"];
+  var investmentGraph = [...operatingGraph, "DirectCapitalization", "CashFlow", "DSCR", "TerminalValue", "DCF", "NPV", "IRR", "Payback"];
+  var definitions = [
+    { id: "max-revpar", label: "MAX RevPAR", family: "maximization", depth: "pricing", description: "Talep modeliniz alt\u0131nda oda ba\u015F\u0131na en y\xFCksek geliri sa\u011Flayan fiyat\u0131 hesaplar.", whenToUse: "Fiyat aral\u0131\u011F\u0131 ve fiyat\u2013doluluk ili\u015Fkisi biliniyorsa.", tradeOff: "En y\xFCksek RevPAR en y\xFCksek k\xE2r anlam\u0131na gelmez. Talep varsay\u0131m\u0131 sonucu belirler.", objectives: [{ metric: "revpar", direction: "MAX" }] },
+    { id: "what-if", label: "What-if", family: "simulation", depth: "operating", description: "Se\xE7ti\u011Finiz fiyat\u0131n gelir ve gider etkisini baz durumla kar\u015F\u0131la\u015Ft\u0131r\u0131r.", whenToUse: "Bir de\u011Fi\u015Fikli\u011Fi uygulamadan \xF6nce etkisini g\xF6rmek i\xE7in.", tradeOff: "Bir alternatifin hesab\u0131d\u0131r; optimum \xF6nerisi de\u011Fildir.", objectives: [] },
+    { id: "ab", label: "A/B kar\u015F\u0131la\u015Ft\u0131rmas\u0131", family: "simulation", depth: "operating", description: "\u0130ki a\xE7\u0131k fiyat alternatifinin i\u015Fletme sonu\xE7lar\u0131n\u0131 kar\u015F\u0131la\u015Ft\u0131r\u0131r.", whenToUse: "\u0130ki se\xE7ene\u011Fin hangisinin amac\u0131n\u0131za uygun oldu\u011Funu g\xF6rmek i\xE7in.", tradeOff: "D\xF6nem, para birimi ve di\u011Fer varsay\u0131mlar kar\u015F\u0131la\u015Ft\u0131r\u0131labilir olmal\u0131d\u0131r.", objectives: [] },
+    { id: "scenarios", label: "Senaryo analizi", family: "simulation", depth: "investment", description: "Muhafazak\xE2r, baz ve iyimser varsay\u0131m paketlerini kar\u015F\u0131la\u015Ft\u0131r\u0131r.", whenToUse: "Fiyat, talep ve maliyetler birlikte de\u011Fi\u015Febiliyorsa.", tradeOff: "Senaryolar tahmin garantisi veya olas\u0131l\u0131k de\u011Fildir; etkilerini siz belirtirsiniz.", objectives: [] },
+    { id: "sensitivity", label: "Duyarl\u0131l\u0131k analizi", family: "simulation", depth: "investment", description: "Tek varsay\u0131m\u0131n farkl\u0131 de\u011Ferlerinde sonu\xE7lar\u0131n de\u011Fi\u015Fimini g\xF6sterir.", whenToUse: "Sonucu hangi girdinin etkiledi\u011Fini ara\u015Ft\u0131rmak i\xE7in.", tradeOff: "Di\u011Fer varsay\u0131mlar sabit tutulur; ger\xE7ek hayattaki ortak de\u011Fi\u015Fimleri temsil etmeyebilir.", objectives: [] },
+    { id: "stress", label: "Stres testi", family: "simulation", depth: "investment", description: "Olumsuz fiyat, doluluk, gider ve iskonto ko\u015Fullar\u0131n\u0131 birlikte hesaplar.", whenToUse: "Zor ko\u015Fullarda dayan\u0131kl\u0131l\u0131\u011F\u0131 g\xF6rmek i\xE7in.", tradeOff: "Doluluk d\xFC\u015F\xFC\u015F\xFC y\xFCzde puan\u0131d\u0131r; test bir ger\xE7ekle\u015Fme olas\u0131l\u0131\u011F\u0131 vermez.", objectives: [] },
+    { id: "max-noi", label: "MAX NOI", family: "maximization", depth: "operating", description: "A\xE7\u0131k karar se\xE7enekleri aras\u0131nda en y\xFCksek net i\u015Fletme gelirini bulur.", whenToUse: "Oda gelirinin yan\u0131 s\u0131ra gider ve di\u011Fer gelirleri de de\u011Ferlendirmek i\xE7in.", tradeOff: "Sonu\xE7 tan\u0131mlad\u0131\u011F\u0131n\u0131z se\xE7enek k\xFCmesi i\xE7in ge\xE7erlidir; incelenmeyen fiyatlar\u0131 kapsamaz.", objectives: [{ metric: "noi", direction: "MAX" }] },
+    { id: "max-npv", label: "MAX NPV", family: "maximization", depth: "investment", description: "Yat\u0131r\u0131m se\xE7enekleri aras\u0131nda en y\xFCksek net bug\xFCnk\xFC de\u011Feri bulur.", whenToUse: "Y\u0131ll\u0131k nakit ak\u0131\u015Flar\u0131 ve yat\u0131r\u0131m tutarlar\u0131 kar\u015F\u0131la\u015Ft\u0131r\u0131lacaksa.", tradeOff: "\u0130skonto, terminal de\u011Fer ve nakit ak\u0131\u015F\u0131 baz\u0131n\u0131n tutarl\u0131 olmas\u0131 gerekir.", objectives: [{ metric: "npv", direction: "MAX" }] },
+    { id: "max-value", label: "MAX yat\u0131r\u0131m de\u011Feri", family: "maximization", depth: "investment", description: "Se\xE7enekler aras\u0131nda en y\xFCksek DCF de\u011Ferini bulur.", whenToUse: "Ayn\u0131 finansal varsay\u0131mlar alt\u0131nda yat\u0131r\u0131m de\u011Ferlerini kar\u015F\u0131la\u015Ft\u0131rmak i\xE7in.", tradeOff: "DCF de\u011Feri al\u0131\u015F maliyetini d\xFC\u015Fmeden \xF6nceki de\u011Ferdir; NPV ile ayn\u0131 de\u011Fildir.", objectives: [{ metric: "value", direction: "MAX" }] },
+    { id: "min-opex", label: "MIN OPEX", family: "minimization", depth: "operating", description: "Gelir, doluluk ve hizmet k\u0131s\u0131tlar\u0131 alt\u0131nda en d\xFC\u015F\xFCk i\u015Fletme giderini se\xE7er.", whenToUse: "Gider azaltma se\xE7eneklerini de\u011Ferlendirmek i\xE7in.", tradeOff: "Hizmet kalitesi se\xE7enekler i\xE7in sizin verdi\u011Finiz \xF6l\xE7\xFCmd\xFCr; maliyetin kalite etkisi uydurulmaz.", objectives: [{ metric: "opex", direction: "MIN" }] },
+    { id: "min-capex", label: "MIN CapEx", family: "minimization", depth: "investment", description: "K\u0131s\u0131tlar\u0131 kar\u015F\u0131layan se\xE7eneklerde ba\u015Flang\u0131\xE7 yat\u0131r\u0131m\u0131 ve y\u0131ll\u0131k CapEx toplam\u0131n\u0131 azalt\u0131r.", whenToUse: "Ayn\u0131 hedefi kar\u015F\u0131layabilen yat\u0131r\u0131m se\xE7enekleri varsa.", tradeOff: "Ba\u015Flang\u0131\xE7 yat\u0131r\u0131m\u0131 ile ek y\u0131ll\u0131k CapEx ayr\u0131 girilir; rezerv gideri tekrar dahil edilmez.", objectives: [{ metric: "capex", direction: "MIN" }] },
+    { id: "min-risk", label: "MIN risk endeksi", family: "minimization", depth: "operating", description: "A\xE7\u0131k se\xE7eneklere verdi\u011Finiz risk endeksini en d\xFC\u015F\xFCk yapan uygun se\xE7ene\u011Fi bulur.", whenToUse: "Kar\u015F\u0131la\u015Ft\u0131r\u0131labilir risk puanlar\u0131n\u0131 siz sa\u011Flayabiliyorsan\u0131z.", tradeOff: "Risk endeksi sizin de\u011Ferlendirdi\u011Finiz 0\u20131 puan\u0131d\u0131r; hesaplanm\u0131\u015F bir kay\u0131p olas\u0131l\u0131\u011F\u0131 de\u011Fildir.", objectives: [{ metric: "risk", direction: "MIN" }] },
+    { id: "min-payback", label: "MIN geri \xF6deme s\xFCresi", family: "minimization", depth: "investment", description: "\u0130\u015Fletme nakit ak\u0131\u015Flar\u0131yla en h\u0131zl\u0131 geri \xF6denen uygun yat\u0131r\u0131m\u0131 se\xE7er.", whenToUse: "Sermayenin geri kazan\u0131lma s\xFCresini kar\u015F\u0131la\u015Ft\u0131rmak i\xE7in.", tradeOff: "Geri \xF6deme toplam getiriyi ve terminal sat\u0131\u015F\u0131 kapsamaz; NPV de incelenmelidir.", objectives: [{ metric: "payback", direction: "MIN" }] },
+    { id: "pareto-revpar-occupancy", label: "RevPAR \u2194 doluluk", family: "multi-objective", depth: "operating", description: "RevPAR ve doluluk aras\u0131nda bask\u0131n olmayan se\xE7enekleri g\xF6sterir.", whenToUse: "Gelir ile dolulu\u011Fu birlikte de\u011Ferlendirmek i\xE7in.", tradeOff: "Tek bir kazanan dayat\u0131lmaz; tercih yapman\u0131z i\xE7in Pareto se\xE7enekleri g\xF6sterilir.", objectives: [{ metric: "revpar", direction: "MAX" }, { metric: "occupancy", direction: "MAX" }] },
+    { id: "pareto-noi-opex", label: "NOI \u2194 OPEX", family: "multi-objective", depth: "operating", description: "NOI art\u0131\u015F\u0131 ve OPEX azalmas\u0131 aras\u0131nda Pareto alternatiflerini g\xF6sterir.", whenToUse: "Gider ile k\xE2rl\u0131l\u0131k hedefleri \xE7at\u0131\u015F\u0131yorsa.", tradeOff: "Verilen se\xE7enekler d\u0131\u015F\u0131ndaki stratejiler de\u011Ferlendirilmez.", objectives: [{ metric: "noi", direction: "MAX" }, { metric: "opex", direction: "MIN" }] },
+    { id: "pareto-npv-risk", label: "NPV \u2194 risk / CapEx", family: "multi-objective", depth: "investment", description: "NPV, risk endeksi ve CapEx aras\u0131nda \xFC\xE7 hedefli Pareto k\xFCmesini bulur.", whenToUse: "Getiri, sermaye ihtiyac\u0131 ve risk tercihleri birlikte ele al\u0131nacaksa.", tradeOff: "Risk puanlar\u0131n\u0131n kayna\u011F\u0131 size aittir; piyasa riski kendili\u011Finden tahmin edilmez.", objectives: [{ metric: "npv", direction: "MAX" }, { metric: "risk", direction: "MIN" }, { metric: "capex", direction: "MIN" }] }
+  ];
+  var ANALYSIS_TEMPLATES = Object.freeze(definitions.map((template2) => Object.freeze({ ...template2, skillGraph: Object.freeze(template2.depth === "pricing" ? ["Demand", "RevPAR", "ConstraintCheck"] : template2.depth === "operating" ? [...operatingGraph] : [...investmentGraph]) })));
+  function findAnalysisTemplate(id) {
+    return ANALYSIS_TEMPLATES.find((template2) => template2.id === id);
+  }
+
+  // src/domain/case/case.schema.ts
+  function isRecord(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+  var absent = (value) => value === void 0 || value === null || typeof value === "string" && value.trim() === "";
+  var finite = (value) => typeof value === "number" && Number.isFinite(value);
+  function validDate(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = /* @__PURE__ */ new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }
+  function validateCase(input, mode = "draft") {
+    const issues = [];
+    const add = (code, path, message) => issues.push({ code, path, message });
+    if (!isRecord(input)) return { success: false, issues: [{ code: "INVALID_CASE", path: "", message: "Case bir nesne olmal\u0131." }] };
+    let data;
+    try {
+      data = structuredClone(input);
+    } catch {
+      return { success: false, issues: [{ code: "INVALID_CASE", path: "", message: "Case yaln\u0131zca kopyalanabilir veri i\xE7ermeli." }] };
+    }
+    for (const key of Object.keys(data)) if (absent(data[key])) delete data[key];
+    if (data.schemaVersion !== "case.v1") add("UNSUPPORTED_SCHEMA", "schemaVersion", "case.v1 gerekli.");
+    if (typeof data.id !== "string" || !data.id.trim()) add("REQUIRED_FIELD", "id", "Case kimli\u011Fi gerekli.");
+    if (!Number.isSafeInteger(data.revision) || data.revision < 0) add("INVALID_REVISION", "revision", "Revizyon negatif olmayan g\xFCvenli tam say\u0131 olmal\u0131.");
+    const required = (key) => {
+      if (mode === "analysis" && absent(data[key])) add("REQUIRED_FIELD", key, "Analiz i\xE7in bu alan gerekli.");
+    };
+    for (const key of ["name", "currency", "period", "minAdr", "maxAdr", "demand"]) required(key);
+    if (data.name !== void 0 && (typeof data.name !== "string" || !data.name.trim())) add("INVALID_NAME", "name", "Case ad\u0131 metin olmal\u0131.");
+    if (data.currency !== void 0 && (typeof data.currency !== "string" || !Intl.supportedValuesOf("currency").includes(data.currency))) add("INVALID_CURRENCY", "currency", "Desteklenen a\xE7\u0131k para birimi kodu gerekli.");
+    for (const key of ["referenceAdr", "minAdr", "maxAdr"]) {
+      if (data[key] !== void 0 && (!finite(data[key]) || data[key] <= 0)) add("INVALID_NUMBER", key, "ADR sonlu ve s\u0131f\u0131rdan b\xFCy\xFCk olmal\u0131.");
+    }
+    for (const key of ["referenceOccupancy", "minOccupancy"]) {
+      if (data[key] !== void 0 && (!finite(data[key]) || data[key] < 0 || data[key] > 1)) add("INVALID_OCCUPANCY", key, "Doluluk 0\u20131 aras\u0131nda olmal\u0131.");
+    }
+    if (finite(data.minAdr) && finite(data.maxAdr) && data.minAdr > data.maxAdr) add("INVALID_ADR_RANGE", "minAdr", "Minimum ADR maksimum ADR\u2019yi a\u015Famaz.");
+    if (data.assumptionNotes !== void 0 && typeof data.assumptionNotes !== "string") add("INVALID_TEXT", "assumptionNotes", "Varsay\u0131m a\xE7\u0131klamas\u0131 metin olmal\u0131.");
+    if (data.period !== void 0) {
+      if (!isRecord(data.period)) add("INVALID_PERIOD", "period", "D\xF6nem nesnesi gerekli.");
+      else {
+        for (const key of ["start", "end"]) {
+          if (absent(data.period[key])) {
+            delete data.period[key];
+            if (mode === "analysis") add("REQUIRED_FIELD", `period.${key}`, "D\xF6nem tarihi gerekli.");
+          } else if (!validDate(data.period[key])) add("INVALID_PERIOD", `period.${key}`, "Ge\xE7erli YYYY-MM-DD tarihi gerekli.");
+        }
+        if (validDate(data.period.start) && validDate(data.period.end) && data.period.start > data.period.end) add("INVALID_PERIOD", "period", "Ba\u015Flang\u0131\xE7 biti\u015Ften sonra olamaz.");
+      }
+    }
+    if (data.demand !== void 0) {
+      const demand = data.demand;
+      if (!isRecord(demand)) add("INVALID_DEMAND", "demand", "Talep modeli nesne olmal\u0131.");
+      else {
+        if (demand.modelVersion !== "demand.v1") add("UNSUPPORTED_MODEL_VERSION", "demand.modelVersion", "demand.v1 gerekli.");
+        if (demand.kind === "linear-sensitivity") {
+          for (const key of ["adrIncrease", "validMinAdr", "validMaxAdr"]) {
+            if (!finite(demand[key]) || demand[key] <= 0) add("INVALID_NUMBER", `demand.${key}`, "Sonlu pozitif say\u0131 gerekli.");
+          }
+          if (!finite(demand.occupancyDecreasePp) || demand.occupancyDecreasePp < 0) add("INVALID_NUMBER", "demand.occupancyDecreasePp", "Negatif olmayan sonlu y\xFCzde puan\u0131 gerekli.");
+          if (finite(demand.validMinAdr) && finite(demand.validMaxAdr)) {
+            if (demand.validMinAdr > demand.validMaxAdr) add("INVALID_ADR_RANGE", "demand", "Model fiyat aral\u0131\u011F\u0131 ge\xE7ersiz.");
+            if (finite(data.referenceAdr) && (data.referenceAdr < demand.validMinAdr || data.referenceAdr > demand.validMaxAdr)) add("OUTSIDE_DEMAND_DOMAIN", "referenceAdr", "Referans ADR model aral\u0131\u011F\u0131nda olmal\u0131.");
+            if (finite(data.minAdr) && data.minAdr < demand.validMinAdr || finite(data.maxAdr) && data.maxAdr > demand.validMaxAdr) add("OUTSIDE_DEMAND_DOMAIN", "demand", "Optimizasyon aral\u0131\u011F\u0131 model alan\u0131n\u0131 a\u015Famaz.");
+          }
+          if (mode === "analysis") for (const key of ["referenceAdr", "referenceOccupancy"]) required(key);
+        } else if (demand.kind === "scenario-points") {
+          if (!Array.isArray(demand.points) || demand.points.length < 2) add("INVALID_POINTS", "demand.points", "En az iki farkl\u0131 fiyat noktas\u0131 gerekli.");
+          else {
+            let pointsValid = true;
+            demand.points.forEach((point, index) => {
+              if (!isRecord(point) || !finite(point.adr) || point.adr <= 0 || !finite(point.occupancy) || point.occupancy < 0 || point.occupancy > 1) {
+                pointsValid = false;
+                add("INVALID_POINT", `demand.points.${index}`, "Pozitif ADR ve 0\u20131 doluluk gerekli.");
+              }
+            });
+            if (pointsValid) {
+              const points = demand.points.sort((a, b) => a.adr - b.adr);
+              for (let i = 1; i < points.length; i++) {
+                if (points[i].adr === points[i - 1].adr) add("DUPLICATE_ADR_POINT", "demand.points", "Tekrarlanan ADR noktas\u0131 var.");
+                if (points[i].occupancy > points[i - 1].occupancy) add("NON_MONOTONE_DEMAND", "demand.points", "Doluluk fiyatla artamaz.");
+              }
+              if (finite(data.minAdr) && data.minAdr < points[0].adr || finite(data.maxAdr) && data.maxAdr > points.at(-1).adr) add("OUTSIDE_DEMAND_DOMAIN", "demand.points", "Optimizasyon aral\u0131\u011F\u0131 noktalar\u0131n alan\u0131n\u0131 a\u015Famaz.");
+            }
+          }
+          if (mode === "analysis" && (data.referenceAdr !== void 0 || data.referenceOccupancy !== void 0)) for (const key of ["referenceAdr", "referenceOccupancy"]) required(key);
+        } else add("UNSUPPORTED_DEMAND_MODEL", "demand.kind", "Desteklenmeyen talep modeli.");
+      }
+    }
+    return issues.length ? { success: false, issues } : { success: true, data, issues: [] };
+  }
+  function validateCaseForAnalysis(input) {
+    return validateCase(input, "analysis");
+  }
+
+  // src/domain/skills/skill.types.ts
+  function failure(code, path, message) {
+    return { success: false, issues: [{ code, path, message }] };
+  }
+
+  // src/domain/skills/demand.skill.ts
+  var DEMAND_SKILL_VERSION = "demand.v1";
+  function compileDemand(input) {
+    if (!isRecord(input)) return failure("INVALID_DEMAND", "demand", "Talep girdisi nesne olmal\u0131.");
+    const parsed = validateCase({
+      schemaVersion: "case.v1",
+      id: "demand-validation",
+      revision: 0,
+      demand: input.demand,
+      minAdr: input.minAdr,
+      maxAdr: input.maxAdr,
+      referenceAdr: input.referenceAdr,
+      referenceOccupancy: input.referenceOccupancy
+    });
+    if (!parsed.success) return { success: false, issues: parsed.issues };
+    const data = parsed.data;
+    const missing2 = [];
+    for (const key of ["demand", "minAdr", "maxAdr"]) {
+      if (data[key] === void 0) missing2.push({ code: "REQUIRED_FIELD", path: key, message: "Talep hesab\u0131 i\xE7in alan gerekli." });
+    }
+    if (data.demand?.kind === "linear-sensitivity") {
+      for (const key of ["referenceAdr", "referenceOccupancy"]) {
+        if (data[key] === void 0) missing2.push({ code: "REQUIRED_FIELD", path: key, message: "Do\u011Frusal model i\xE7in referans gerekli." });
+      }
+    }
+    if (missing2.length) return { success: false, issues: missing2 };
+    const demand = data.demand;
+    const minAdr = data.minAdr;
+    const maxAdr = data.maxAdr;
+    let segments;
+    let evaluate;
+    if (demand.kind === "linear-sensitivity") {
+      const slope = demand.occupancyDecreasePp / 100 / demand.adrIncrease;
+      if (!Number.isFinite(slope)) return failure("NUMERICAL_ERROR", "demand", "Duyarl\u0131l\u0131k katsay\u0131s\u0131 hesaplanamad\u0131.");
+      const referenceAdr = data.referenceAdr;
+      const referenceOccupancy = data.referenceOccupancy;
+      evaluate = (adr) => referenceOccupancy - slope * (adr - referenceAdr);
+      segments = [{ minAdr, maxAdr, occupancyAtMin: evaluate(minAdr), occupancyAtMax: evaluate(maxAdr) }];
+    } else {
+      const points = demand.points;
+      const interpolate = (adr, left, right) => {
+        if (adr === left.adr) return left.occupancy;
+        if (adr === right.adr) return right.occupancy;
+        const fraction = (adr - left.adr) / (right.adr - left.adr);
+        return left.occupancy + fraction * (right.occupancy - left.occupancy);
+      };
+      evaluate = (adr) => {
+        for (let i = 1; i < points.length; i++) {
+          if (adr <= points[i].adr) return interpolate(adr, points[i - 1], points[i]);
+        }
+        return Number.NaN;
+      };
+      segments = [];
+      for (let i = 1; i < points.length; i++) {
+        const left = Math.max(minAdr, points[i - 1].adr);
+        const right = Math.min(maxAdr, points[i].adr);
+        if (left <= right) segments.push({ minAdr: left, maxAdr: right, occupancyAtMin: interpolate(left, points[i - 1], points[i]), occupancyAtMax: interpolate(right, points[i - 1], points[i]) });
+      }
+    }
+    for (const segment of segments) {
+      for (const occupancy of [segment.occupancyAtMin, segment.occupancyAtMax]) {
+        if (!Number.isFinite(occupancy)) return failure("NUMERICAL_ERROR", "demand", "Talep hesab\u0131 sonlu sonu\xE7 \xFCretmedi.");
+        if (occupancy < 0 || occupancy > 1) return failure("INVALID_OCCUPANCY", "demand", "Model analiz aral\u0131\u011F\u0131nda 0\u20131 d\u0131\u015F\u0131nda doluluk \xFCretiyor; fiyat aral\u0131\u011F\u0131n\u0131 veya modeli d\xFCzeltin.");
+      }
+    }
+    const occupancyAt = (adr) => {
+      if (!Number.isFinite(adr) || adr <= 0) return failure("INVALID_NUMBER", "adr", "ADR sonlu ve pozitif olmal\u0131.");
+      if (adr < minAdr || adr > maxAdr) return failure("OUTSIDE_DEMAND_DOMAIN", "adr", "Fiyat derlenen analiz aral\u0131\u011F\u0131n\u0131n d\u0131\u015F\u0131nda; ekstrapolasyon yap\u0131lmaz.");
+      const value = evaluate(adr);
+      if (!Number.isFinite(value)) return failure("NUMERICAL_ERROR", "demand", "Talep hesab\u0131 sonlu sonu\xE7 \xFCretmedi.");
+      if (value < 0 || value > 1) return failure("INVALID_OCCUPANCY", "demand", "Doluluk 0\u20131 aral\u0131\u011F\u0131 d\u0131\u015F\u0131nda; k\u0131rpma yap\u0131lmaz.");
+      return { success: true, value };
+    };
+    return { success: true, value: Object.freeze({
+      modelVersion: DEMAND_SKILL_VERSION,
+      kind: demand.kind,
+      minAdr,
+      maxAdr,
+      segments: Object.freeze(segments.map((segment) => Object.freeze(segment))),
+      occupancyAt
+    }) };
+  }
+
+  // src/domain/numerics/numerical-policy.ts
+  var NUMERICAL_POLICY = Object.freeze({
+    version: "numerics.v1",
+    ratioTolerance: 1e-10,
+    relativeTolerance: 1e-10,
+    moneyDisplayDigits: 2,
+    occupancyDisplayDigits: 2
+  });
+  function nearlyEqual(x, y) {
+    return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) <= NUMERICAL_POLICY.relativeTolerance * Math.max(1, Math.abs(x), Math.abs(y));
+  }
+  function ratioEqual(x, y) {
+    return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) <= NUMERICAL_POLICY.ratioTolerance;
+  }
+  function parseNumericInput(value) {
+    if (value == null || typeof value === "string" && value.trim() === "") return void 0;
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) throw new TypeError("Sonlu bir say\u0131 gerekli.");
+      return value;
+    }
+    if (typeof value !== "string" || !/^[+-]?\d+(?:[.,]\d+)?$/.test(value.trim())) {
+      throw new TypeError("Binlik ay\u0131r\u0131c\u0131 kullanmadan bir say\u0131 girin.");
+    }
+    const parsed = Number(value.trim().replace(",", "."));
+    if (!Number.isFinite(parsed)) throw new TypeError("Sonlu bir say\u0131 gerekli.");
+    return parsed;
+  }
+  function percentageToRatio(value) {
+    if (!Number.isFinite(value) || value < 0 || value > 100) throw new RangeError("Y\xFCzde 0\u2013100 aras\u0131nda olmal\u0131.");
+    return value / 100;
+  }
+
+  // src/domain/readiness/readiness.engine.ts
+  var reasons = {
+    name: "Analizi hangi otele ait oldu\u011Funu belirterek saklamak i\xE7in otel ad\u0131 gerekli.",
+    currency: "ADR ve RevPAR tutarlar\u0131n\u0131 ayn\u0131 para biriminde yorumlamak i\xE7in gerekli.",
+    "period.start": "Talep varsay\u0131m\u0131n\u0131n ba\u015Flang\u0131\xE7 d\xF6nemini belirtmek i\xE7in gerekli.",
+    "period.end": "Talep varsay\u0131m\u0131n\u0131n biti\u015F d\xF6nemini belirtmek i\xE7in gerekli.",
+    minAdr: "Hesaplamada izin verilen en d\xFC\u015F\xFCk fiyat\u0131 belirlemek i\xE7in gerekli.",
+    maxAdr: "Hesaplamada izin verilen en y\xFCksek fiyat\u0131 belirlemek i\xE7in gerekli.",
+    demand: "Fiyat de\u011Fi\u015Fti\u011Finde dolulu\u011Fun nas\u0131l de\u011Fi\u015Fece\u011Fini belirlemek i\xE7in talep modeli gerekli.",
+    "demand.kind": "Hangi talep modelinin kullan\u0131laca\u011F\u0131n\u0131 se\xE7in.",
+    referenceAdr: "Do\u011Frusal talebi ba\u011Flamak veya baz kar\u015F\u0131la\u015Ft\u0131rmas\u0131 yapmak i\xE7in referans fiyat gerekli.",
+    referenceOccupancy: "Referans fiyattaki doluluk oran\u0131n\u0131 bilmek i\xE7in gerekli.",
+    "demand.adrIncrease": "Doluluk d\xFC\u015F\xFC\u015F\xFCn\xFCn hangi fiyat art\u0131\u015F\u0131 i\xE7in ge\xE7erli oldu\u011Funu belirtmek i\xE7in gerekli.",
+    "demand.occupancyDecreasePp": "Fiyat art\u0131\u015F\u0131na kar\u015F\u0131 doluluk d\xFC\u015F\xFC\u015F\xFCn\xFC y\xFCzde puan\u0131 olarak tan\u0131mlamak i\xE7in gerekli.",
+    "demand.validMinAdr": "Talep varsay\u0131m\u0131n\u0131n ge\xE7erli oldu\u011Fu en d\xFC\u015F\xFCk fiyat\u0131 belirtmek i\xE7in gerekli.",
+    "demand.validMaxAdr": "Talep varsay\u0131m\u0131n\u0131n ge\xE7erli oldu\u011Fu en y\xFCksek fiyat\u0131 belirtmek i\xE7in gerekli.",
+    "demand.points": "Fiyat\u2013doluluk ili\u015Fkisini en az iki noktadan kurmak i\xE7in gerekli."
+  };
+  function at(input, path) {
+    return path.split(".").reduce((value, key) => isRecord(value) ? value[key] : void 0, input);
+  }
+  function missing(value) {
+    return value == null || typeof value === "string" && value.trim() === "";
+  }
+  function inputKind(path) {
+    if (path === "demand" || path === "demand.kind") return "model";
+    if (path === "demand.points") return "points";
+    if (path.startsWith("period.")) return "date";
+    if (path.includes("Occupancy")) return "ratio";
+    if (["name", "currency", "id", "demand.modelVersion"].includes(path)) return "text";
+    return "number";
+  }
+  function checkMaxRevparReadiness(input) {
+    const parsed = validateCaseForAnalysis(input);
+    const missingFields = [];
+    const issues = [];
+    const warnings = [];
+    const appendMissing = (path) => {
+      if (!missingFields.some((field2) => field2.path === path)) missingFields.push({ path, reason: reasons[path] ?? "Analiz s\xF6zle\u015Fmesini tamamlamak i\xE7in bu alan gerekli.", inputKind: inputKind(path) });
+    };
+    if (!parsed.success) {
+      for (const issue of parsed.issues) {
+        if (issue.path && missing(at(input, issue.path)) && (issue.code === "REQUIRED_FIELD" || reasons[issue.path])) {
+          if (issue.path === "period") {
+            appendMissing("period.start");
+            appendMissing("period.end");
+          } else appendMissing(issue.path);
+        } else issues.push({ ...issue, remediation: `\u201C${issue.path || "Case"}\u201D alan\u0131n\u0131 d\xFCzeltip haz\u0131rl\u0131k kontrol\xFCn\xFC tekrar \xE7al\u0131\u015Ft\u0131r\u0131n.` });
+      }
+      if (missingFields.some((field2) => field2.path === "period")) {
+        missingFields.splice(missingFields.findIndex((field2) => field2.path === "period"), 1);
+        appendMissing("period.start");
+        appendMissing("period.end");
+      }
+      return { status: issues.length ? "BLOCKED" : "INCOMPLETE", missingFields, issues, warnings };
+    }
+    const compiled = compileDemand(parsed.data);
+    if (!compiled.success) return {
+      status: "BLOCKED",
+      missingFields,
+      issues: compiled.issues.map((issue) => ({ ...issue, remediation: "Talep parametrelerini veya analiz fiyat aral\u0131\u011F\u0131n\u0131 d\xFCzeltin; doluluk 0\u20131 i\xE7inde kalmal\u0131." })),
+      warnings
+    };
+    if (parsed.data.assumptionNotes?.trim()) warnings.push({ code: "ASSUMPTION_NOTES", message: parsed.data.assumptionNotes });
+    const highestOccupancy = Math.max(...compiled.value.segments.map((segment) => segment.occupancyAtMin));
+    if (parsed.data.minOccupancy !== void 0 && parsed.data.minOccupancy - highestOccupancy > NUMERICAL_POLICY.ratioTolerance) {
+      warnings.push({ code: "NO_FEASIBLE_OCCUPANCY", message: "Veri haz\u0131r, ancak bu talep modeliyle fiyat aral\u0131\u011F\u0131ndaki hi\xE7bir fiyat minimum doluluk \u015Fart\u0131n\u0131 kar\u015F\u0131lam\u0131yor." });
+    }
+    if (parsed.data.demand.kind === "scenario-points" && parsed.data.referenceAdr !== void 0 && parsed.data.referenceOccupancy !== void 0) {
+      const prediction = compiled.value.occupancyAt(parsed.data.referenceAdr);
+      if (!prediction.success) warnings.push({ code: "REFERENCE_OUTSIDE_ANALYSIS_RANGE", message: "Referans fiyat analiz aral\u0131\u011F\u0131 d\u0131\u015F\u0131nda; baz \xF6l\xE7\xFCm\xFC model kalibrasyonu say\u0131lmaz." });
+      else if (Math.abs(prediction.value - parsed.data.referenceOccupancy) > NUMERICAL_POLICY.ratioTolerance) warnings.push({ code: "REFERENCE_MODEL_MISMATCH", message: "Baz doluluk \xF6l\xE7\xFCm\xFC talep modelinden farkl\u0131; baz \xF6l\xE7\xFCm\xFC ve model varsay\u0131m\u0131 ayr\u0131 de\u011Ferlendirilmelidir." });
+    }
+    return { status: "READY", missingFields, issues, warnings, caseSnapshot: parsed.data };
+  }
+
+  // src/domain/skills/financial.skills.ts
+  var FinancialInputError = class extends Error {
+    issue;
+    constructor(code, path, message) {
+      super(message);
+      this.issue = { code, path, message };
+    }
+  };
+  function finite2(value, path) {
+    if (typeof value !== "number" || !Number.isFinite(value)) throw new FinancialInputError("INVALID_NUMBER", path, `${path}: sonlu say\u0131 gerekli.`);
+    return value;
+  }
+  function nonnegative(value, path) {
+    finite2(value, path);
+    if (value < 0) throw new FinancialInputError("INVALID_NUMBER", path, `${path}: negatif olamaz.`);
+    return value;
+  }
+  function ratio(value, path) {
+    nonnegative(value, path);
+    if (value > 1) throw new FinancialInputError("INVALID_RATIO", path, `${path}: 0\u20131 oran\u0131 gerekli.`);
+    return value;
+  }
+  function attempt(operation) {
+    try {
+      return { success: true, value: operation() };
+    } catch (error) {
+      return { success: false, issues: [error instanceof FinancialInputError ? error.issue : { code: "INVALID_INPUT", path: "", message: error instanceof Error ? error.message : "Ge\xE7ersiz finansal girdi." }] };
+    }
+  }
+  function unwrap(result) {
+    if (!result.success) {
+      const issue = result.issues[0];
+      throw new FinancialInputError(issue.code, issue.path, issue.message);
+    }
+    return result.value;
+  }
+  function calculateCapacity(capacity) {
+    return attempt(() => {
+      if (!Number.isSafeInteger(capacity.roomCount) || capacity.roomCount <= 0) throw new FinancialInputError("INVALID_CAPACITY", "capacity.roomCount", "Pozitif tam say\u0131 oda say\u0131s\u0131 gerekli.");
+      if (!Number.isInteger(capacity.openDays) || capacity.openDays < 1 || capacity.openDays > 366) throw new FinancialInputError("INVALID_CAPACITY", "capacity.openDays", "A\xE7\u0131k g\xFCn say\u0131s\u0131 1\u2013366 aras\u0131nda tam say\u0131 olmal\u0131.");
+      if (capacity.bedCount !== void 0 && (!Number.isSafeInteger(capacity.bedCount) || capacity.bedCount < capacity.roomCount)) throw new FinancialInputError("INVALID_CAPACITY", "capacity.bedCount", "Yatak say\u0131s\u0131 oda say\u0131s\u0131ndan az olmayan tam say\u0131 olmal\u0131.");
+      nonnegative(capacity.unavailableRoomNights, "capacity.unavailableRoomNights");
+      if (!Number.isInteger(capacity.unavailableRoomNights)) throw new FinancialInputError("INVALID_CAPACITY", "capacity.unavailableRoomNights", "Kullan\u0131lamayan oda geceleri tam say\u0131 olmal\u0131.");
+      if (capacity.unavailableRoomNights > 0 && !capacity.unavailableReason?.trim()) throw new FinancialInputError("REQUIRED_FIELD", "capacity.unavailableReason", "Kullan\u0131lamayan kapasitenin nedeni gerekli.");
+      const available = finite2(capacity.roomCount * capacity.openDays - capacity.unavailableRoomNights, "availableRoomNights");
+      if (available <= 0) throw new FinancialInputError("INVALID_CAPACITY", "capacity", "Kullan\u0131labilir kapasite pozitif olmal\u0131.");
+      return available;
+    });
+  }
+  function calculateRoomRevenue(availableRoomNights, occupancy, adr) {
+    return attempt(() => {
+      nonnegative(availableRoomNights, "availableRoomNights");
+      ratio(occupancy, "occupancy");
+      nonnegative(adr, "adr");
+      return finite2(availableRoomNights * occupancy * adr, "roomRevenue");
+    });
+  }
+  function calculateOtherRevenue(streams, occupiedRoomNights) {
+    return attempt(() => {
+      nonnegative(occupiedRoomNights, "occupiedRoomNights");
+      if (!Array.isArray(streams)) throw new FinancialInputError("REQUIRED_FIELD", "otherRevenues", "Gelir kalemleri dizisi gerekli; yoksa a\xE7\u0131k\xE7a bo\u015F dizi girin.");
+      const names = /* @__PURE__ */ new Set();
+      return finite2(streams.reduce((total, stream, i) => {
+        if (typeof stream.name !== "string" || !stream.name.trim() || names.has(stream.name)) throw new FinancialInputError("INVALID_REVENUE_STREAM", `otherRevenues.${i}`, "Gelir kalemleri benzersiz isim ta\u015F\u0131mal\u0131.");
+        names.add(stream.name);
+        return total + nonnegative(stream.fixedAnnual, `${stream.name}.fixedAnnual`) + nonnegative(stream.perOccupiedRoomNight, `${stream.name}.perOccupiedRoomNight`) * occupiedRoomNights;
+      }, 0), "otherRevenue");
+    });
+  }
+  function calculateTotalRevenue(roomRevenue, otherRevenue) {
+    return attempt(() => finite2(nonnegative(roomRevenue, "roomRevenue") + nonnegative(otherRevenue, "otherRevenue"), "totalRevenue"));
+  }
+  function calculateOpex(totalRevenue, occupiedRoomNights, costs) {
+    return attempt(() => finite2(nonnegative(costs.fixedOpex, "costs.fixedOpex") + nonnegative(costs.variablePerOccupiedRoomNight, "costs.variablePerOccupiedRoomNight") * nonnegative(occupiedRoomNights, "occupiedRoomNights") + ratio(costs.variableRevenueRate, "costs.variableRevenueRate") * nonnegative(totalRevenue, "totalRevenue"), "opex"));
+  }
+  function calculateGop(totalRevenue, opex) {
+    return attempt(() => finite2(nonnegative(totalRevenue, "totalRevenue") - nonnegative(opex, "opex"), "gop"));
+  }
+  function calculateEbitda(gop, managementFee, propertyExpenses, nonOperatingIncome) {
+    return attempt(() => finite2(finite2(gop, "gop") - nonnegative(managementFee, "managementFee") - nonnegative(propertyExpenses, "propertyExpenses") + finite2(nonOperatingIncome, "nonOperatingIncome"), "ebitda"));
+  }
+  function calculateNoi(ebitda, replacementReserve) {
+    return attempt(() => finite2(finite2(ebitda, "ebitda") - nonnegative(replacementReserve, "replacementReserve"), "noi"));
+  }
+  function calculateOperatingMetrics(capacity, adr, occupancy, streams, costs) {
+    return attempt(() => {
+      const availableRoomNights = unwrap(calculateCapacity(capacity));
+      ratio(occupancy, "occupancy");
+      nonnegative(adr, "adr");
+      const occupiedRoomNights = finite2(availableRoomNights * occupancy, "occupiedRoomNights");
+      const roomRevenue = unwrap(calculateRoomRevenue(availableRoomNights, occupancy, adr));
+      const otherRevenue = unwrap(calculateOtherRevenue(streams, occupiedRoomNights));
+      const totalRevenue = unwrap(calculateTotalRevenue(roomRevenue, otherRevenue));
+      const opex = unwrap(calculateOpex(totalRevenue, occupiedRoomNights, costs));
+      const gop = unwrap(calculateGop(totalRevenue, opex));
+      const managementFee = finite2(totalRevenue * ratio(costs.managementFeeRate, "costs.managementFeeRate"), "managementFee");
+      const propertyExpenses = nonnegative(costs.propertyExpenses, "costs.propertyExpenses");
+      const ebitda = unwrap(calculateEbitda(gop, managementFee, propertyExpenses, costs.nonOperatingIncome));
+      const replacementReserve = finite2(totalRevenue * ratio(costs.replacementReserveRate, "costs.replacementReserveRate"), "replacementReserve");
+      const noi = unwrap(calculateNoi(ebitda, replacementReserve));
+      return { adr, occupancy, availableRoomNights, occupiedRoomNights, revpar: finite2(adr * occupancy, "revpar"), roomRevenue, otherRevenue, totalRevenue, opex, gop, managementFee, propertyExpenses, ebitda, replacementReserve, noi };
+    });
+  }
+  function calculateCashFlow(noi, tax, capex, workingCapitalChange, debtService, mode) {
+    return attempt(() => {
+      if (mode !== "property" && mode !== "equity") throw new FinancialInputError("INVALID_MODE", "cashFlowMode", "Property veya equity se\xE7in.");
+      nonnegative(debtService, "debtService");
+      return finite2(finite2(noi, "noi") - nonnegative(tax, "tax") - nonnegative(capex, "capex") - finite2(workingCapitalChange, "workingCapitalChange") - (mode === "equity" ? nonnegative(debtService, "debtService") : 0), "cashFlow");
+    });
+  }
+  function calculateDscr(noi, debtService) {
+    return attempt(() => {
+      finite2(noi, "noi");
+      nonnegative(debtService, "debtService");
+      return debtService === 0 ? null : finite2(noi / debtService, "dscr");
+    });
+  }
+
+  // src/domain/finance/finance.schema.ts
+  function validateOperatingCase(input) {
+    return attempt(() => {
+      if (!isRecord(input)) throw new FinancialInputError("INVALID_CASE", "", "Finansal Case nesnesi gerekli.");
+      const readiness = checkMaxRevparReadiness(input.case);
+      if (readiness.status !== "READY" || !readiness.caseSnapshot) {
+        const issue = readiness.issues[0] ?? { code: "REQUIRED_FIELD", path: readiness.missingFields[0]?.path ?? "case", message: readiness.missingFields[0]?.reason ?? "Case gerekli." };
+        throw new FinancialInputError(issue.code, `case.${issue.path}`, issue.message);
+      }
+      for (const key of ["capacity", "costs", "otherRevenues"]) if (input[key] == null) throw new FinancialInputError("REQUIRED_FIELD", key, `${key} gerekli.`);
+      for (const [group, fields2] of Object.entries({ capacity: ["roomCount", "openDays", "unavailableRoomNights"], costs: ["fixedOpex", "variablePerOccupiedRoomNight", "variableRevenueRate", "managementFeeRate", "propertyExpenses", "nonOperatingIncome", "replacementReserveRate"] })) {
+        if (!isRecord(input[group])) throw new FinancialInputError("INVALID_INPUT", group, `${group} nesnesi gerekli.`);
+        for (const field2 of fields2) if (input[group][field2] == null) throw new FinancialInputError("REQUIRED_FIELD", `${group}.${field2}`, `${group}.${field2} gerekli; yoksa a\xE7\u0131k\xE7a 0 girin.`);
+      }
+      const data = structuredClone({ case: readiness.caseSnapshot, capacity: input.capacity, costs: input.costs, otherRevenues: input.otherRevenues });
+      const period = readiness.caseSnapshot.period;
+      const days = (Date.parse(`${period.end}T00:00:00Z`) - Date.parse(`${period.start}T00:00:00Z`)) / 864e5 + 1;
+      if (days < 365 || days > 366) throw new FinancialInputError("ANNUAL_PERIOD_REQUIRED", "case.period", "Y\u0131ll\u0131k gelir/gider modeli i\xE7in Case d\xF6nemi 365\u2013366 g\xFCn olmal\u0131; k\u0131smi d\xF6nem varsay\u0131mlar\u0131n\u0131 y\u0131ll\u0131kla\u015Ft\u0131r\u0131n.");
+      const model = unwrap(compileDemand(readiness.caseSnapshot));
+      unwrap(calculateOperatingMetrics(data.capacity, model.minAdr, unwrap(model.occupancyAt(model.minAdr)), data.otherRevenues, data.costs));
+      return data;
+    });
+  }
+  function validateFinance(input) {
+    return attempt(() => {
+      if (input == null) throw new FinancialInputError("REQUIRED_FIELD", "finance", "Finans varsay\u0131mlar\u0131 gerekli.");
+      if (!isRecord(input)) throw new FinancialInputError("INVALID_INPUT", "finance", "Finans nesnesi gerekli.");
+      for (const key of ["forecastHorizon", "discountRate", "capRate", "revenueGrowth", "costGrowth", "taxRate", "cashFlowMode", "initialInvestment", "annualCapex", "workingCapitalChanges", "annualDebtService", "terminal"]) if (input[key] == null) throw new FinancialInputError("REQUIRED_FIELD", `finance.${key}`, `${key} gerekli.`);
+      const data = structuredClone(input);
+      if (!Number.isSafeInteger(data.forecastHorizon) || data.forecastHorizon < 1 || data.forecastHorizon > 100) throw new FinancialInputError("INVALID_HORIZON", "finance.forecastHorizon", "Tahmin ufku 1\u2013100 y\u0131l olmal\u0131.");
+      for (const [key, val] of Object.entries({ discountRate: data.discountRate, revenueGrowth: data.revenueGrowth, costGrowth: data.costGrowth })) if (finite2(val, `finance.${key}`) <= -1) throw new FinancialInputError("INVALID_RATE", `finance.${key}`, "Oran -%100\u2019den b\xFCy\xFCk olmal\u0131.");
+      if (finite2(data.capRate, "finance.capRate") <= 0) throw new FinancialInputError("INVALID_RATE", "finance.capRate", "Cap rate pozitif olmal\u0131.");
+      ratio(data.taxRate, "finance.taxRate");
+      nonnegative(data.initialInvestment, "finance.initialInvestment");
+      if (!["property", "equity"].includes(data.cashFlowMode)) throw new FinancialInputError("INVALID_MODE", "finance.cashFlowMode", "Property veya equity se\xE7in.");
+      for (const key of ["annualCapex", "workingCapitalChanges", "annualDebtService"]) {
+        if (!Array.isArray(data[key]) || data[key].length !== data.forecastHorizon) throw new FinancialInputError("INVALID_SCHEDULE", `finance.${key}`, `${key} tahmin ufkuyla ayn\u0131 say\u0131da y\u0131ll\u0131k de\u011Fer i\xE7ermeli.`);
+        data[key].forEach((value, i) => key === "workingCapitalChanges" ? finite2(value, `${key}.${i}`) : nonnegative(value, `${key}.${i}`));
+      }
+      if (!isRecord(data.terminal)) throw new FinancialInputError("INVALID_TERMINAL", "finance.terminal", "Terminal y\xF6ntemi nesnesi gerekli.");
+      const terminal = data.terminal;
+      if (terminal.method === "exit-cap") {
+        if (finite2(terminal.exitCapRate, "exitCapRate") <= 0) throw new FinancialInputError("INVALID_RATE", "exitCapRate", "Exit cap rate pozitif olmal\u0131.");
+        if (finite2(terminal.noiGrowth, "noiGrowth") <= -1) throw new FinancialInputError("INVALID_RATE", "noiGrowth", "B\xFCy\xFCme -%100\u2019den b\xFCy\xFCk olmal\u0131.");
+        ratio(terminal.sellingCostRate, "sellingCostRate");
+      } else if (terminal.method === "gordon") {
+        if (finite2(terminal.growth, "terminal.growth") <= -1 || terminal.growth >= data.discountRate) throw new FinancialInputError("INVALID_GORDON", "terminal.growth", "Gordon b\xFCy\xFCmesi -1 ile iskonto oran\u0131 aras\u0131nda olmal\u0131.");
+      } else if (terminal.method === "explicit") nonnegative(terminal.amount, "terminal.amount");
+      else if (terminal.method !== "none") throw new FinancialInputError("INVALID_TERMINAL", "finance.terminal", "Terminal y\xF6ntemi desteklenmiyor.");
+      if (data.terminalDebtBalance !== void 0) nonnegative(data.terminalDebtBalance, "finance.terminalDebtBalance");
+      if (data.cashFlowMode === "equity" && ["exit-cap", "explicit"].includes(terminal.method) && data.terminalDebtBalance === void 0) throw new FinancialInputError("REQUIRED_FIELD", "finance.terminalDebtBalance", "\xD6zkaynak sat\u0131\u015F de\u011Ferinde d\xF6nem sonu kalan bor\xE7 a\xE7\u0131k\xE7a girilmeli.");
+      return data;
+    });
+  }
+  function checkFinancialReadiness(input, analysis = "investment") {
+    const base = isRecord(input) ? checkMaxRevparReadiness(input.case) : checkMaxRevparReadiness(null);
+    const missingFields = base.missingFields.map((field2) => ({ ...field2, path: `case.${field2.path}` }));
+    const issues = base.issues.map((issue) => ({ ...issue, path: `case.${issue.path}` }));
+    const requirements = [
+      "capacity.roomCount",
+      "capacity.openDays",
+      "capacity.unavailableRoomNights",
+      "otherRevenues",
+      ...["fixedOpex", "variablePerOccupiedRoomNight", "variableRevenueRate", "managementFeeRate", "propertyExpenses", "nonOperatingIncome", "replacementReserveRate"].map((key) => `costs.${key}`),
+      ...analysis === "investment" ? ["forecastHorizon", "discountRate", "capRate", "revenueGrowth", "costGrowth", "taxRate", "cashFlowMode", "initialInvestment", "annualCapex", "workingCapitalChanges", "annualDebtService", "terminal"].map((key) => `finance.${key}`) : []
+    ];
+    const at2 = (path) => path.split(".").reduce((value, key) => isRecord(value) ? value[key] : void 0, input);
+    for (const path of requirements) {
+      const value = at2(path);
+      if (value == null || typeof value === "string" && !value.trim()) {
+        if (!missingFields.some((field2) => field2.path === path)) missingFields.push({ path, reason: `${path} analizi \xE7al\u0131\u015Ft\u0131rmak i\xE7in gerekli; s\u0131f\u0131rsa a\xE7\u0131k\xE7a 0 girin.`, inputKind: "number" });
+      } else if (!["otherRevenues", "finance.cashFlowMode", "finance.annualCapex", "finance.workingCapitalChanges", "finance.annualDebtService", "finance.terminal"].includes(path)) {
+        const signed = ["costs.nonOperatingIncome", "finance.discountRate", "finance.revenueGrowth", "finance.costGrowth"].includes(path);
+        const rate01 = /Rate$/.test(path) && !["finance.discountRate", "finance.capRate"].includes(path);
+        const integer = ["capacity.roomCount", "capacity.openDays", "capacity.unavailableRoomNights", "finance.forecastHorizon"].includes(path);
+        const bad = typeof value !== "number" || !Number.isFinite(value) || !signed && value < 0 || rate01 && value > 1 || integer && !Number.isSafeInteger(value) || ["capacity.roomCount", "capacity.openDays", "finance.forecastHorizon", "finance.capRate"].includes(path) && value <= 0 || ["finance.discountRate", "finance.revenueGrowth", "finance.costGrowth"].includes(path) && value <= -1;
+        if (bad) issues.push({ code: "INVALID_NUMBER", path, message: `${path}: ge\xE7erli sonlu say\u0131 ve birim aral\u0131\u011F\u0131 gerekli.`, remediation: "Sonlu ve ge\xE7erli bir de\u011Fer girin." });
+      }
+    }
+    const operating = validateOperatingCase(input);
+    const finance = analysis === "investment" ? validateFinance(isRecord(input) ? input.finance : void 0) : void 0;
+    for (const validation of [operating, finance]) if (validation && !validation.success) {
+      for (const issue of validation.issues) {
+        if (issue.code === "REQUIRED_FIELD") {
+          if (!missingFields.some((field2) => field2.path === issue.path)) missingFields.push({ path: issue.path, reason: issue.message, inputKind: "number" });
+        } else if (!issues.some((item) => item.path === issue.path && item.code === issue.code)) issues.push({ ...issue, remediation: "\u0130lgili finansal girdiyi d\xFCzeltip haz\u0131rl\u0131\u011F\u0131 tekrar kontrol edin." });
+      }
+    }
+    return { status: issues.length ? "BLOCKED" : missingFields.length ? "INCOMPLETE" : "READY", missingFields, issues, warnings: base.warnings, ...base.caseSnapshot ? { caseSnapshot: base.caseSnapshot } : {} };
+  }
+
+  // src/domain/guide/decision.guide.ts
+  function recommendAnalysis(intent) {
+    const text = intent.toLocaleLowerCase("tr-TR");
+    const ids = /risk|denge|trade|birlikte/.test(text) ? ["pareto-npv-risk", "stress"] : /yatırım|değer|npv/.test(text) ? ["max-npv", "scenarios"] : /gider|maliyet|opex/.test(text) ? ["min-opex", "pareto-noi-opex"] : /fiyat|doluluk|revpar/.test(text) ? ["max-revpar", "what-if"] : ["what-if", "scenarios"];
+    return ids.flatMap((id) => ANALYSIS_TEMPLATES.filter((template2) => template2.id === id));
+  }
+  function readinessForTemplate(template2, input) {
+    return template2.depth === "pricing" ? checkMaxRevparReadiness(isRecord(input) ? input.case : void 0) : checkFinancialReadiness(input, template2.depth);
+  }
+  function startWizard() {
+    return { phase: "CASE", approved: false, revision: 0 };
+  }
+  function selectWizardTool(state2, template2) {
+    return { ...state2, phase: "TOOL", selectedTool: template2.id, approved: false };
+  }
+  function approveWizardTool(state2) {
+    if (!state2.selectedTool) throw new Error("\xD6nce ara\xE7 se\xE7in.");
+    return { ...state2, phase: "INPUTS", approved: true };
+  }
+  function invalidateWizard(state2) {
+    return { ...state2, phase: state2.approved ? "INPUTS" : state2.phase, revision: state2.revision + 1, resultRevision: void 0 };
+  }
+  function reviewWizard(state2, ready) {
+    if (!state2.approved || !ready) throw new Error("Onay ve READY verisi gerekli.");
+    return { ...state2, phase: "REVIEW" };
+  }
+  function completeWizard(state2) {
+    if (state2.phase !== "REVIEW") throw new Error("Hesaplamadan \xF6nce varsay\u0131m \xF6zeti gerekli.");
+    return { ...state2, phase: "RESULT", resultRevision: state2.revision };
+  }
+
+  // src/domain/skills/historical-demand.skill.ts
+  function fitHistoricalDemand(rows) {
+    return attempt(() => {
+      if (!Array.isArray(rows) || rows.length < 3) throw new FinancialInputError("INSUFFICIENT_HISTORY", "rows", "En az \xFC\xE7 kar\u015F\u0131la\u015Ft\u0131r\u0131labilir tarihsel g\xF6zlem gerekli.");
+      rows.forEach((row2, i) => {
+        if (finite2(row2.adr, `rows.${i}.adr`) <= 0) throw new FinancialInputError("INVALID_NUMBER", "adr", "Pozitif ADR gerekli.");
+        ratio(row2.occupancy, `rows.${i}.occupancy`);
+        for (const key of ["season", "channel", "segment"]) if (typeof row2[key] !== "string" || !row2[key].trim()) throw new FinancialInputError("REQUIRED_FIELD", `rows.${i}.${key}`, "Sezon, kanal ve segment bilgisi gerekli.");
+      });
+      if (new Set(rows.map((row2) => JSON.stringify([row2.season, row2.channel, row2.segment]))).size !== 1) throw new FinancialInputError("INCOMPARABLE_HISTORY", "rows", "Tek bir sezon, kanal ve segment se\xE7erek kar\u015F\u0131la\u015Ft\u0131r\u0131labilir g\xF6zlemleri kullan\u0131n.");
+      const p = rows.reduce((sum, row2) => sum + row2.adr, 0) / rows.length;
+      const q = rows.reduce((sum, row2) => sum + row2.occupancy, 0) / rows.length;
+      const xx = rows.reduce((sum, row2) => sum + (row2.adr - p) ** 2, 0);
+      const xy = rows.reduce((sum, row2) => sum + (row2.adr - p) * (row2.occupancy - q), 0);
+      if (!xx) throw new FinancialInputError("NO_PRICE_VARIATION", "rows", "Talep ili\u015Fkisi i\xE7in farkl\u0131 fiyatlar gerekli.");
+      const slope = finite2(xy / xx, "slope");
+      if (slope > 0) throw new FinancialInputError("NON_MONOTONE_DEMAND", "rows", "Artan tarihsel ili\u015Fki fiyat etkisi modeli olarak kabul edilmez.");
+      const yy = rows.reduce((sum, row2) => sum + (row2.occupancy - q) ** 2, 0);
+      return {
+        referenceAdr: p,
+        referenceOccupancy: q,
+        demand: { kind: "linear-sensitivity", modelVersion: "demand.v1", adrIncrease: 1, occupancyDecreasePp: -slope * 100, validMinAdr: Math.min(...rows.map((row2) => row2.adr)), validMaxAdr: Math.max(...rows.map((row2) => row2.adr)) },
+        rSquared: yy === 0 ? 1 : finite2(xy * xy / (xx * yy), "rSquared"),
+        observations: rows.length,
+        warning: "Bu tarihsel uyum nedensel fiyat esnekli\u011Fi de\u011Fildir; zaman, talep ve di\u011Fer etkenlerden etkilenebilir. Analizden \xF6nce model varsay\u0131m\u0131 olarak g\xF6zden ge\xE7irin."
+      };
+    });
+  }
+
+  // src/domain/skills/revpar.skill.ts
+  var REVPAR_SKILL_VERSION = "revpar.v1";
+  function calculateRevpar(adr, occupancy) {
+    if (!Number.isFinite(adr) || adr <= 0) return failure("INVALID_NUMBER", "adr", "ADR sonlu ve pozitif olmal\u0131.");
+    if (!Number.isFinite(occupancy) || occupancy < 0 || occupancy > 1) return failure("INVALID_OCCUPANCY", "occupancy", "Doluluk 0\u20131 oran\u0131 olmal\u0131.");
+    const value = adr * occupancy;
+    if (!Number.isFinite(value)) return failure("NUMERICAL_ERROR", "revpar", "RevPAR sonlu de\u011Fil.");
+    return { success: true, value };
+  }
+
+  // src/domain/constraints/constraint.validator.ts
+  function validateCandidate(adr, occupancy, bounds) {
+    const issues = [];
+    const bindingConstraints = [];
+    const add = (code, path, message) => issues.push({ code, path, message });
+    if (!bounds || !Number.isFinite(bounds.minAdr) || !Number.isFinite(bounds.maxAdr) || bounds.minAdr <= 0 || bounds.minAdr > bounds.maxAdr) add("INVALID_ADR_RANGE", "bounds", "Ge\xE7erli pozitif fiyat aral\u0131\u011F\u0131 gerekli.");
+    if (bounds?.minOccupancy !== void 0 && (!Number.isFinite(bounds.minOccupancy) || bounds.minOccupancy < 0 || bounds.minOccupancy > 1)) add("INVALID_OCCUPANCY", "minOccupancy", "Minimum doluluk 0\u20131 oran\u0131 olmal\u0131.");
+    if (!Number.isFinite(adr) || adr <= 0) add("INVALID_NUMBER", "adr", "ADR sonlu ve pozitif olmal\u0131.");
+    if (!Number.isFinite(occupancy) || occupancy < 0 || occupancy > 1) add("INVALID_OCCUPANCY", "occupancy", "Doluluk 0\u20131 oran\u0131 olmal\u0131.");
+    if (issues.length) return { valid: false, issues, bindingConstraints };
+    if (adr < bounds.minAdr && !nearlyEqual(adr, bounds.minAdr)) add("ADR_BELOW_MIN", "adr", "Fiyat minimum ADR s\u0131n\u0131r\u0131n\u0131n alt\u0131nda.");
+    if (adr > bounds.maxAdr && !nearlyEqual(adr, bounds.maxAdr)) add("ADR_ABOVE_MAX", "adr", "Fiyat maksimum ADR s\u0131n\u0131r\u0131n\u0131n \xFCst\xFCnde.");
+    if (bounds.minOccupancy !== void 0 && occupancy < bounds.minOccupancy && !ratioEqual(occupancy, bounds.minOccupancy)) add("MIN_OCCUPANCY_VIOLATION", "occupancy", "Beklenen doluluk minimum doluluk \u015Fart\u0131n\u0131 kar\u015F\u0131lam\u0131yor.");
+    if (nearlyEqual(adr, bounds.minAdr)) bindingConstraints.push("minAdr");
+    if (nearlyEqual(adr, bounds.maxAdr)) bindingConstraints.push("maxAdr");
+    if (bounds.minOccupancy !== void 0 && ratioEqual(occupancy, bounds.minOccupancy)) bindingConstraints.push("minOccupancy");
+    if (ratioEqual(occupancy, 0)) bindingConstraints.push("zeroOccupancy");
+    if (ratioEqual(occupancy, 1)) bindingConstraints.push("fullOccupancy");
+    return { valid: issues.length === 0, issues, bindingConstraints };
+  }
+
+  // src/domain/simulation/simulate-price.ts
+  function simulatePrice(input, adr) {
+    const readiness = checkMaxRevparReadiness(input);
+    if (readiness.status !== "READY" || !readiness.caseSnapshot) return { readiness, issues: [] };
+    const snapshot = readiness.caseSnapshot;
+    const compiled = compileDemand(snapshot);
+    if (!compiled.success) return { readiness, issues: compiled.issues };
+    const model = compiled.value;
+    const occupancy = model.occupancyAt(adr);
+    if (!occupancy.success) return { readiness, issues: occupancy.issues };
+    const revpar = calculateRevpar(adr, occupancy.value);
+    if (!revpar.success) return { readiness, issues: revpar.issues };
+    const bounds = { minAdr: snapshot.minAdr, maxAdr: snapshot.maxAdr, minOccupancy: snapshot.minOccupancy };
+    const constraints = validateCandidate(adr, occupancy.value, bounds);
+    const prices = /* @__PURE__ */ new Set([snapshot.minAdr, snapshot.maxAdr, adr]);
+    for (const segment of model.segments) {
+      prices.add(segment.minAdr);
+      prices.add(segment.maxAdr);
+    }
+    for (let i = 1; i < 80; i++) prices.add(snapshot.minAdr + (snapshot.maxAdr - snapshot.minAdr) * i / 80);
+    const curve = [];
+    for (const price of [...prices].sort((a, b) => a - b)) {
+      const q = model.occupancyAt(price);
+      if (!q.success) return { readiness, issues: q.issues };
+      const r = calculateRevpar(price, q.value);
+      if (!r.success) return { readiness, issues: r.issues };
+      curve.push({ adr: price, occupancy: q.value, revpar: r.value, feasible: validateCandidate(price, q.value, bounds).valid });
+    }
+    return { readiness, issues: [], selected: { adr, occupancy: occupancy.value, revpar: revpar.value, feasible: constraints.valid, constraints }, curve };
+  }
+
+  // src/domain/skills/valuation.skills.ts
+  var validRate = (rate) => {
+    finite2(rate, "discountRate");
+    if (rate <= -1) throw new FinancialInputError("INVALID_RATE", "discountRate", "\u0130skonto oran\u0131 -%100\u2019den b\xFCy\xFCk olmal\u0131.");
+  };
+  function calculateDirectCapitalization(noi, capRate) {
+    return attempt(() => {
+      finite2(noi, "noi");
+      finite2(capRate, "capRate");
+      if (capRate <= 0) throw new FinancialInputError("INVALID_RATE", "capRate", "Cap rate pozitif olmal\u0131.");
+      if (noi <= 0) throw new FinancialInputError("NON_POSITIVE_NOI", "noi", "Do\u011Frudan kapitalizasyon i\xE7in pozitif stabilize NOI gerekli.");
+      return finite2(noi / capRate, "propertyValue");
+    });
+  }
+  function calculateTerminalValue(input) {
+    return attempt(() => {
+      if (input.method === "none") return 0;
+      if (input.method === "explicit") return nonnegative(input.amount, "terminal.amount");
+      if (input.method === "exit-cap") {
+        finite2(input.exitCapRate, "exitCapRate");
+        if (input.exitCapRate <= 0) throw new FinancialInputError("INVALID_RATE", "exitCapRate", "Exit cap rate pozitif olmal\u0131.");
+        const noi = finite2(input.nextYearNoi, "nextYearNoi");
+        if (noi <= 0) throw new FinancialInputError("NON_POSITIVE_NOI", "terminal.nextYearNoi", "Exit-cap terminal de\u011Feri i\xE7in gelecek y\u0131l NOI pozitif olmal\u0131.");
+        return finite2(noi / input.exitCapRate * (1 - ratio(input.sellingCostRate, "sellingCostRate")), "terminalValue");
+      }
+      if (input.method !== "gordon") throw new FinancialInputError("INVALID_TERMINAL", "terminal.method", "Terminal y\xF6ntemi desteklenmiyor.");
+      validRate(input.discountRate);
+      finite2(input.growth, "terminal.growth");
+      if (input.growth <= -1 || input.discountRate <= input.growth) throw new FinancialInputError("INVALID_GORDON", "terminal", "Gordon modeli i\xE7in -1 < b\xFCy\xFCme < iskonto oran\u0131 gerekli.");
+      return finite2(finite2(input.lastCashFlow, "lastCashFlow") * (1 + input.growth) / (input.discountRate - input.growth), "terminalValue");
+    });
+  }
+  function calculateDcf(annualFlows, discountRate, terminalValue) {
+    return attempt(() => {
+      validRate(discountRate);
+      if (!Array.isArray(annualFlows) || !annualFlows.length) throw new FinancialInputError("REQUIRED_FIELD", "annualFlows", "En az bir y\u0131ll\u0131k nakit ak\u0131\u015F\u0131 gerekli.");
+      const forecastPv = finite2(annualFlows.reduce((sum, flow, i) => sum + finite2(flow, `annualFlows.${i}`) / (1 + discountRate) ** (i + 1), 0), "forecastPv");
+      const terminalPv = finite2(finite2(terminalValue, "terminalValue") / (1 + discountRate) ** annualFlows.length, "terminalPv");
+      return { forecastPv, terminalPv, value: finite2(forecastPv + terminalPv, "dcfValue") };
+    });
+  }
+  function calculateIrr(flows) {
+    return attempt(() => {
+      if (!Array.isArray(flows) || flows.length < 2) throw new FinancialInputError("REQUIRED_FIELD", "cashFlows", "IRR i\xE7in en az iki d\xF6nem gerekli.");
+      flows.forEach((flow, i) => finite2(flow, `cashFlows.${i}`));
+      if (!flows.some((v) => v > 0) || !flows.some((v) => v < 0)) return { status: "NO_ROOT", rate: null };
+      if (flows[0] >= 0 || flows.slice(1).some((v) => v < 0)) return { status: "NON_CONVENTIONAL", rate: null };
+      const scale = Math.max(...flows.map(Math.abs));
+      const npvSign = (logBase) => {
+        const terms = flows.map((flow, i) => flow === 0 ? -Infinity : Math.log(Math.abs(flow) / scale) - i * logBase);
+        const maximum = Math.max(...terms);
+        return flows.reduce((sum, flow, i) => sum + Math.sign(flow) * Math.exp(terms[i] - maximum), 0);
+      };
+      let low = Math.log(1e-12);
+      let high = Math.log(1e12);
+      if (npvSign(low) <= 0 || npvSign(high) >= 0) return { status: "OUTSIDE_SEARCH_RANGE", rate: null };
+      for (let i = 0; i < 200; i++) {
+        const middle = (low + high) / 2;
+        if (npvSign(middle) > 0) low = middle;
+        else high = middle;
+      }
+      return { status: "UNIQUE", rate: finite2(Math.expm1((low + high) / 2), "irr") };
+    });
+  }
+  function calculatePayback(initialInvestment, annualFlows, discountRate) {
+    return attempt(() => {
+      nonnegative(initialInvestment, "initialInvestment");
+      if (!Array.isArray(annualFlows)) throw new FinancialInputError("REQUIRED_FIELD", "annualFlows", "Y\u0131ll\u0131k ak\u0131\u015Flar gerekli.");
+      if (discountRate !== void 0) validRate(discountRate);
+      let balance = -initialInvestment;
+      if (!initialInvestment) return { years: 0, recovered: true };
+      for (let i = 0; i < annualFlows.length; i++) {
+        const flow = finite2(annualFlows[i], `annualFlows.${i}`) / (discountRate === void 0 ? 1 : (1 + discountRate) ** (i + 1));
+        if (flow > 0 && (balance + flow >= 0 || nearlyEqual(balance + flow, 0))) return { years: i + Math.min(1, -balance / flow), recovered: true };
+        balance = finite2(balance + flow, "cumulativeCashFlow");
+      }
+      return { years: null, recovered: false };
+    });
+  }
+
+  // src/domain/finance/financial.engine.ts
+  function evaluateOperatingCase(input, adr) {
+    return attempt(() => {
+      const data = unwrap(validateOperatingCase(input));
+      const model = unwrap(compileDemand(data.case));
+      const q = unwrap(model.occupancyAt(adr));
+      const metrics = unwrap(calculateOperatingMetrics(data.capacity, adr, q, data.otherRevenues, data.costs));
+      const constraints = validateCandidate(adr, q, { minAdr: model.minAdr, maxAdr: model.maxAdr, minOccupancy: data.case.minOccupancy });
+      return { metrics, constraints };
+    });
+  }
+  function evaluateInvestmentCase(input, adr) {
+    return attempt(() => {
+      const data = unwrap(validateOperatingCase(input));
+      const finance = unwrap(validateFinance(isRecord(input) ? input.finance : void 0));
+      const base = unwrap(evaluateOperatingCase(data, adr));
+      const annual = [];
+      for (let year = 1; year <= finance.forecastHorizon; year++) {
+        const rf = finite2((1 + finance.revenueGrowth) ** (year - 1), "revenueGrowthFactor");
+        const cf = finite2((1 + finance.costGrowth) ** (year - 1), "costGrowthFactor");
+        const streams = data.otherRevenues.map((stream) => ({ ...stream, fixedAnnual: stream.fixedAnnual * rf, perOccupiedRoomNight: stream.perOccupiedRoomNight * rf }));
+        const costs = { ...data.costs, fixedOpex: data.costs.fixedOpex * cf, variablePerOccupiedRoomNight: data.costs.variablePerOccupiedRoomNight * cf, propertyExpenses: data.costs.propertyExpenses * cf, nonOperatingIncome: data.costs.nonOperatingIncome * rf };
+        const operating = unwrap(calculateOperatingMetrics(data.capacity, adr * rf, base.metrics.occupancy, streams, costs));
+        const tax = Math.max(0, operating.noi) * finance.taxRate;
+        const capex = finance.annualCapex[year - 1];
+        const workingCapital = finance.workingCapitalChanges[year - 1];
+        const debtService = finance.annualDebtService[year - 1];
+        const cashFlow = unwrap(calculateCashFlow(operating.noi, tax, capex, workingCapital, debtService, finance.cashFlowMode));
+        annual.push({ year, operating, tax, capex, workingCapital, debtService, cashFlow, dscr: unwrap(calculateDscr(operating.noi, debtService)) });
+      }
+      const last = annual.at(-1);
+      const terminal = finance.terminal;
+      const grossTerminalValue = unwrap(calculateTerminalValue(terminal.method === "exit-cap" ? { method: "exit-cap", nextYearNoi: last.operating.noi * (1 + terminal.noiGrowth), exitCapRate: terminal.exitCapRate, sellingCostRate: terminal.sellingCostRate } : terminal.method === "gordon" ? { method: "gordon", lastCashFlow: last.cashFlow, growth: terminal.growth, discountRate: finance.discountRate } : terminal));
+      const terminalValue = finite2(grossTerminalValue - (finance.cashFlowMode === "equity" && ["exit-cap", "explicit"].includes(terminal.method) ? finance.terminalDebtBalance : 0), "terminalValue");
+      const annualFlows = annual.map((item) => item.cashFlow);
+      const flowsWithExit = [...annualFlows];
+      flowsWithExit[flowsWithExit.length - 1] += terminalValue;
+      const dcf = unwrap(calculateDcf(annualFlows, finance.discountRate, terminalValue));
+      const direct = calculateDirectCapitalization(base.metrics.noi, finance.capRate);
+      return {
+        ...base,
+        annual,
+        terminalValue,
+        forecastPv: dcf.forecastPv,
+        terminalPv: dcf.terminalPv,
+        dcfValue: dcf.value,
+        npv: finite2(dcf.value - finance.initialInvestment, "npv"),
+        directCapitalizationValue: direct.success ? direct.value : null,
+        irr: unwrap(calculateIrr([-finance.initialInvestment, ...flowsWithExit])),
+        // Payback concerns operating recovery; terminal sale proceeds are deliberately excluded.
+        payback: unwrap(calculatePayback(finance.initialInvestment, annualFlows)),
+        discountedPayback: unwrap(calculatePayback(finance.initialInvestment, annualFlows, finance.discountRate)),
+        usedAssumptions: structuredClone({ ...data, finance }),
+        version: "finance.v1"
+      };
+    });
+  }
+
+  // src/domain/simulation/scenario.engine.ts
+  var SCENARIO_PATCH_PATHS = Object.freeze([
+    "adr",
+    "financialCase.case.referenceAdr",
+    "financialCase.case.referenceOccupancy",
+    "financialCase.case.minAdr",
+    "financialCase.case.maxAdr",
+    "financialCase.case.minOccupancy",
+    "financialCase.case.demand.adrIncrease",
+    "financialCase.case.demand.occupancyDecreasePp",
+    "financialCase.case.demand.validMinAdr",
+    "financialCase.case.demand.validMaxAdr",
+    "financialCase.capacity.openDays",
+    "financialCase.capacity.roomCount",
+    "financialCase.capacity.unavailableRoomNights",
+    "financialCase.costs.fixedOpex",
+    "financialCase.costs.variablePerOccupiedRoomNight",
+    "financialCase.costs.variableRevenueRate",
+    "financialCase.costs.managementFeeRate",
+    "financialCase.costs.propertyExpenses",
+    "financialCase.costs.nonOperatingIncome",
+    "financialCase.costs.replacementReserveRate",
+    "financialCase.finance.discountRate",
+    "financialCase.finance.capRate",
+    "financialCase.finance.revenueGrowth",
+    "financialCase.finance.costGrowth",
+    "financialCase.finance.taxRate",
+    "financialCase.finance.initialInvestment",
+    "financialCase.finance.terminal.exitCapRate",
+    "financialCase.finance.terminal.noiGrowth",
+    "financialCase.finance.terminal.sellingCostRate",
+    "financialCase.finance.terminal.growth",
+    "financialCase.finance.terminal.amount"
+  ]);
+  function evaluateScenario(input) {
+    return attempt(() => {
+      if (typeof input.name !== "string" || !input.name.trim()) throw new FinancialInputError("REQUIRED_FIELD", "name", "Senaryo ad\u0131 gerekli.");
+      if (!["operating", "investment"].includes(input.depth)) throw new FinancialInputError("INVALID_DEPTH", "depth", "Operating veya investment analiz derinli\u011Fi gerekli.");
+      const calculation = unwrap(input.depth === "operating" ? evaluateOperatingCase(input.financialCase, input.adr) : evaluateInvestmentCase(input.financialCase, input.adr));
+      const m = calculation.metrics;
+      const kpis = { ...m, occupancy: m.occupancy, value: null };
+      if (input.depth === "investment") {
+        const investment = calculation;
+        Object.assign(kpis, {
+          npv: investment.npv,
+          value: investment.dcfValue,
+          dcfValue: investment.dcfValue,
+          irr: investment.irr.rate,
+          payback: investment.payback.years,
+          capex: input.financialCase.finance.initialInvestment + input.financialCase.finance.annualCapex.reduce((sum, value) => sum + value, 0),
+          dscr: investment.annual.some((year) => year.dscr !== null) ? Math.min(...investment.annual.flatMap((year) => year.dscr === null ? [] : [year.dscr])) : null,
+          directCapitalizationValue: investment.directCapitalizationValue
+        });
+      } else if (input.financialCase.finance?.capRate !== void 0) {
+        const direct = calculateDirectCapitalization(m.noi, input.financialCase.finance.capRate);
+        kpis.value = direct.success ? direct.value : null;
+      }
+      return { name: input.name, inputSnapshot: structuredClone(input), calculation, kpis, feasible: calculation.constraints.valid };
+    });
+  }
+  function applyScenarioPatches(base, patches, name = base.name) {
+    return attempt(() => {
+      const result = structuredClone(base);
+      if (!Array.isArray(patches)) throw new FinancialInputError("INVALID_PATCH", "patches", "De\u011Fi\u015Fiklik dizisi gerekli.");
+      for (const patch of patches) {
+        if (!SCENARIO_PATCH_PATHS.includes(patch.path) && !/^financialCase\.(?:case\.demand\.points\.\d+\.occupancy|finance\.(?:annualCapex|workingCapitalChanges|annualDebtService)\.\d+)$/.test(patch.path)) throw new FinancialInputError("INVALID_PATCH", patch.path, "Bu alan senaryo de\u011Fi\u015Fikli\u011Fini desteklemiyor.");
+        finite2(patch.value, patch.path);
+        const keys = patch.path.split(".");
+        const leaf = keys.pop();
+        let target = result;
+        for (const key of keys) {
+          const next = target[key];
+          if (typeof next !== "object" || next === null) throw new FinancialInputError("INVALID_PATCH", patch.path, "De\u011Fi\u015Ftirilecek model alan\u0131 mevcut de\u011Fil.");
+          target = next;
+        }
+        if (Array.isArray(target) && (!/^\d+$/.test(leaf) || Number(leaf) >= target.length)) throw new FinancialInputError("INVALID_PATCH", patch.path, "Plan dizisinde mevcut y\u0131l indeksi gerekli.");
+        target[leaf] = patch.value;
+      }
+      result.name = name;
+      return result;
+    });
+  }
+  function runWhatIf(base, patches) {
+    return attempt(() => {
+      const original = unwrap(evaluateScenario(base));
+      const alternative = unwrap(evaluateScenario(unwrap(applyScenarioPatches(base, patches, "What-if"))));
+      const delta = Object.fromEntries(Object.keys(original.kpis).map((metric) => [metric, original.kpis[metric] !== null && alternative.kpis[metric] !== null ? alternative.kpis[metric] - original.kpis[metric] : null]));
+      return { base: original, alternative, delta };
+    });
+  }
+  function compareAlternatives(a, b) {
+    return attempt(() => {
+      if (a.financialCase.case.currency !== b.financialCase.case.currency || a.financialCase.case.period?.start !== b.financialCase.case.period?.start || a.financialCase.case.period?.end !== b.financialCase.case.period?.end || a.depth !== b.depth) throw new FinancialInputError("INCOMPARABLE", "alternatives", "A/B ayn\u0131 d\xF6nem, para birimi ve analiz derinli\u011Finde olmal\u0131.");
+      const av = unwrap(evaluateScenario(a));
+      const bv = unwrap(evaluateScenario(b));
+      return { alternatives: [av, bv], deltaBvsA: Object.fromEntries(Object.keys(av.kpis).map((key) => [key, av.kpis[key] !== null && bv.kpis[key] !== null ? bv.kpis[key] - av.kpis[key] : null])) };
+    });
+  }
+  function runScenarios(requests) {
+    return attempt(() => {
+      if (!Array.isArray(requests) || requests.length < 2) throw new FinancialInputError("REQUIRED_FIELD", "scenarios", "En az iki senaryo gerekli.");
+      if (new Set(requests.map((request) => request.name)).size !== requests.length) throw new FinancialInputError("DUPLICATE_SCENARIO", "scenarios", "Senaryo isimleri benzersiz olmal\u0131.");
+      for (const request of requests.slice(1)) unwrap(compareAlternatives(requests[0], request));
+      return requests.map((request) => unwrap(evaluateScenario(request)));
+    });
+  }
+  function runSensitivity(base, path, values) {
+    return attempt(() => {
+      if (!Array.isArray(values) || values.length < 2 || values.length > 1e3) throw new FinancialInputError("INVALID_RANGE", "values", "Duyarl\u0131l\u0131k i\xE7in 2\u20131000 de\u011Fer gerekli.");
+      return values.map((value, i) => unwrap(evaluateScenario(unwrap(applyScenarioPatches(base, [{ path, value }], `Duyarl\u0131l\u0131k ${i + 1}`)))));
+    });
+  }
+  function runStressTest(base, shocks) {
+    return attempt(() => {
+      if (!Array.isArray(shocks) || !shocks.length) throw new FinancialInputError("REQUIRED_FIELD", "shocks", "En az bir stres de\u011Fi\u015Fikli\u011Fi gerekli.");
+      const seen = /* @__PURE__ */ new Set();
+      const patches = shocks.map((shock) => {
+        if (seen.has(shock.path)) throw new FinancialInputError("DUPLICATE_SHOCK", shock.path, "Bir alan i\xE7in tek birle\u015Fik stres de\u011Fi\u015Fikli\u011Fi girin.");
+        seen.add(shock.path);
+        let value = base;
+        for (const key of shock.path.split(".")) value = value && typeof value === "object" ? value[key] : void 0;
+        const original = finite2(value, shock.path);
+        finite2(shock.change, shock.path);
+        if (!["relative", "percentage-points", "absolute"].includes(shock.mode)) throw new FinancialInputError("INVALID_SHOCK", shock.path, "Stres de\u011Fi\u015Fiklik t\xFCr\xFC ge\xE7ersiz.");
+        if (shock.mode === "percentage-points" && !/(Occupancy|occupancy|Rate|Growth|referenceOccupancy)$/.test(shock.path)) throw new FinancialInputError("INVALID_SHOCK", shock.path, "Y\xFCzde puan\u0131 yaln\u0131z oran alan\u0131nda kullan\u0131labilir.");
+        return { path: shock.path, value: shock.mode === "relative" ? original * (1 + shock.change) : original + (shock.mode === "percentage-points" ? shock.change / 100 : shock.change) };
+      });
+      return unwrap(runWhatIf(base, patches));
+    });
+  }
+
+  // src/domain/optimization/optimization.engine.ts
+  var decisionPaths = /* @__PURE__ */ new Set(["adr", "financialCase.capacity.openDays", "financialCase.costs.fixedOpex", "financialCase.costs.variablePerOccupiedRoomNight", "financialCase.costs.propertyExpenses", "financialCase.finance.initialInvestment"]);
+  function evaluateDecisionOptions(base, options, constraints) {
+    return attempt(() => {
+      if (!Array.isArray(options) || options.length < 1 || options.length > 1e4) throw new FinancialInputError("INVALID_OPTIONS", "options", "1\u201310000 a\xE7\u0131k karar alternatifi gerekli.");
+      if (new Set(options.map((option) => option.name)).size !== options.length) throw new FinancialInputError("DUPLICATE_OPTION", "options", "Alternatif isimleri benzersiz olmal\u0131.");
+      for (const constraint of constraints) {
+        finite2(constraint.value, constraint.metric);
+        if (![">=", "<="].includes(constraint.operator)) throw new FinancialInputError("INVALID_CONSTRAINT", constraint.metric, "K\u0131s\u0131t operat\xF6r\xFC >= veya <= olmal\u0131.");
+      }
+      return options.map((option) => {
+        if (!option.name?.trim()) throw new FinancialInputError("REQUIRED_FIELD", "option.name", "Alternatif ad\u0131 gerekli.");
+        ratio(option.riskScore, "riskScore");
+        ratio(option.serviceQuality, "serviceQuality");
+        for (const patch of option.patches) if (!decisionPaths.has(patch.path) && !/^financialCase\.finance\.annualCapex\.\d+$/.test(patch.path)) throw new FinancialInputError("EXOGENOUS_DECISION", patch.path, "Bu alan karar de\u011Fi\u015Fkeni de\u011Fil; sabit piyasa/talep varsay\u0131m\u0131 optimizasyonda de\u011Fi\u015Ftirilemez.");
+        const scenario = unwrap(evaluateScenario(unwrap(applyScenarioPatches(base, option.patches, option.name))));
+        const metrics = { ...scenario.kpis, risk: option.riskScore, serviceQuality: option.serviceQuality };
+        const violations = constraints.flatMap((constraint) => {
+          const value = metrics[constraint.metric];
+          if (value == null) return [`${constraint.metric}: hesaplanamayan metrik k\u0131s\u0131t\u0131 kar\u015F\u0131lamaz.`];
+          const pass = constraint.operator === ">=" ? value >= constraint.value || nearlyEqual(value, constraint.value) : value <= constraint.value || nearlyEqual(value, constraint.value);
+          return pass ? [] : [`${constraint.metric} ${constraint.operator} ${constraint.value}`];
+        });
+        return { option: structuredClone(option), scenario, metrics, feasible: scenario.feasible && !violations.length, violations };
+      });
+    });
+  }
+  function optimizeOptions(base, options, objective, constraints = []) {
+    return attempt(() => {
+      if (!["MAX", "MIN"].includes(objective.direction)) throw new FinancialInputError("INVALID_OBJECTIVE", "direction", "MAX veya MIN y\xF6n\xFC gerekli.");
+      const alternatives = unwrap(evaluateDecisionOptions(base, options, constraints));
+      if (!alternatives.some((option) => Object.hasOwn(option.metrics, objective.metric))) throw new FinancialInputError("INVALID_OBJECTIVE", "metric", "Hedef metri\u011Fi desteklenmiyor.");
+      const feasible = alternatives.filter((option) => option.feasible && option.metrics[objective.metric] != null);
+      feasible.sort((a, b) => {
+        const av = a.metrics[objective.metric];
+        const bv = b.metrics[objective.metric];
+        if (nearlyEqual(av, bv)) return a.option.name < b.option.name ? -1 : a.option.name > b.option.name ? 1 : 0;
+        return objective.direction === "MAX" ? bv - av : av - bv;
+      });
+      return { status: feasible.length ? "OPTIMAL_CANDIDATES" : "INFEASIBLE", best: feasible[0] ?? null, alternatives, objective };
+    });
+  }
+  function paretoOptimize(base, options, objectives, constraints = []) {
+    return attempt(() => {
+      if (!Array.isArray(objectives) || objectives.length < 2 || new Set(objectives.map((objective) => objective.metric)).size !== objectives.length) throw new FinancialInputError("INVALID_OBJECTIVES", "objectives", "En az iki farkl\u0131 hedef gerekli.");
+      const all = unwrap(evaluateDecisionOptions(base, options, constraints));
+      for (const objective of objectives) if (!["MAX", "MIN"].includes(objective.direction) || !all.some((option) => Object.hasOwn(option.metrics, objective.metric))) throw new FinancialInputError("INVALID_OBJECTIVE", objective.metric, "Ge\xE7erli hedef/y\xF6n gerekli.");
+      const feasible = all.filter((option) => option.feasible && objectives.every((objective) => option.metrics[objective.metric] != null));
+      const dominates = (a, b) => {
+        let better = false;
+        for (const objective of objectives) {
+          const av = a.metrics[objective.metric];
+          const bv = b.metrics[objective.metric];
+          if (nearlyEqual(av, bv)) continue;
+          if (objective.direction === "MAX" && av < bv || objective.direction === "MIN" && av > bv) return false;
+          better = true;
+        }
+        return better;
+      };
+      const front = feasible.filter((option) => !feasible.some((other) => dominates(other, option)));
+      return { front, dominated: feasible.filter((option) => !front.includes(option)), infeasible: all.filter((option) => !feasible.includes(option)), objectives };
+    });
+  }
+  function createPriceOptions(min, max, step, riskScore, serviceQuality) {
+    return attempt(() => {
+      nonnegative(min, "minAdr");
+      finite2(max, "maxAdr");
+      finite2(step, "step");
+      ratio(riskScore, "riskScore");
+      ratio(serviceQuality, "serviceQuality");
+      if (min <= 0 || min > max || step <= 0 || (max - min) / step > 9998) throw new FinancialInputError("INVALID_GRID", "step", "Pozitif fiyat ad\u0131m\u0131 ve en fazla 10000 aday gerekli.");
+      const count = Math.floor((max - min) / step);
+      const prices = Array.from({ length: count + 1 }, (_, i) => Math.min(max, min + i * step));
+      if (prices.at(-1) !== max) prices.push(max);
+      return prices.map((adr) => ({ name: `ADR ${adr}`, patches: [{ path: "adr", value: adr }], riskScore, serviceQuality }));
+    });
+  }
+
+  // src/domain/problems/problem.versions.ts
+  var MAX_REVPAR_VERSIONS = Object.freeze({
+    problemVersion: "max-revpar.v1",
+    demandVersion: DEMAND_SKILL_VERSION,
+    calculationVersion: REVPAR_SKILL_VERSION,
+    solverVersion: "max-revpar-solver.v1",
+    numericalPolicyVersion: NUMERICAL_POLICY.version
+  });
+
+  // src/domain/problems/problem.schema.ts
+  function validateMaxRevparProblem(input) {
+    if (!isRecord(input)) return { success: false, issues: [{ code: "INVALID_PROBLEM", path: "", message: "Problem nesnesi gerekli." }] };
+    const issues = [];
+    const add = (path) => issues.push({ code: "INVALID_PROBLEM", path, message: "Problem s\xF6zle\u015Fmesiyle uyu\u015Fmuyor." });
+    for (const key of ["problemVersion", "calculationVersion", "solverVersion", "numericalPolicyVersion"]) if (input[key] !== MAX_REVPAR_VERSIONS[key]) add(key);
+    const readiness = checkMaxRevparReadiness(input.caseSnapshot);
+    const snapshot = readiness.status === "READY" ? readiness.caseSnapshot : void 0;
+    if (!snapshot) {
+      issues.push(...readiness.issues.map((issue) => ({ ...issue, path: `caseSnapshot.${issue.path}` })));
+      issues.push(...readiness.missingFields.map((field2) => ({ code: "REQUIRED_FIELD", path: `caseSnapshot.${field2.path}`, message: field2.reason })));
+    }
+    if (!isRecord(input.objective) || input.objective.metric !== "revpar" || input.objective.direction !== "max") add("objective");
+    if (!isRecord(input.decision) || input.decision.metric !== "adr" || !snapshot || input.decision.min !== snapshot.minAdr || input.decision.max !== snapshot.maxAdr) add("decision");
+    if (!isRecord(input.constraints) || input.constraints.occupancyMax !== 1 || !snapshot || input.constraints.occupancyMin !== (snapshot.minOccupancy ?? 0)) add("constraints");
+    if (issues.length || !snapshot) return { success: false, issues };
+    const problem = {
+      problemVersion: MAX_REVPAR_VERSIONS.problemVersion,
+      caseSnapshot: snapshot,
+      objective: { metric: "revpar", direction: "max" },
+      decision: { metric: "adr", min: snapshot.minAdr, max: snapshot.maxAdr },
+      constraints: { occupancyMin: snapshot.minOccupancy ?? 0, occupancyMax: 1 },
+      calculationVersion: MAX_REVPAR_VERSIONS.calculationVersion,
+      solverVersion: MAX_REVPAR_VERSIONS.solverVersion,
+      numericalPolicyVersion: MAX_REVPAR_VERSIONS.numericalPolicyVersion
+    };
+    return { success: true, data: deepFreeze(problem), issues: [] };
+  }
+  function deepFreeze(value) {
+    if (value !== null && typeof value === "object") {
+      for (const child of Object.values(value)) deepFreeze(child);
+      Object.freeze(value);
+    }
+    return value;
+  }
+
+  // src/domain/problems/max-revpar.builder.ts
+  function buildMaxRevparProblem(input) {
+    const readiness = checkMaxRevparReadiness(input);
+    if (readiness.status !== "READY" || !readiness.caseSnapshot) return {
+      success: false,
+      readiness,
+      issues: [...readiness.issues, ...readiness.missingFields.map((field2) => ({ code: "REQUIRED_FIELD", path: field2.path, message: field2.reason }))]
+    };
+    const snapshot = readiness.caseSnapshot;
+    const parsed = validateMaxRevparProblem({
+      problemVersion: MAX_REVPAR_VERSIONS.problemVersion,
+      caseSnapshot: snapshot,
+      objective: { metric: "revpar", direction: "max" },
+      decision: { metric: "adr", min: snapshot.minAdr, max: snapshot.maxAdr },
+      constraints: { occupancyMin: snapshot.minOccupancy ?? 0, occupancyMax: 1 },
+      calculationVersion: MAX_REVPAR_VERSIONS.calculationVersion,
+      solverVersion: MAX_REVPAR_VERSIONS.solverVersion,
+      numericalPolicyVersion: MAX_REVPAR_VERSIONS.numericalPolicyVersion
+    });
+    if (!parsed.success) return { success: false, readiness, issues: parsed.issues };
+    return { success: true, problem: parsed.data, readiness, issues: [] };
+  }
+
+  // src/domain/solvers/max-revpar.solver.ts
+  function solveMaxRevpar(input) {
+    const parsed = validateMaxRevparProblem(input);
+    if (!parsed.success) return { status: "INVALID_PROBLEM", issues: parsed.issues };
+    const problem = parsed.data;
+    const compiled = compileDemand(problem.caseSnapshot);
+    if (!compiled.success) return { status: "INVALID_PROBLEM", issues: compiled.issues };
+    const bounds = { minAdr: problem.decision.min, maxAdr: problem.decision.max, minOccupancy: problem.constraints.occupancyMin };
+    const candidates = /* @__PURE__ */ new Set();
+    for (const segment of compiled.value.segments) {
+      const { minAdr: low, maxAdr: high, occupancyAtMin: qLow, occupancyAtMax: qHigh } = segment;
+      if (qLow < bounds.minOccupancy && !ratioEqual(qLow, bounds.minOccupancy)) continue;
+      let feasibleHigh = high;
+      if (qHigh < bounds.minOccupancy && qLow !== qHigh) feasibleHigh = low + (high - low) * ((qLow - bounds.minOccupancy) / (qLow - qHigh));
+      feasibleHigh = Math.min(high, Math.max(low, feasibleHigh));
+      candidates.add(low);
+      candidates.add(feasibleHigh);
+      if (high > low && qLow > qHigh) {
+        const inverseSlope = (high - low) / (qLow - qHigh);
+        const stationary = (qLow * inverseSlope + low) / 2;
+        if (Number.isFinite(stationary) && stationary >= low && stationary <= feasibleHigh) candidates.add(stationary);
+      }
+    }
+    let best;
+    let candidateCount = 0;
+    for (const adr of [...candidates].sort((a, b) => a - b)) {
+      const q = compiled.value.occupancyAt(adr);
+      if (!q.success) return { status: "NUMERICAL_ERROR", issues: q.issues };
+      const constraints = validateCandidate(adr, q.value, bounds);
+      if (!constraints.valid) continue;
+      const r = calculateRevpar(adr, q.value);
+      if (!r.success) return { status: "NUMERICAL_ERROR", issues: r.issues };
+      candidateCount++;
+      if (!best || r.value > best.revpar && !nearlyEqual(r.value, best.revpar) || nearlyEqual(r.value, best.revpar) && adr < best.adr) best = { adr, occupancy: q.value, revpar: r.value, constraints };
+    }
+    if (!best) return { status: "INFEASIBLE", issues: [{ code: "NO_FEASIBLE_PRICE", path: "constraints", message: "Talep modeli ve doluluk \u015Fartlar\u0131 alt\u0131nda uygulanabilir fiyat yok." }] };
+    return Object.freeze({
+      status: "OPTIMAL",
+      optimalAdr: best.adr,
+      expectedOccupancy: best.occupancy,
+      maximumRevpar: best.revpar,
+      bindingConstraints: best.constraints.bindingConstraints,
+      candidateCount,
+      inputSnapshot: problem
+    });
+  }
+
+  // src/domain/results/result.explainer.ts
+  var number = (value) => value.toLocaleString("tr-TR", { maximumFractionDigits: 4 });
+  function explainRevparResult(result) {
+    if (result.status !== "OPTIMAL") return { title: result.status === "INFEASIBLE" ? "Uygulanabilir fiyat yok" : "Problem hesaplanamad\u0131", messages: result.issues.map((issue) => issue.message) };
+    const snapshot = result.inputSnapshot.caseSnapshot;
+    const roundedAdr = Number(result.optimalAdr.toFixed(2));
+    const compiled = compileDemand(snapshot);
+    const applicationOccupancy = compiled.success ? compiled.value.occupancyAt(roundedAdr) : void 0;
+    const applicationRevpar = applicationOccupancy?.success ? calculateRevpar(roundedAdr, applicationOccupancy.value) : void 0;
+    const constraints = applicationOccupancy?.success ? validateCandidate(roundedAdr, applicationOccupancy.value, { minAdr: snapshot.minAdr, maxAdr: snapshot.maxAdr, minOccupancy: snapshot.minOccupancy }) : void 0;
+    const reference = snapshot.referenceAdr !== void 0 && snapshot.referenceOccupancy !== void 0 ? calculateRevpar(snapshot.referenceAdr, snapshot.referenceOccupancy) : void 0;
+    return {
+      title: "Talep varsay\u0131m\u0131 alt\u0131nda en y\xFCksek RevPAR",
+      messages: [
+        `${number(result.optimalAdr)} ${snapshot.currency} ADR \u2192 %${number(result.expectedOccupancy * 100)} doluluk \u2192 ${number(result.maximumRevpar)} ${snapshot.currency} RevPAR.`,
+        reference?.success ? `Baz RevPAR ${number(reference.value)}; mutlak fark ${number(result.maximumRevpar - reference.value)} ${snapshot.currency}.` : "Referans \xF6l\xE7\xFCm verilmedi; baz kar\u015F\u0131la\u015Ft\u0131rmas\u0131 yap\u0131lmad\u0131.",
+        result.bindingConstraints.length ? `Aktif s\u0131n\u0131rlar: ${result.bindingConstraints.join(", ")}.` : "Optimum fiyat aral\u0131\u011F\u0131n\u0131n i\xE7inde; aktif s\u0131n\u0131r yok.",
+        "Sonu\xE7 belirtilen talep modeli ve k\u0131s\u0131tlar alt\u0131nda hesaplanm\u0131\u015Ft\u0131r. Ger\xE7ekle\u015Fecek talebi garanti etmez; NOI veya k\xE2r optimumu de\u011Fildir."
+      ],
+      delta: reference?.success ? { absolute: result.maximumRevpar - reference.value, relative: reference.value === 0 ? null : (result.maximumRevpar - reference.value) / reference.value } : null,
+      application: {
+        adr: roundedAdr,
+        occupancy: applicationOccupancy?.success ? applicationOccupancy.value : null,
+        revpar: applicationRevpar?.success ? applicationRevpar.value : null,
+        feasible: constraints?.valid ?? false
+      },
+      usedAssumptions: snapshot,
+      versions: { problem: result.inputSnapshot.problemVersion, demand: snapshot.demand.modelVersion, calculation: result.inputSnapshot.calculationVersion, solver: result.inputSnapshot.solverVersion, numerical: result.inputSnapshot.numericalPolicyVersion }
+    };
+  }
+
+  // src/features/workbench/analysis.runner.ts
+  var row = (result) => ({ name: result.name, ...result.kpis, feasible: result.feasible ? "Uygun" : "K\u0131s\u0131t\u0131 kar\u015F\u0131lam\u0131yor" });
+  function runAnalysis(template2, input, controls2) {
+    return attempt(() => {
+      const ready = readinessForTemplate(template2, input);
+      if (ready.status !== "READY") throw new FinancialInputError("NOT_READY", "", [...ready.missingFields.map((field2) => field2.reason), ...ready.issues.map((issue) => issue.message)].join(" "));
+      if (template2.id === "max-revpar") {
+        const built = buildMaxRevparProblem(input.case);
+        if (!built.success) throw new FinancialInputError("NOT_READY", "", built.issues.map((issue) => issue.message).join(" "));
+        const solution = solveMaxRevpar(built.problem);
+        const explanation = explainRevparResult(solution);
+        return { title: explanation.title, rows: solution.status === "OPTIMAL" ? [{ name: "Optimum", adr: solution.optimalAdr, occupancy: solution.expectedOccupancy, revpar: solution.maximumRevpar }] : [], messages: explanation.messages, raw: { solution, explanation } };
+      }
+      const base = { name: "Baz", financialCase: input, adr: controls2.adr, depth: template2.depth === "investment" ? "investment" : "operating" };
+      if (template2.id === "what-if") {
+        const output3 = unwrap(runWhatIf(base, [{ path: "adr", value: controls2.alternativeAdr }]));
+        return { title: "What-if kar\u015F\u0131la\u015Ft\u0131rmas\u0131", rows: [row(output3.base), row(output3.alternative)], messages: ["Alternatif fiyat ayn\u0131 talep modelinde hesapland\u0131; optimum \xF6nerisi de\u011Fildir."], raw: output3 };
+      }
+      if (template2.id === "ab") {
+        const output3 = unwrap(compareAlternatives(base, { ...base, name: "B", adr: controls2.alternativeAdr }));
+        return { title: "A/B kar\u015F\u0131la\u015Ft\u0131rmas\u0131", rows: output3.alternatives.map(row), messages: ["Ayn\u0131 d\xF6nem, para birimi ve varsay\u0131mlarla iki fiyat kar\u015F\u0131la\u015Ft\u0131r\u0131ld\u0131."], raw: output3 };
+      }
+      if (template2.id === "scenarios") {
+        const scenarios = controls2.scenarios;
+        if (!scenarios) throw new FinancialInputError("REQUIRED_FIELD", "scenarios", "Senaryo paketleri gerekli.");
+        const output3 = unwrap(runScenarios(scenarios));
+        return { title: "Senaryo sonu\xE7lar\u0131", rows: output3.map(row), messages: ["Senaryo paketlerinin olas\u0131l\u0131\u011F\u0131 tahmin edilmedi."], raw: output3 };
+      }
+      if (template2.id === "sensitivity") {
+        if (!controls2.sensitivity) throw new FinancialInputError("REQUIRED_FIELD", "sensitivity", "Duyarl\u0131l\u0131k alan\u0131 ve de\u011Ferleri gerekli.");
+        const sensitivity = controls2.sensitivity;
+        const output3 = unwrap(runSensitivity(base, sensitivity.path, sensitivity.values));
+        return { title: "Duyarl\u0131l\u0131k sonu\xE7lar\u0131", rows: output3.map((scenario, i) => ({ ...row(scenario), parameter: /Rate$/.test(sensitivity.path) ? `%${sensitivity.values[i] * 100}` : sensitivity.values[i] })), messages: ["Tek de\u011Fi\u015Fken de\u011Fi\u015Fti; di\u011Fer varsay\u0131mlar sabit tutuldu."], raw: output3 };
+      }
+      if (template2.id === "stress") {
+        const shock = controls2.stress;
+        if (!shock) throw new FinancialInputError("REQUIRED_FIELD", "stress", "Stres de\u011Fi\u015Fiklikleri gerekli.");
+        const output3 = unwrap(runStressTest(base, [
+          { path: "adr", mode: "relative", change: shock.adrChange },
+          ...input.case.demand?.kind === "scenario-points" ? input.case.demand.points.map((_, index) => ({ path: `financialCase.case.demand.points.${index}.occupancy`, mode: "percentage-points", change: -shock.occupancyDropPp })) : [{ path: "financialCase.case.referenceOccupancy", mode: "percentage-points", change: -shock.occupancyDropPp }],
+          { path: "financialCase.costs.fixedOpex", mode: "relative", change: shock.opexChange },
+          { path: "financialCase.finance.discountRate", mode: "percentage-points", change: shock.discountIncreasePp }
+        ]));
+        return { title: "Stres testi", rows: [row(output3.base), row(output3.alternative)], messages: ["Talep e\u011Frisi referans doluluk d\xFC\u015F\xFC\u015F\xFC kadar a\u015Fa\u011F\u0131 kayd\u0131r\u0131ld\u0131; doluluk azal\u0131\u015F\u0131 y\xFCzde puan\u0131d\u0131r."], raw: output3 };
+      }
+      if (!controls2.options) throw new FinancialInputError("REQUIRED_FIELD", "options", "A\xE7\u0131k karar alternatifleri gerekli.");
+      if (template2.family === "multi-objective") {
+        const output3 = unwrap(paretoOptimize(base, controls2.options, template2.objectives, controls2.constraints));
+        return {
+          title: "Pareto se\xE7enekleri",
+          rows: output3.front.map((option) => ({ ...row(option.scenario), risk: option.metrics.risk, capex: option.metrics.capex, serviceQuality: option.metrics.serviceQuality })),
+          messages: [`${output3.front.length} bask\u0131n olmayan, ${output3.dominated.length} bask\u0131n ve ${output3.infeasible.length} uygun olmayan alternatif.`, "Tek bir kazanan se\xE7ilmedi; sonu\xE7 verilen se\xE7enek k\xFCmesi i\xE7in ge\xE7erlidir."],
+          raw: output3
+        };
+      }
+      const output2 = unwrap(optimizeOptions(base, controls2.options, template2.objectives[0], controls2.constraints));
+      return {
+        title: output2.status === "INFEASIBLE" ? "Uygulanabilir alternatif yok" : "Karar se\xE7enekleri aras\u0131nda en iyi sonu\xE7",
+        rows: output2.best ? [{ ...row(output2.best.scenario), risk: output2.best.metrics.risk, serviceQuality: output2.best.metrics.serviceQuality, capex: output2.best.metrics.capex }] : [],
+        messages: [`${output2.alternatives.length} a\xE7\u0131k alternatif de\u011Ferlendirildi.`, "Bu sonu\xE7 yaln\u0131z tan\u0131mlanan karar alternatifleri i\xE7in ge\xE7erlidir; s\xFCrekli karar uzay\u0131 optimumu de\u011Fildir."],
+        raw: output2
+      };
+    });
+  }
+
+  // src/domain/case/case.repository.ts
+  function assertCase(input) {
+    const result = validateCase(input);
+    if (!result.success) {
+      const issue = result.issues[0];
+      throw new FinancialInputError(issue.code, issue.path, issue.message);
+    }
+  }
+  function serializeCaseDocument(payload) {
+    return attempt(() => {
+      if (!isRecord(payload)) throw new FinancialInputError("INVALID_CASE", "", "Case nesnesi gerekli.");
+      assertCase(payload.case);
+      return JSON.stringify({ version: "case-document.v1", payload });
+    });
+  }
+  function parseCaseDocument(text) {
+    return attempt(() => {
+      if (typeof text !== "string" || text.length > 1e6) throw new FinancialInputError("INVALID_DOCUMENT", "", "Case dosyas\u0131 1 MB alt\u0131nda metin olmal\u0131.");
+      const data = JSON.parse(text);
+      if (!isRecord(data) || data.version !== "case-document.v1" || !isRecord(data.payload)) throw new FinancialInputError("INVALID_DOCUMENT", "", "case-document.v1 nesnesi gerekli.");
+      assertCase(data.payload.case);
+      return { version: "case-document.v1", payload: structuredClone(data.payload) };
+    });
+  }
+
+  // src/features/workbench/workbench.ui.ts
+  var definitions2 = {
+    case: [{ key: "name", label: "Otel ad\u0131" }, { key: "currency", label: "Para birimi", type: "select", choices: [["USD", "USD"], ["TRY", "TRY"], ["EUR", "EUR"]] }, { key: "start", label: "D\xF6nem ba\u015Flang\u0131c\u0131", type: "date" }, { key: "end", label: "D\xF6nem biti\u015Fi", type: "date" }],
+    pricing: [
+      { key: "demandKind", label: "Talep modeli", type: "select", choices: [["linear-sensitivity", "Do\u011Frusal duyarl\u0131l\u0131k"], ["scenario-points", "Senaryo noktalar\u0131"], ["historical", "Tarihsel uyum"]] },
+      { key: "minAdr", label: "Minimum ADR" },
+      { key: "maxAdr", label: "Maksimum ADR" },
+      { key: "minOccupancy", label: "Minimum doluluk (%) \u2014 iste\u011Fe ba\u011Fl\u0131" },
+      { key: "referenceAdr", label: "Referans ADR" },
+      { key: "referenceOccupancy", label: "Referans doluluk (%)" },
+      { key: "adrIncrease", label: "Fiyat art\u0131\u015F\u0131" },
+      { key: "occupancyDecreasePp", label: "Bu art\u0131\u015Fta doluluk d\xFC\u015F\xFC\u015F\xFC (y\xFCzde puan\u0131)", hint: "5 USD art\u0131\u015Fta 2 y\xFCzde puan\u0131 d\xFC\u015F\xFC\u015F: %55 \u2192 %53." },
+      { key: "validMinAdr", label: "Talep modelinin minimum fiyat\u0131" },
+      { key: "validMaxAdr", label: "Talep modelinin maksimum fiyat\u0131" },
+      { key: "points", label: "Fiyat; doluluk (%) \u2014 sat\u0131r ba\u015F\u0131na bir nokta", type: "textarea" },
+      { key: "history", label: "Fiyat; doluluk (%); sezon; kanal; segment", type: "textarea", hint: "En az \xFC\xE7 g\xF6zlem; tek sezon, kanal ve segment. Tarihsel ili\u015Fki nedensellik de\u011Fildir." }
+    ],
+    operating: [
+      { key: "roomCount", label: "Oda say\u0131s\u0131" },
+      { key: "openDays", label: "A\xE7\u0131k g\xFCn say\u0131s\u0131" },
+      { key: "unavailableRoomNights", label: "Kullan\u0131lamayan oda geceleri", hint: "Oda say\u0131s\u0131 \xD7 kapal\u0131 gece toplam\u0131; a\xE7\u0131k g\xFCnlerden ayr\u0131ca d\xFC\u015F\xFCl\xFCr." },
+      { key: "unavailableReason", label: "Kullan\u0131lamayan kapasitenin nedeni" },
+      { key: "revenues", label: "Di\u011Fer gelirler: isim; y\u0131ll\u0131k sabit tutar; sat\u0131lan oda gecesi ba\u015F\u0131na gelir", type: "textarea", hint: "F&B, spa, kira, ticari ve di\u011Fer gelirleri ayr\u0131 sat\u0131rda girin. Yoksa bo\u015F b\u0131rak\u0131n." },
+      { key: "fixedOpex", label: "Y\u0131ll\u0131k sabit OPEX", hint: "Personel, enerji, bak\u0131m, pazarlama gibi i\u015Fletme giderlerinin sabit toplam\u0131." },
+      { key: "variablePerOccupiedRoomNight", label: "Sat\u0131lan oda gecesi ba\u015F\u0131na de\u011Fi\u015Fken gider" },
+      { key: "variableRevenueRate", label: "Toplam gelir \xFCzerinden de\u011Fi\u015Fken gider (%)" },
+      { key: "managementFeeRate", label: "Y\xF6netim \xFCcreti (%)", hint: "OPEX toplam\u0131na tekrar dahil etmeyin." },
+      { key: "propertyExpenses", label: "Y\u0131ll\u0131k m\xFClk giderleri", hint: "\u0130\u015Fletme OPEX\u2019ine dahil edilmeyen m\xFClk vergisi, sigorta vb." },
+      { key: "nonOperatingIncome", label: "Di\u011Fer i\u015Fletme d\u0131\u015F\u0131 gelir" },
+      { key: "replacementReserveRate", label: "Yenileme rezervi (%)", hint: "NOI\u2019den ayr\u0131l\u0131r; ayn\u0131 tutar\u0131 y\u0131ll\u0131k CapEx\u2019e tekrar yazmay\u0131n." }
+    ],
+    investment: [
+      { key: "forecastHorizon", label: "Tahmin ufku (y\u0131l)" },
+      { key: "discountRate", label: "\u0130skonto oran\u0131 (%)" },
+      { key: "capRate", label: "Kapitalizasyon oran\u0131 (%)" },
+      { key: "revenueGrowth", label: "Y\u0131ll\u0131k gelir b\xFCy\xFCmesi (%)" },
+      { key: "costGrowth", label: "Y\u0131ll\u0131k gider b\xFCy\xFCmesi (%)" },
+      { key: "taxRate", label: "NOI \xFCzerinden varsay\u0131lan etkin nakit vergi (%)", hint: "Basitle\u015Ftirilmi\u015F senaryo varsay\u0131m\u0131d\u0131r; vergi mevzuat\u0131 hesab\u0131 de\u011Fildir." },
+      { key: "cashFlowMode", label: "Nakit ak\u0131\u015F\u0131 baz\u0131", type: "select", choices: [["property", "M\xFClk \u2014 bor\xE7 \xF6ncesi"], ["equity", "\xD6zkaynak \u2014 bor\xE7 servisi sonras\u0131"]] },
+      { key: "initialInvestment", label: "Ba\u015Flang\u0131\xE7 yat\u0131r\u0131m\u0131 (t=0)" },
+      { key: "annualCapex", label: "Y\u0131ll\u0131k ek CapEx \u2014 y\u0131l ba\u015F\u0131na bir de\u011Fer (; ile)", hint: "Tahmin ufku kadar say\u0131 girin; 0 da a\xE7\u0131k bir girdidir." },
+      { key: "workingCapitalChanges", label: "Y\u0131ll\u0131k i\u015Fletme sermayesi de\u011Fi\u015Fimi (; ile)", hint: "Pozitif de\u011Fi\u015Fim nakit \xE7\u0131k\u0131\u015F\u0131, negatif de\u011Fi\u015Fim nakit giri\u015Fi." },
+      { key: "annualDebtService", label: "Y\u0131ll\u0131k bor\xE7 servisi (; ile)", hint: "Bor\xE7 yoksa her y\u0131l 0. DSCR bor\xE7 servisi 0 oldu\u011Funda tan\u0131ms\u0131zd\u0131r." },
+      { key: "terminalMethod", label: "D\xF6nem sonu de\u011Fer y\xF6ntemi", type: "select", choices: [["none", "Terminal de\u011Fer yok"], ["exit-cap", "Gelecek y\u0131l NOI / exit cap"], ["gordon", "Gordon b\xFCy\xFCme modeli"], ["explicit", "A\xE7\u0131k sat\u0131\u015F de\u011Feri"]] },
+      { key: "exitCapRate", label: "Exit cap rate (%)" },
+      { key: "noiGrowth", label: "Terminal NOI b\xFCy\xFCmesi (%)" },
+      { key: "sellingCostRate", label: "Sat\u0131\u015F masraf\u0131 (%)" },
+      { key: "terminalGrowth", label: "Gordon b\xFCy\xFCmesi (%)" },
+      { key: "terminalAmount", label: "A\xE7\u0131k d\xF6nem sonu de\u011Fer tutar\u0131" },
+      { key: "terminalDebtBalance", label: "Sat\u0131\u015F tarihinde kalan bor\xE7 \u2014 \xF6zkaynak sat\u0131\u015F analizinde gerekli", hint: "Exit-cap veya a\xE7\u0131k sat\u0131\u015F de\u011Feri br\xFCt tutar\u0131ndan d\xFC\u015F\xFCl\xFCr; Gordon \xF6zkaynak ak\u0131\u015F\u0131na tekrar d\xFC\u015F\xFClmez." }
+    ],
+    analysis: [
+      { key: "adr", label: "Baz / denenecek ADR" },
+      { key: "alternativeAdr", label: "Alternatif ADR" },
+      { key: "scenarioRows", label: "Senaryo: isim; ADR; referans doluluk (%); sabit OPEX de\u011Fi\u015Fimi (%); iskonto (%)", type: "textarea" },
+      { key: "sensitivityPath", label: "Duyarl\u0131l\u0131k de\u011Fi\u015Fkeni", type: "select", choices: [["financialCase.finance.discountRate", "\u0130skonto oran\u0131 (%)"], ["financialCase.costs.fixedOpex", "Sabit OPEX"], ["adr", "ADR"], ["financialCase.finance.capRate", "Cap rate (%)"]] },
+      { key: "sensitivityValues", label: "Duyarl\u0131l\u0131k de\u011Ferleri (; ile)" },
+      { key: "stressAdr", label: "Stres: ADR de\u011Fi\u015Fimi (%)" },
+      { key: "stressOccupancy", label: "Stres: doluluk d\xFC\u015F\xFC\u015F\xFC (y\xFCzde puan\u0131)" },
+      { key: "stressOpex", label: "Stres: sabit OPEX art\u0131\u015F\u0131 (%)" },
+      { key: "stressDiscount", label: "Stres: iskonto art\u0131\u015F\u0131 (y\xFCzde puan\u0131)" },
+      { key: "optionMode", label: "Karar se\xE7enekleri", type: "select", choices: [["grid", "Fiyat aral\u0131\u011F\u0131n\u0131 belirtilen ad\u0131mla de\u011Ferlendir"], ["manual", "A\xE7\u0131k i\u015Fletme / yat\u0131r\u0131m se\xE7enekleri"]] },
+      { key: "priceStep", label: "Fiyat ad\u0131m\u0131", hint: "Di\u011Fer hedefler bu a\xE7\u0131k fiyat k\xFCmesini kar\u015F\u0131la\u015Ft\u0131r\u0131r; yaln\u0131z MAX RevPAR s\xFCrekli aral\u0131\u011F\u0131 analitik \xE7\xF6zer." },
+      { key: "riskScore", label: "Fiyat se\xE7eneklerinin risk endeksi (%)", hint: "Sizin verdi\u011Finiz kar\u015F\u0131la\u015Ft\u0131rmal\u0131 puan; hesaplanm\u0131\u015F olas\u0131l\u0131k de\u011Fildir." },
+      { key: "serviceQuality", label: "Fiyat se\xE7eneklerinin hizmet kalite puan\u0131 (%)" },
+      { key: "optionRows", label: "Se\xE7enek: isim; ADR; sabit OPEX; ba\u015Flang\u0131\xE7 yat\u0131r\u0131m\u0131; risk endeksi (%); kalite (%)", type: "textarea" },
+      { key: "qualityMin", label: "Minimum hizmet kalite puan\u0131 (%) \u2014 iste\u011Fe ba\u011Fl\u0131" },
+      { key: "noiMin", label: "Minimum NOI \u2014 iste\u011Fe ba\u011Fl\u0131" },
+      { key: "dscrMin", label: "Minimum DSCR \u2014 iste\u011Fe ba\u011Fl\u0131" },
+      { key: "capexMax", label: "Maksimum toplam yat\u0131r\u0131m/CapEx \u2014 iste\u011Fe ba\u011Fl\u0131" }
+    ]
+  };
+  var example = { name: "\xD6rnek Otel", currency: "USD", start: "2026-01-01", end: "2026-12-31", demandKind: "linear-sensitivity", minAdr: "130", maxAdr: "150", referenceAdr: "145", referenceOccupancy: "55", adrIncrease: "5", occupancyDecreasePp: "2", validMinAdr: "130", validMaxAdr: "150", points: "130;65\n145;55\n150;50", history: "130;61;yaz;direkt;tatil\n145;55;yaz;direkt;tatil\n150;53;yaz;direkt;tatil", roomCount: "100", openDays: "365", unavailableRoomNights: "0", revenues: "F&B;100000;20", fixedOpex: "1000000", variablePerOccupiedRoomNight: "30", variableRevenueRate: "5", managementFeeRate: "3", propertyExpenses: "100000", nonOperatingIncome: "0", replacementReserveRate: "4", forecastHorizon: "3", discountRate: "10", capRate: "8", revenueGrowth: "0", costGrowth: "0", taxRate: "0", cashFlowMode: "property", initialInvestment: "1000000", annualCapex: "10000;10000;10000", workingCapitalChanges: "0;0;0", annualDebtService: "0;0;0", terminalMethod: "none", exitCapRate: "8", noiGrowth: "0", sellingCostRate: "2", terminalGrowth: "2", terminalAmount: "10000000", terminalDebtBalance: "0", adr: "145", alternativeAdr: "150", scenarioRows: "Muhafazak\xE2r;145;45;20;14\nBaz;145;55;0;10\n\u0130yimser;141,25;65;-5;8", sensitivityPath: "financialCase.finance.discountRate", sensitivityValues: "5;10;15", stressAdr: "-10", stressOccupancy: "10", stressOpex: "20", stressDiscount: "4", optionMode: "grid", priceStep: "0,5", riskScore: "20", serviceQuality: "80", optionRows: "Ekonomik;130;900000;800000;35;75\nDengeli;141,25;1000000;1000000;20;85\nPremium;150;1100000;1200000;10;95" };
+  var root = document.getElementById("hdse-workbench");
+  var part = (name) => root.querySelector(`[data-part="${name}"]`);
+  var field = (key) => document.querySelector(`[data-field="${key}"]`);
+  var action = (name) => document.querySelector(`[data-action="${name}"]`);
+  var state = startWizard();
+  var template = ANALYSIS_TEMPLATES[0];
+  var output;
+  var caseId = globalThis.crypto?.randomUUID?.() ?? "local-hotel-case";
+  var storageKey = "hdse-workbench.form.v1";
+  function el(tag, text) {
+    const node = document.createElement(tag);
+    if (text !== void 0) node.textContent = text;
+    return node;
+  }
+  function messages(target, values) {
+    target.replaceChildren(...values.map((text) => el("p", text)));
+  }
+  function fields() {
+    return Object.fromEntries([...document.querySelectorAll("[data-field]")].map((input) => [input.dataset.field, input.value]));
+  }
+  function hydrate(values) {
+    for (const [key, value] of Object.entries(values)) {
+      if (!/^[a-zA-Z][a-zA-Z0-9]*$/.test(key)) continue;
+      const input = document.querySelector(`[data-field="${key}"]`);
+      if (input && typeof value === "string") input.value = value;
+    }
+  }
+  for (const [group, list] of Object.entries(definitions2)) {
+    const target = root.querySelector(`[data-group="${group}"]`);
+    if (group === "operating") target.append(el("h3", "Kapasite, gelir ve i\u015Fletme giderleri"));
+    if (group === "investment") target.append(el("h3", "Nakit ak\u0131\u015F\u0131 ve de\u011Ferleme varsay\u0131mlar\u0131"));
+    if (group === "analysis") target.append(el("h3", "Analiz se\xE7enekleri"));
+    const grid = el("div");
+    grid.className = "grid";
+    for (const definition of list) {
+      const label = el("label");
+      label.dataset.label = definition.key;
+      label.append(el("span", definition.label));
+      const input = definition.type === "textarea" ? document.createElement("textarea") : definition.type === "select" ? document.createElement("select") : document.createElement("input");
+      input.dataset.field = definition.key;
+      if (input instanceof HTMLInputElement) {
+        input.type = definition.type === "date" ? "date" : "text";
+        if (!["name", "unavailableReason"].includes(definition.key)) input.inputMode = "decimal";
+      }
+      if (input instanceof HTMLSelectElement) for (const [value, text] of definition.choices ?? []) {
+        const option = el("option", text);
+        option.value = value;
+        input.append(option);
+      }
+      label.append(input);
+      if (definition.hint) label.append(el("small", definition.hint));
+      grid.append(label);
+    }
+    target.append(grid);
+  }
+  for (const t of ANALYSIS_TEMPLATES) {
+    const option = el("option", t.label);
+    option.value = t.id;
+    field("tool").append(option);
+  }
+  function visibility() {
+    root.querySelectorAll("[data-label]").forEach((label) => {
+      label.hidden = false;
+    });
+    const show = (key, visible) => {
+      const label = document.querySelector(`[data-label="${key}"]`);
+      if (label) label.hidden = !visible;
+    };
+    const kind = field("demandKind").value;
+    for (const key of ["referenceAdr", "referenceOccupancy", "adrIncrease", "occupancyDecreasePp", "validMinAdr", "validMaxAdr"]) show(key, kind === "linear-sensitivity");
+    show("points", kind === "scenario-points");
+    show("history", kind === "historical");
+    root.querySelector('[data-group="operating"]').hidden = template.depth === "pricing";
+    root.querySelector('[data-group="investment"]').hidden = template.depth !== "investment";
+    const method = field("terminalMethod").value;
+    for (const key of ["exitCapRate", "noiGrowth", "sellingCostRate"]) show(key, method === "exit-cap");
+    show("terminalGrowth", method === "gordon");
+    show("terminalAmount", method === "explicit");
+    show("terminalDebtBalance", field("cashFlowMode").value === "equity" && ["exit-cap", "explicit"].includes(method));
+    const optimization = template.family !== "simulation" && template.id !== "max-revpar";
+    show("adr", template.id !== "max-revpar");
+    show("alternativeAdr", ["what-if", "ab"].includes(template.id));
+    show("scenarioRows", template.id === "scenarios");
+    for (const key of ["sensitivityPath", "sensitivityValues"]) show(key, template.id === "sensitivity");
+    for (const key of ["stressAdr", "stressOccupancy", "stressOpex", "stressDiscount"]) show(key, template.id === "stress");
+    show("optionMode", optimization);
+    for (const key of ["priceStep", "riskScore", "serviceQuality"]) show(key, optimization && field("optionMode").value === "grid");
+    show("optionRows", optimization && field("optionMode").value === "manual");
+    for (const key of ["qualityMin", "noiMin"]) show(key, optimization);
+    for (const key of ["dscrMin", "capexMax"]) show(key, optimization && template.depth === "investment");
+  }
+  function readCase() {
+    const errors = [];
+    const numeric = (key, percent = false) => {
+      try {
+        const value = parseNumericInput(field(key).value);
+        return percent && value !== void 0 ? percentageToRatio(value) : value;
+      } catch {
+        errors.push(`${document.querySelector(`[data-label="${key}"] span`)?.textContent ?? key}: ge\xE7erli ${percent ? "0\u2013100 y\xFCzde" : "say\u0131"} girin.`);
+        return void 0;
+      }
+    };
+    const rate = (key) => {
+      try {
+        const n = parseNumericInput(field(key).value);
+        return n === void 0 ? void 0 : n / 100;
+      } catch {
+        errors.push(`${key}: ge\xE7erli y\xFCzde oran\u0131 girin.`);
+        return void 0;
+      }
+    };
+    const list = (key) => {
+      try {
+        return field(key).value.trim() ? field(key).value.split(";").map((value) => {
+          const number2 = parseNumericInput(value);
+          if (number2 === void 0) throw Error();
+          return number2;
+        }) : void 0;
+      } catch {
+        errors.push(`${key}: ; ile ayr\u0131lm\u0131\u015F y\u0131ll\u0131k say\u0131lar gerekli.`);
+        return void 0;
+      }
+    };
+    const caseData = { schemaVersion: "case.v1", id: caseId, revision: state.revision, name: field("name").value, currency: field("currency").value, period: { start: field("start").value, end: field("end").value }, minAdr: numeric("minAdr"), maxAdr: numeric("maxAdr"), minOccupancy: numeric("minOccupancy", true) };
+    const kind = field("demandKind").value;
+    if (kind === "linear-sensitivity") {
+      caseData.referenceAdr = numeric("referenceAdr");
+      caseData.referenceOccupancy = numeric("referenceOccupancy", true);
+      caseData.demand = { kind, modelVersion: "demand.v1", adrIncrease: numeric("adrIncrease"), occupancyDecreasePp: numeric("occupancyDecreasePp"), validMinAdr: numeric("validMinAdr"), validMaxAdr: numeric("validMaxAdr") };
+    } else {
+      try {
+        if (kind === "scenario-points") {
+          const points = field("points").value.trim() ? field("points").value.trim().split("\n").map((line, index) => {
+            const c = line.split(";");
+            if (c.length !== 2) throw Error(`Nokta ${index + 1}: fiyat; doluluk y\xFCzdesi gerekli.`);
+            const p = parseNumericInput(c[0]), q = parseNumericInput(c[1]);
+            if (p === void 0 || q === void 0) throw Error("Bo\u015F nokta.");
+            return { adr: p, occupancy: percentageToRatio(q) };
+          }) : void 0;
+          caseData.demand = { kind, modelVersion: "demand.v1", points };
+        } else {
+          const rows = field("history").value.trim().split("\n").map((line) => {
+            const c = line.split(";");
+            if (c.length !== 5) throw Error("Tarihsel sat\u0131rda be\u015F alan gerekli.");
+            const p = parseNumericInput(c[0]), q = parseNumericInput(c[1]);
+            if (p === void 0 || q === void 0) throw Error("Fiyat/doluluk gerekli.");
+            return { adr: p, occupancy: percentageToRatio(q), season: c[2], channel: c[3], segment: c[4] };
+          });
+          const fit = unwrap(fitHistoricalDemand(rows));
+          Object.assign(caseData, { referenceAdr: fit.referenceAdr, referenceOccupancy: fit.referenceOccupancy, demand: fit.demand, assumptionNotes: fit.warning });
+        }
+      } catch (error) {
+        errors.push(error instanceof Error ? error.message : "Talep noktalar\u0131 ge\xE7ersiz.");
+      }
+    }
+    const data = { case: caseData };
+    if (template.depth !== "pricing") {
+      data.capacity = { roomCount: numeric("roomCount"), openDays: numeric("openDays"), unavailableRoomNights: numeric("unavailableRoomNights"), unavailableReason: field("unavailableReason").value };
+      data.costs = Object.fromEntries(["fixedOpex", "variablePerOccupiedRoomNight", "variableRevenueRate", "managementFeeRate", "propertyExpenses", "nonOperatingIncome", "replacementReserveRate"].map((key) => [key, /Rate$/.test(key) ? numeric(key, true) : numeric(key)]));
+      try {
+        data.otherRevenues = field("revenues").value.trim() ? field("revenues").value.trim().split("\n").map((line) => {
+          const c = line.split(";");
+          if (c.length !== 3) throw Error("Gelir sat\u0131r\u0131nda isim; sabit tutar; oda gecesi ba\u015F\u0131na tutar gerekli.");
+          const fixed = parseNumericInput(c[1]), per = parseNumericInput(c[2]);
+          if (fixed === void 0 || per === void 0) throw Error("Gelir tutarlar\u0131 gerekli.");
+          return { name: c[0].trim(), fixedAnnual: fixed, perOccupiedRoomNight: per };
+        }) : [];
+      } catch (error) {
+        errors.push(error instanceof Error ? error.message : "Gelirler ge\xE7ersiz.");
+      }
+    }
+    if (template.depth === "investment") {
+      const method = field("terminalMethod").value;
+      const terminal = method === "exit-cap" ? { method, exitCapRate: rate("exitCapRate"), noiGrowth: rate("noiGrowth"), sellingCostRate: numeric("sellingCostRate", true) } : method === "gordon" ? { method, growth: rate("terminalGrowth") } : method === "explicit" ? { method, amount: numeric("terminalAmount") } : { method };
+      data.finance = { forecastHorizon: numeric("forecastHorizon"), discountRate: rate("discountRate"), capRate: rate("capRate"), revenueGrowth: rate("revenueGrowth"), costGrowth: rate("costGrowth"), taxRate: numeric("taxRate", true), cashFlowMode: field("cashFlowMode").value, initialInvestment: numeric("initialInvestment"), annualCapex: list("annualCapex"), workingCapitalChanges: list("workingCapitalChanges"), annualDebtService: list("annualDebtService"), terminal, ...field("cashFlowMode").value === "equity" && ["exit-cap", "explicit"].includes(method) ? { terminalDebtBalance: numeric("terminalDebtBalance") } : {} };
+    }
+    return { input: data, errors };
+  }
+  function invalidate() {
+    state = invalidateWizard(state);
+    output = void 0;
+    part("results").hidden = true;
+    part("review").hidden = true;
+    visibility();
+    check();
+  }
+  function check() {
+    const { input, errors } = readCase();
+    const ready = readinessForTemplate(template, input);
+    part("readiness").textContent = errors.length ? "Ge\xE7ersiz giri\u015F" : ready.status === "READY" ? "Veri haz\u0131r \u2014 varsay\u0131mlar\u0131 g\xF6zden ge\xE7irebilirsin." : ready.status === "INCOMPLETE" ? "Eksik bilgiler var." : "Veri d\xFCzeltmesi gerekli.";
+    messages(part("errors"), [...errors, ...ready.missingFields.map((f) => f.reason), ...ready.issues.map((i) => i.message)]);
+    messages(part("warnings"), ready.warnings.map((w) => w.message));
+    action("review").disabled = errors.length > 0 || ready.status !== "READY" || !state.approved;
+    const missingOnly = document.querySelector('[data-action="missing-only"]').checked;
+    if (missingOnly) {
+      const paths = { name: "name", currency: "currency", start: "period.start", end: "period.end", demandKind: "demand", referenceAdr: "referenceAdr", referenceOccupancy: "referenceOccupancy", minAdr: "minAdr", maxAdr: "maxAdr", minOccupancy: "minOccupancy", adrIncrease: "demand.adrIncrease", occupancyDecreasePp: "demand.occupancyDecreasePp", validMinAdr: "demand.validMinAdr", validMaxAdr: "demand.validMaxAdr", points: "demand.points", history: "demand", roomCount: "capacity.roomCount", openDays: "capacity.openDays", unavailableRoomNights: "capacity.unavailableRoomNights", unavailableReason: "capacity.unavailableReason", revenues: "otherRevenues" };
+      const needed = /* @__PURE__ */ new Set([...ready.missingFields.map((f) => f.path.replace(/^case\./, "")), ...ready.issues.map((i) => i.path.replace(/^case\./, ""))]);
+      for (const group of ["case", "pricing", "operating", "investment"]) for (const definition of definitions2[group]) {
+        const label = document.querySelector(`[data-label="${definition.key}"]`);
+        if (label.hidden) continue;
+        const path = paths[definition.key] ?? `${group === "operating" ? "costs" : "finance"}.${definition.key}`;
+        const invalid = errors.length > 0 || [...needed].some((required) => required === path || required.startsWith(`${path}.`) || path.startsWith(`${required}.`));
+        label.hidden = !invalid;
+      }
+    }
+  }
+  function showTool() {
+    template = findAnalysisTemplate(field("tool").value) ?? ANALYSIS_TEMPLATES[0];
+    state = selectWizardTool(state, template);
+    part("tool-description").replaceChildren(el("p", template.description), el("p", `Ne zaman? ${template.whenToUse}`), el("p", `Dikkat: ${template.tradeOff}`), el("p", `Gerekli veri: ${template.depth === "pricing" ? "Case, fiyat s\u0131n\u0131rlar\u0131 ve talep modeli" : template.depth === "operating" ? "Case, talep, kapasite, gelir ve giderler" : "\u0130\u015Fletme verileri, y\u0131ll\u0131k nakit ak\u0131\u015F\u0131 ve de\u011Ferleme varsay\u0131mlar\u0131"}.`));
+    part("inputs").hidden = true;
+    part("review").hidden = true;
+    part("results").hidden = true;
+    output = void 0;
+    action("approve").disabled = false;
+    visibility();
+  }
+  function numericRequired(key) {
+    const value = parseNumericInput(field(key).value);
+    if (value === void 0) throw Error(`${key}: de\u011Fer gerekli.`);
+    return value;
+  }
+  function controls(input) {
+    if (template.id === "max-revpar") return { adr: input.case.minAdr };
+    const adr = numericRequired("adr");
+    const result = { adr };
+    if (["what-if", "ab"].includes(template.id)) result.alternativeAdr = numericRequired("alternativeAdr");
+    if (template.id === "sensitivity") {
+      const path = field("sensitivityPath").value;
+      const values = field("sensitivityValues").value.split(";").map((value) => {
+        const n = parseNumericInput(value);
+        if (n === void 0) throw Error("Duyarl\u0131l\u0131k de\u011Feri gerekli.");
+        return /Rate$/.test(path) ? n / 100 : n;
+      });
+      result.sensitivity = { path, values };
+    }
+    if (template.id === "stress") result.stress = { adrChange: numericRequired("stressAdr") / 100, occupancyDropPp: numericRequired("stressOccupancy"), opexChange: numericRequired("stressOpex") / 100, discountIncreasePp: numericRequired("stressDiscount") };
+    if (template.id === "scenarios") {
+      const base = { name: "Baz", financialCase: input, adr, depth: "investment" };
+      result.scenarios = field("scenarioRows").value.trim().split("\n").map((line) => {
+        const c = line.split(";");
+        if (c.length !== 5) throw Error("Senaryoda be\u015F alan gerekli.");
+        const nums = c.slice(1).map((value) => {
+          const n = parseNumericInput(value);
+          if (n === void 0) throw Error("Senaryo de\u011Ferleri gerekli.");
+          return n;
+        });
+        const targetOccupancy = percentageToRatio(nums[1]);
+        const occupancyPatches = input.case.demand?.kind === "scenario-points" ? input.case.demand.points.map((point, index) => ({ path: `financialCase.case.demand.points.${index}.occupancy`, value: point.occupancy + targetOccupancy - unwrap(unwrap(compileDemand(input.case)).occupancyAt(adr)) })) : [{ path: "financialCase.case.referenceOccupancy", value: targetOccupancy }];
+        return unwrap(applyScenarioPatches(base, [{ path: "adr", value: nums[0] }, ...occupancyPatches, { path: "financialCase.costs.fixedOpex", value: input.costs.fixedOpex * (1 + nums[2] / 100) }, { path: "financialCase.finance.discountRate", value: nums[3] / 100 }], c[0]));
+      });
+    }
+    if (template.family !== "simulation") {
+      if (field("optionMode").value === "grid") result.options = unwrap(createPriceOptions(input.case.minAdr, input.case.maxAdr, numericRequired("priceStep"), percentageToRatio(numericRequired("riskScore")), percentageToRatio(numericRequired("serviceQuality"))));
+      else result.options = field("optionRows").value.trim().split("\n").map((line) => {
+        const c = line.split(";");
+        if (c.length !== 6) throw Error("Karar se\xE7ene\u011Finde alt\u0131 alan gerekli.");
+        const nums = c.slice(1).map((value) => {
+          const n = parseNumericInput(value);
+          if (n === void 0) throw Error("Se\xE7enek de\u011Feri gerekli.");
+          return n;
+        });
+        const patches = [{ path: "adr", value: nums[0] }, { path: "financialCase.costs.fixedOpex", value: nums[1] }];
+        if (template.depth === "investment") patches.push({ path: "financialCase.finance.initialInvestment", value: nums[2] });
+        return { name: c[0], patches, riskScore: percentageToRatio(nums[3]), serviceQuality: percentageToRatio(nums[4]) };
+      });
+      const constraints = [];
+      for (const [key, metric, operator] of [["qualityMin", "serviceQuality", ">="], ["noiMin", "noi", ">="], ...template.depth === "investment" ? [["dscrMin", "dscr", ">="], ["capexMax", "capex", "<="]] : []]) {
+        const n = parseNumericInput(field(key).value);
+        if (n !== void 0) constraints.push({ metric, operator, value: key === "qualityMin" ? percentageToRatio(n) : n });
+      }
+      result.constraints = constraints;
+    }
+    return result;
+  }
+  var metricNames = { name: "Alternatif", parameter: "De\u011Fi\u015Fen girdi", adr: "ADR", occupancy: "Doluluk", revpar: "RevPAR", roomRevenue: "Oda geliri", totalRevenue: "Toplam gelir", opex: "OPEX", gop: "GOP", ebitda: "EBITDA", noi: "NOI", npv: "NPV", value: "DCF de\u011Feri", directCapitalizationValue: "Do\u011Frudan kapitalizasyon de\u011Feri", irr: "IRR", payback: "Geri \xF6deme (y\u0131l)", dscr: "DSCR", risk: "Risk endeksi", serviceQuality: "Hizmet puan\u0131", capex: "Yat\u0131r\u0131m + CapEx", feasible: "K\u0131s\u0131t durumu" };
+  var fmt = (metric, value) => value == null ? "\u2014" : typeof value === "string" ? value : ["occupancy", "irr", "risk", "serviceQuality"].includes(metric) ? `%${(value * 100).toLocaleString("tr-TR", { maximumFractionDigits: 2 })}` : value.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
+  function table(rows, keys) {
+    const wrap = el("div");
+    wrap.className = "table-wrap";
+    const table2 = el("table");
+    const head = el("thead"), tr = el("tr");
+    for (const key of keys) tr.append(el("th", metricNames[key] ?? key));
+    head.append(tr);
+    table2.append(head);
+    const body = el("tbody");
+    for (const row2 of rows) {
+      const line = el("tr");
+      for (const key of keys) line.append(el("td", fmt(key, row2[key])));
+      body.append(line);
+    }
+    table2.append(body);
+    wrap.append(table2);
+    return wrap;
+  }
+  function plot(rows, metric) {
+    const numeric = rows.filter((row2) => typeof row2[metric] === "number");
+    if (!numeric.length) return;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.classList.add("chart");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", `${metricNames[metric] ?? metric} alternatif kar\u015F\u0131la\u015Ft\u0131rmas\u0131`);
+    const draw = () => {
+      const width = Math.max(280, svg.getBoundingClientRect().width || 600);
+      svg.setAttribute("viewBox", `0 0 ${width} 240`);
+      svg.replaceChildren();
+      const values = numeric.map((row2) => row2[metric]);
+      const min = Math.min(0, ...values), max = Math.max(0, ...values);
+      const range = max - min || 1;
+      const node = (tag, attrs, text) => {
+        const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+        for (const [key, v] of Object.entries(attrs)) n.setAttribute(key, String(v));
+        if (text) n.textContent = text;
+        return n;
+      };
+      svg.append(node("title", {}, metricNames[metric] ?? metric));
+      const sample = numeric.length > 12 ? numeric.filter((_, i) => i % Math.ceil(numeric.length / 12) === 0) : numeric;
+      const left = 70, right = width - 15, top = 18, bottom = 175;
+      const y = (v) => bottom - (v - min) / range * (bottom - top);
+      svg.append(node("line", { x1: left, x2: right, y1: y(0), y2: y(0), stroke: "var(--line)" }));
+      for (let i = 0; i < 3; i++) {
+        const v = min + range * i / 2;
+        svg.append(node("text", { x: left - 7, y: y(v) + 4, "text-anchor": "end" }, fmt(metric, v)));
+      }
+      sample.forEach((row2, i) => {
+        const step = (right - left) / sample.length;
+        const x = left + step * i;
+        const value = row2[metric];
+        svg.append(node("rect", { x: x + step * 0.15, y: Math.min(y(0), y(value)), width: step * 0.7, height: Math.max(1, Math.abs(y(value) - y(0))), fill: "var(--accent)" }));
+        const label = String(row2.name ?? i + 1);
+        svg.append(node("text", { x: x + step / 2, y: 200, "text-anchor": "middle" }, sample.length <= 4 ? label.slice(0, 16) : String(i + 1)));
+      });
+      svg.append(node("text", { x: (left + right) / 2, y: 229, "text-anchor": "middle" }, `${metricNames[metric] ?? metric} \xB7 ${["occupancy", "risk"].includes(metric) ? "%" : field("currency").value}`));
+    };
+    part("plots").append(svg);
+    draw();
+    if (typeof ResizeObserver !== "undefined") new ResizeObserver(draw).observe(svg);
+  }
+  function pricePlots(solution) {
+    const simulation = simulatePrice(solution.inputSnapshot.caseSnapshot, solution.optimalAdr);
+    if (!simulation.curve?.length) return;
+    const curve = simulation.curve;
+    for (const metric of ["occupancy", "revpar"]) {
+      const heading = el("h3", metric === "occupancy" ? "Fiyat \u2192 doluluk" : "Fiyat \u2192 RevPAR");
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("chart");
+      svg.dataset.priceChart = metric;
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", `${metricNames[metric]} ve se\xE7ilen optimum fiyat`);
+      const draw = () => {
+        const width = Math.max(280, svg.getBoundingClientRect().width || 600);
+        svg.setAttribute("viewBox", `0 0 ${width} 240`);
+        svg.replaceChildren();
+        const node = (tag, attrs, text) => {
+          const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+          for (const [key, value] of Object.entries(attrs)) n.setAttribute(key, String(value));
+          if (text) n.textContent = text;
+          return n;
+        };
+        const factor = metric === "occupancy" ? 100 : 1;
+        const values = curve.map((point2) => point2[metric] * factor);
+        const min = Math.min(...values), max = Math.max(...values);
+        const padding = Math.max((max - min) * 0.15, 1e-4);
+        const low = Math.max(0, min - padding), high = max + padding;
+        const left = 75, right = width - 25, top = 15, bottom = 180;
+        const pMin = curve[0].adr, pMax = curve.at(-1).adr;
+        const x = (p) => pMin === pMax ? (left + right) / 2 : left + (p - pMin) / (pMax - pMin) * (right - left);
+        const y = (v) => bottom - (v - low) / (high - low) * (bottom - top);
+        svg.append(node("title", {}, metricNames[metric]));
+        for (let i = 0; i < 3; i++) {
+          const v = low + (high - low) * i / 2;
+          svg.append(node("line", { x1: left, x2: right, y1: y(v), y2: y(v), stroke: "var(--line)" }));
+          svg.append(node("text", { x: left - 8, y: y(v) + 4, "text-anchor": "end" }, v.toLocaleString("tr-TR", { maximumFractionDigits: 2 })));
+          if (pMin !== pMax || i === 0) {
+            const p = pMin + (pMax - pMin) * i / 2;
+            svg.append(node("text", { x: x(p), y: bottom + 22, "text-anchor": i === 0 ? "start" : i === 2 ? "end" : "middle" }, p.toLocaleString("tr-TR", { maximumFractionDigits: 2 })));
+          }
+        }
+        svg.append(node("path", { d: curve.map((point2, i) => `${i ? "L" : "M"}${x(point2.adr)},${y(point2[metric] * factor)}`).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 2 }));
+        const q = metric === "occupancy" ? solution.expectedOccupancy * 100 : solution.maximumRevpar;
+        const point = node("circle", { cx: x(solution.optimalAdr), cy: y(q), r: 6, fill: "var(--accent)" });
+        point.append(node("title", {}, `${solution.optimalAdr} ADR \u2192 ${q} ${metric === "occupancy" ? "%" : field("currency").value}`));
+        svg.append(point);
+        svg.append(node("text", { x: (left + right) / 2, y: 230, "text-anchor": "middle" }, `ADR (${field("currency").value}) \xB7 ${metricNames[metric]} (${metric === "occupancy" ? "%" : field("currency").value})`));
+      };
+      part("plots").append(heading, svg);
+      draw();
+      if (typeof ResizeObserver !== "undefined") new ResizeObserver(draw).observe(svg);
+    }
+  }
+  function showResult(result) {
+    output = result;
+    part("results").hidden = false;
+    part("result-title").textContent = result.title;
+    messages(part("messages"), result.messages);
+    part("metrics").replaceChildren();
+    const first = result.rows[0];
+    for (const key of template.depth === "pricing" ? ["adr", "occupancy", "revpar"] : template.depth === "investment" ? ["noi", "npv", "value"] : ["totalRevenue", "opex", "noi"]) if (first && typeof first[key] === "number") {
+      const card = el("div");
+      card.className = "stat";
+      card.append(el("span", metricNames[key]));
+      card.append(el("strong", fmt(key, first[key])));
+      part("metrics").append(card);
+    }
+    const columns = ["name", "parameter", "adr", "occupancy", "revpar", ...template.depth !== "pricing" ? ["totalRevenue", "opex", "gop", "ebitda", "noi"] : [], ...template.depth === "investment" ? ["npv", "value", "directCapitalizationValue", "irr", "payback", "dscr", "capex"] : [], ...template.family === "multi-objective" || template.family === "minimization" ? ["risk", "serviceQuality"] : [], "feasible"];
+    part("result-table").replaceChildren(table(result.rows, columns.filter((key) => result.rows.some((row2) => Object.hasOwn(row2, key)))));
+    part("plots").replaceChildren();
+    if (result.rows.length > 1) {
+      plot(result.rows, template.depth === "pricing" ? "revpar" : template.depth === "investment" ? "npv" : "noi");
+    }
+    const exact = result.raw.solution;
+    if (exact?.status === "OPTIMAL") pricePlots(exact);
+    part("forecast").replaceChildren();
+    const raw = result.raw;
+    const annual = raw.best?.scenario?.calculation?.annual;
+    if (annual) part("forecast").append(el("h3", "Se\xE7ilen yat\u0131r\u0131m\u0131n y\u0131ll\u0131k nakit ak\u0131\u015F\u0131"), table(annual.map((year) => ({ name: `Y\u0131l ${year.year}`, noi: year.operating.noi, cashFlow: year.cashFlow, dscr: year.dscr })), ["name", "noi", "cashFlow", "dscr"]));
+    if (template.depth === "investment") part("messages").append(el("p", "IRR \u201C\u2014\u201D ise nakit ak\u0131\u015F\u0131 k\xF6ks\xFCz, \xE7ok i\u015Faret de\u011Fi\u015Fimli veya arama aral\u0131\u011F\u0131 d\u0131\u015F\u0131ndad\u0131r; durum hesaplama izinde belirtilir. Geri \xF6deme \u201C\u2014\u201D ise i\u015Fletme ak\u0131\u015Flar\u0131yla tahmin ufkunda geri \xF6deme ger\xE7ekle\u015Fmez. DSCR bor\xE7 servisi olmayan y\u0131lda tan\u0131ms\u0131zd\u0131r."));
+    part("trace").textContent = JSON.stringify(result.raw, null, 2);
+    state = completeWizard(state);
+  }
+  function download(name, text) {
+    const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+  action("approve").addEventListener("click", () => {
+    state = approveWizardTool(state);
+    part("inputs").hidden = false;
+    action("approve").disabled = true;
+    visibility();
+    check();
+  });
+  action("example").addEventListener("click", () => {
+    hydrate(example);
+    state = invalidateWizard(state);
+    part("notice").textContent = "\xD6rnek varsay\u0131mlar y\xFCklendi. Bunlar piyasa verisi de\u011Fildir; kendi verilerinle de\u011Fi\u015Ftirebilirsin. T\xFCm girdileri d\xFCzenlemek i\xE7in \u201Cyaln\u0131z eksik alanlar\u201D se\xE7imini kald\u0131r.";
+    if (state.approved) invalidate();
+    else visibility();
+  });
+  document.querySelector('[data-action="missing-only"]').addEventListener("change", () => {
+    visibility();
+    check();
+  });
+  field("tool").addEventListener("change", showTool);
+  field("intent").addEventListener("input", () => {
+    const recommendations = recommendAnalysis(field("intent").value);
+    part("recommendations").replaceChildren(el("p", `\xD6nerilen ara\xE7lar: ${recommendations.map((t) => t.label).join(", ")}`));
+  });
+  root.addEventListener("input", (event) => {
+    if (event.target.dataset.field && !["tool", "intent"].includes(event.target.dataset.field)) invalidate();
+  });
+  action("review").addEventListener("click", () => {
+    try {
+      const { input, errors } = readCase();
+      const ready = readinessForTemplate(template, input);
+      if (errors.length || ready.status !== "READY") throw Error("Eksik veya ge\xE7ersiz verileri d\xFCzeltin.");
+      const settings = controls(input);
+      state = reviewWizard(state, true);
+      messages(part("summary"), [template.description, `${input.case.name} \xB7 ${input.case.currency} \xB7 ${input.case.period?.start}\u2013${input.case.period?.end}`, `ADR aral\u0131\u011F\u0131 ${input.case.minAdr}\u2013${input.case.maxAdr}; talep modeli ${input.case.demand?.kind}; minimum doluluk ${input.case.minOccupancy === void 0 ? "belirtilmedi" : fmt("occupancy", input.case.minOccupancy)}.`, input.finance ? `Nakit ak\u0131\u015F\u0131 baz\u0131 ${input.finance.cashFlowMode}; ufuk ${input.finance.forecastHorizon} y\u0131l; iskonto ${input.finance.discountRate * 100}%; terminal y\xF6ntemi ${input.finance.terminal.method}.` : "", settings.options ? `${settings.options.length} karar se\xE7ene\u011Fi de\u011Ferlendirilecek.` : "", template.tradeOff]);
+      part("review").hidden = false;
+    } catch (error) {
+      messages(part("errors"), [error instanceof Error ? error.message : "Varsay\u0131mlar ge\xE7ersiz."]);
+    }
+  });
+  action("run").addEventListener("click", () => {
+    try {
+      if (state.phase !== "REVIEW") throw Error("\xD6nce varsay\u0131mlar\u0131 g\xF6zden ge\xE7irin.");
+      const { input, errors } = readCase();
+      if (errors.length) throw Error(errors.join(" "));
+      const result = runAnalysis(template, input, controls(input));
+      if (!result.success) throw Error(result.issues.map((issue) => issue.message).join(" "));
+      showResult(result.value);
+    } catch (error) {
+      messages(part("errors"), [error instanceof Error ? error.message : "Hesaplama hatas\u0131."]);
+      part("results").hidden = true;
+    }
+  });
+  action("save").addEventListener("click", () => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({ version: "workbench-form.v1", id: caseId, revision: state.revision, fields: fields() }));
+      part("notice").textContent = "Taslak bu taray\u0131c\u0131da kaydedildi; yeniden a\xE7\u0131ld\u0131\u011F\u0131nda haz\u0131r olma durumu tekrar kontrol edilir.";
+    } catch {
+      part("notice").textContent = "Taray\u0131c\u0131 yerel saklamaya izin vermedi; Case dosyas\u0131 indirebilirsin.";
+    }
+  });
+  action("export").addEventListener("click", () => {
+    try {
+      const { input, errors } = readCase();
+      if (errors.length) throw Error(errors.join(" "));
+      const text = unwrap(serializeCaseDocument({ ...input, formValues: fields() }));
+      download("hotel-case.json", text);
+    } catch (error) {
+      part("notice").textContent = error instanceof Error ? error.message : "Case indirilemedi.";
+    }
+  });
+  document.querySelector('[data-action="import"]').addEventListener("change", async (event) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const data = unwrap(parseCaseDocument(await file.text()));
+      const payload = data.payload;
+      if (!payload.formValues) throw Error("Bu ekran i\xE7in formValues i\xE7eren d\u0131\u015Fa aktar\u0131lm\u0131\u015F Case dosyas\u0131n\u0131 kullan\u0131n.");
+      hydrate(payload.formValues);
+      if (payload.case) {
+        caseId = payload.case.id;
+        state = { ...state, revision: payload.case.revision };
+      }
+      showTool();
+      part("notice").textContent = "Case y\xFCklendi; analiz arac\u0131n\u0131 onaylay\u0131p verileri kontrol edin.";
+    } catch (error) {
+      part("notice").textContent = error instanceof Error ? error.message : "Case y\xFCklenemedi.";
+    }
+  });
+  action("download-result").addEventListener("click", () => {
+    if (output) download("hotel-analysis-result.json", JSON.stringify(output, null, 2));
+  });
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey) ?? "null");
+    if (saved?.version === "workbench-form.v1" && typeof saved.fields === "object" && saved.fields) {
+      hydrate(saved.fields);
+      if (typeof saved.id === "string" && saved.id.trim()) caseId = saved.id;
+      if (Number.isSafeInteger(saved.revision) && saved.revision >= 0) state = { ...state, revision: saved.revision };
+      part("notice").textContent = "Kaydedilmi\u015F taslak y\xFCklendi; hesaplama \xF6ncesi veriler yeniden do\u011Frulanacak.";
+    }
+  } catch {
+  }
+  showTool();
+})();
+
+</script>
+</body></html>

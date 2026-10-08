@@ -1,0 +1,3378 @@
+{
+  "what-if": {
+    "title": "What-if karşılaştırması",
+    "rows": [
+      {
+        "name": "Baz",
+        "adr": 145,
+        "occupancy": 0.55,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 20075,
+        "revpar": 79.75,
+        "roomRevenue": 2910875,
+        "otherRevenue": 501500,
+        "totalRevenue": 3412375,
+        "opex": 1772868.75,
+        "gop": 1639506.25,
+        "managementFee": 102371.25,
+        "propertyExpenses": 100000,
+        "ebitda": 1437135,
+        "replacementReserve": 136495,
+        "noi": 1300640,
+        "value": 16258000,
+        "feasible": "Uygun"
+      },
+      {
+        "name": "What-if",
+        "adr": 150,
+        "occupancy": 0.53,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 19345,
+        "revpar": 79.5,
+        "roomRevenue": 2901750,
+        "otherRevenue": 486900,
+        "totalRevenue": 3388650,
+        "opex": 1749782.5,
+        "gop": 1638867.5,
+        "managementFee": 101659.5,
+        "propertyExpenses": 100000,
+        "ebitda": 1437208,
+        "replacementReserve": 135546,
+        "noi": 1301662,
+        "value": 16270775,
+        "feasible": "Uygun"
+      }
+    ],
+    "messages": [
+      "Alternatif fiyat aynı talep modelinde hesaplandı; optimum önerisi değildir."
+    ],
+    "raw": {
+      "base": {
+        "name": "Baz",
+        "inputSnapshot": {
+          "name": "Baz",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 145,
+          "depth": "operating"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 145,
+            "occupancy": 0.55,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 20075,
+            "revpar": 79.75,
+            "roomRevenue": 2910875,
+            "otherRevenue": 501500,
+            "totalRevenue": 3412375,
+            "opex": 1772868.75,
+            "gop": 1639506.25,
+            "managementFee": 102371.25,
+            "propertyExpenses": 100000,
+            "ebitda": 1437135,
+            "replacementReserve": 136495,
+            "noi": 1300640
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          }
+        },
+        "kpis": {
+          "adr": 145,
+          "occupancy": 0.55,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 20075,
+          "revpar": 79.75,
+          "roomRevenue": 2910875,
+          "otherRevenue": 501500,
+          "totalRevenue": 3412375,
+          "opex": 1772868.75,
+          "gop": 1639506.25,
+          "managementFee": 102371.25,
+          "propertyExpenses": 100000,
+          "ebitda": 1437135,
+          "replacementReserve": 136495,
+          "noi": 1300640,
+          "value": 16258000
+        },
+        "feasible": true
+      },
+      "alternative": {
+        "name": "What-if",
+        "inputSnapshot": {
+          "name": "What-if",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 150,
+          "depth": "operating"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 150,
+            "occupancy": 0.53,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 19345,
+            "revpar": 79.5,
+            "roomRevenue": 2901750,
+            "otherRevenue": 486900,
+            "totalRevenue": 3388650,
+            "opex": 1749782.5,
+            "gop": 1638867.5,
+            "managementFee": 101659.5,
+            "propertyExpenses": 100000,
+            "ebitda": 1437208,
+            "replacementReserve": 135546,
+            "noi": 1301662
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": [
+              "maxAdr"
+            ]
+          }
+        },
+        "kpis": {
+          "adr": 150,
+          "occupancy": 0.53,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 19345,
+          "revpar": 79.5,
+          "roomRevenue": 2901750,
+          "otherRevenue": 486900,
+          "totalRevenue": 3388650,
+          "opex": 1749782.5,
+          "gop": 1638867.5,
+          "managementFee": 101659.5,
+          "propertyExpenses": 100000,
+          "ebitda": 1437208,
+          "replacementReserve": 135546,
+          "noi": 1301662,
+          "value": 16270775
+        },
+        "feasible": true
+      },
+      "delta": {
+        "adr": 5,
+        "occupancy": -0.020000000000000018,
+        "availableRoomNights": 0,
+        "occupiedRoomNights": -730,
+        "revpar": -0.25,
+        "roomRevenue": -9125,
+        "otherRevenue": -14600,
+        "totalRevenue": -23725,
+        "opex": -23086.25,
+        "gop": -638.75,
+        "managementFee": -711.75,
+        "propertyExpenses": 0,
+        "ebitda": 73,
+        "replacementReserve": -949,
+        "noi": 1022,
+        "value": 12775
+      }
+    }
+  },
+  "ab": {
+    "title": "A/B karşılaştırması",
+    "rows": [
+      {
+        "name": "Baz",
+        "adr": 145,
+        "occupancy": 0.55,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 20075,
+        "revpar": 79.75,
+        "roomRevenue": 2910875,
+        "otherRevenue": 501500,
+        "totalRevenue": 3412375,
+        "opex": 1772868.75,
+        "gop": 1639506.25,
+        "managementFee": 102371.25,
+        "propertyExpenses": 100000,
+        "ebitda": 1437135,
+        "replacementReserve": 136495,
+        "noi": 1300640,
+        "value": 16258000,
+        "feasible": "Uygun"
+      },
+      {
+        "name": "B",
+        "adr": 150,
+        "occupancy": 0.53,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 19345,
+        "revpar": 79.5,
+        "roomRevenue": 2901750,
+        "otherRevenue": 486900,
+        "totalRevenue": 3388650,
+        "opex": 1749782.5,
+        "gop": 1638867.5,
+        "managementFee": 101659.5,
+        "propertyExpenses": 100000,
+        "ebitda": 1437208,
+        "replacementReserve": 135546,
+        "noi": 1301662,
+        "value": 16270775,
+        "feasible": "Uygun"
+      }
+    ],
+    "messages": [
+      "Aynı dönem, para birimi ve varsayımlarla iki fiyat karşılaştırıldı."
+    ],
+    "raw": {
+      "alternatives": [
+        {
+          "name": "Baz",
+          "inputSnapshot": {
+            "name": "Baz",
+            "financialCase": {
+              "case": {
+                "schemaVersion": "case.v1",
+                "id": "hotel-finance",
+                "revision": 0,
+                "name": "Örnek Otel",
+                "currency": "USD",
+                "period": {
+                  "start": "2026-01-01",
+                  "end": "2026-12-31"
+                },
+                "minAdr": 130,
+                "maxAdr": 150,
+                "referenceAdr": 145,
+                "referenceOccupancy": 0.55,
+                "demand": {
+                  "kind": "linear-sensitivity",
+                  "modelVersion": "demand.v1",
+                  "adrIncrease": 5,
+                  "occupancyDecreasePp": 2,
+                  "validMinAdr": 130,
+                  "validMaxAdr": 150
+                }
+              },
+              "capacity": {
+                "roomCount": 100,
+                "bedCount": 200,
+                "openDays": 365,
+                "unavailableRoomNights": 0
+              },
+              "otherRevenues": [
+                {
+                  "name": "F&B",
+                  "fixedAnnual": 100000,
+                  "perOccupiedRoomNight": 20
+                }
+              ],
+              "costs": {
+                "fixedOpex": 1000000,
+                "variablePerOccupiedRoomNight": 30,
+                "variableRevenueRate": 0.05,
+                "managementFeeRate": 0.03,
+                "propertyExpenses": 100000,
+                "nonOperatingIncome": 0,
+                "replacementReserveRate": 0.04
+              },
+              "finance": {
+                "forecastHorizon": 3,
+                "discountRate": 0.1,
+                "capRate": 0.08,
+                "revenueGrowth": 0,
+                "costGrowth": 0,
+                "taxRate": 0,
+                "cashFlowMode": "property",
+                "initialInvestment": 1000000,
+                "annualCapex": [
+                  10000,
+                  10000,
+                  10000
+                ],
+                "workingCapitalChanges": [
+                  0,
+                  0,
+                  0
+                ],
+                "annualDebtService": [
+                  0,
+                  0,
+                  0
+                ],
+                "terminal": {
+                  "method": "none"
+                }
+              }
+            },
+            "adr": 145,
+            "depth": "operating"
+          },
+          "calculation": {
+            "metrics": {
+              "adr": 145,
+              "occupancy": 0.55,
+              "availableRoomNights": 36500,
+              "occupiedRoomNights": 20075,
+              "revpar": 79.75,
+              "roomRevenue": 2910875,
+              "otherRevenue": 501500,
+              "totalRevenue": 3412375,
+              "opex": 1772868.75,
+              "gop": 1639506.25,
+              "managementFee": 102371.25,
+              "propertyExpenses": 100000,
+              "ebitda": 1437135,
+              "replacementReserve": 136495,
+              "noi": 1300640
+            },
+            "constraints": {
+              "valid": true,
+              "issues": [],
+              "bindingConstraints": []
+            }
+          },
+          "kpis": {
+            "adr": 145,
+            "occupancy": 0.55,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 20075,
+            "revpar": 79.75,
+            "roomRevenue": 2910875,
+            "otherRevenue": 501500,
+            "totalRevenue": 3412375,
+            "opex": 1772868.75,
+            "gop": 1639506.25,
+            "managementFee": 102371.25,
+            "propertyExpenses": 100000,
+            "ebitda": 1437135,
+            "replacementReserve": 136495,
+            "noi": 1300640,
+            "value": 16258000
+          },
+          "feasible": true
+        },
+        {
+          "name": "B",
+          "inputSnapshot": {
+            "name": "B",
+            "financialCase": {
+              "case": {
+                "schemaVersion": "case.v1",
+                "id": "hotel-finance",
+                "revision": 0,
+                "name": "Örnek Otel",
+                "currency": "USD",
+                "period": {
+                  "start": "2026-01-01",
+                  "end": "2026-12-31"
+                },
+                "minAdr": 130,
+                "maxAdr": 150,
+                "referenceAdr": 145,
+                "referenceOccupancy": 0.55,
+                "demand": {
+                  "kind": "linear-sensitivity",
+                  "modelVersion": "demand.v1",
+                  "adrIncrease": 5,
+                  "occupancyDecreasePp": 2,
+                  "validMinAdr": 130,
+                  "validMaxAdr": 150
+                }
+              },
+              "capacity": {
+                "roomCount": 100,
+                "bedCount": 200,
+                "openDays": 365,
+                "unavailableRoomNights": 0
+              },
+              "otherRevenues": [
+                {
+                  "name": "F&B",
+                  "fixedAnnual": 100000,
+                  "perOccupiedRoomNight": 20
+                }
+              ],
+              "costs": {
+                "fixedOpex": 1000000,
+                "variablePerOccupiedRoomNight": 30,
+                "variableRevenueRate": 0.05,
+                "managementFeeRate": 0.03,
+                "propertyExpenses": 100000,
+                "nonOperatingIncome": 0,
+                "replacementReserveRate": 0.04
+              },
+              "finance": {
+                "forecastHorizon": 3,
+                "discountRate": 0.1,
+                "capRate": 0.08,
+                "revenueGrowth": 0,
+                "costGrowth": 0,
+                "taxRate": 0,
+                "cashFlowMode": "property",
+                "initialInvestment": 1000000,
+                "annualCapex": [
+                  10000,
+                  10000,
+                  10000
+                ],
+                "workingCapitalChanges": [
+                  0,
+                  0,
+                  0
+                ],
+                "annualDebtService": [
+                  0,
+                  0,
+                  0
+                ],
+                "terminal": {
+                  "method": "none"
+                }
+              }
+            },
+            "adr": 150,
+            "depth": "operating"
+          },
+          "calculation": {
+            "metrics": {
+              "adr": 150,
+              "occupancy": 0.53,
+              "availableRoomNights": 36500,
+              "occupiedRoomNights": 19345,
+              "revpar": 79.5,
+              "roomRevenue": 2901750,
+              "otherRevenue": 486900,
+              "totalRevenue": 3388650,
+              "opex": 1749782.5,
+              "gop": 1638867.5,
+              "managementFee": 101659.5,
+              "propertyExpenses": 100000,
+              "ebitda": 1437208,
+              "replacementReserve": 135546,
+              "noi": 1301662
+            },
+            "constraints": {
+              "valid": true,
+              "issues": [],
+              "bindingConstraints": [
+                "maxAdr"
+              ]
+            }
+          },
+          "kpis": {
+            "adr": 150,
+            "occupancy": 0.53,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 19345,
+            "revpar": 79.5,
+            "roomRevenue": 2901750,
+            "otherRevenue": 486900,
+            "totalRevenue": 3388650,
+            "opex": 1749782.5,
+            "gop": 1638867.5,
+            "managementFee": 101659.5,
+            "propertyExpenses": 100000,
+            "ebitda": 1437208,
+            "replacementReserve": 135546,
+            "noi": 1301662,
+            "value": 16270775
+          },
+          "feasible": true
+        }
+      ],
+      "deltaBvsA": {
+        "adr": 5,
+        "occupancy": -0.020000000000000018,
+        "availableRoomNights": 0,
+        "occupiedRoomNights": -730,
+        "revpar": -0.25,
+        "roomRevenue": -9125,
+        "otherRevenue": -14600,
+        "totalRevenue": -23725,
+        "opex": -23086.25,
+        "gop": -638.75,
+        "managementFee": -711.75,
+        "propertyExpenses": 0,
+        "ebitda": 73,
+        "replacementReserve": -949,
+        "noi": 1022,
+        "value": 12775
+      }
+    }
+  },
+  "scenarios": {
+    "title": "Senaryo sonuçları",
+    "rows": [
+      {
+        "name": "Baz",
+        "adr": 145,
+        "occupancy": 0.55,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 20075,
+        "revpar": 79.75,
+        "roomRevenue": 2910875,
+        "otherRevenue": 501500,
+        "totalRevenue": 3412375,
+        "opex": 1772868.75,
+        "gop": 1639506.25,
+        "managementFee": 102371.25,
+        "propertyExpenses": 100000,
+        "ebitda": 1437135,
+        "replacementReserve": 136495,
+        "noi": 1300640,
+        "value": 3209630.6536438763,
+        "npv": 2209630.6536438763,
+        "dcfValue": 3209630.6536438763,
+        "irr": 1.1631253582461574,
+        "payback": 0.7748093968883655,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 16258000,
+        "feasible": "Uygun"
+      },
+      {
+        "name": "Muhafazakâr",
+        "adr": 145,
+        "occupancy": 0.45,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 16425,
+        "revpar": 65.25,
+        "roomRevenue": 2381625,
+        "otherRevenue": 428500,
+        "totalRevenue": 2810125,
+        "opex": 1833256.25,
+        "gop": 976868.75,
+        "managementFee": 84303.75,
+        "propertyExpenses": 100000,
+        "ebitda": 792565,
+        "replacementReserve": 112405,
+        "noi": 680160,
+        "value": 1666588.7302779863,
+        "npv": 666588.7302779863,
+        "dcfValue": 1666588.7302779863,
+        "irr": 0.4506164260782122,
+        "payback": 1.4921809717082488,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 8502000,
+        "feasible": "Uygun"
+      },
+      {
+        "name": "İyimser",
+        "adr": 141.25,
+        "occupancy": 0.665,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 24272.5,
+        "revpar": 93.93125,
+        "roomRevenue": 3428490.625,
+        "otherRevenue": 585450,
+        "totalRevenue": 4013940.625,
+        "opex": 1928872.03125,
+        "gop": 2085068.59375,
+        "managementFee": 120418.21875,
+        "propertyExpenses": 100000,
+        "ebitda": 1864650.375,
+        "replacementReserve": 160557.625,
+        "noi": 1704092.75,
+        "value": 4212957.9282494355,
+        "npv": 3212957.9282494355,
+        "dcfValue": 4212957.9282494355,
+        "irr": 1.597418353657761,
+        "payback": 0.5902864527340667,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 21301159.375,
+        "feasible": "Uygun"
+      }
+    ],
+    "messages": [
+      "Senaryo paketlerinin olasılığı tahmin edilmedi."
+    ],
+    "raw": [
+      {
+        "name": "Baz",
+        "inputSnapshot": {
+          "name": "Baz",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 145,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 145,
+            "occupancy": 0.55,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 20075,
+            "revpar": 79.75,
+            "roomRevenue": 2910875,
+            "otherRevenue": 501500,
+            "totalRevenue": 3412375,
+            "opex": 1772868.75,
+            "gop": 1639506.25,
+            "managementFee": 102371.25,
+            "propertyExpenses": 100000,
+            "ebitda": 1437135,
+            "replacementReserve": 136495,
+            "noi": 1300640
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 3209630.6536438763,
+          "terminalPv": 0,
+          "dcfValue": 3209630.6536438763,
+          "npv": 2209630.6536438763,
+          "directCapitalizationValue": 16258000,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 1.1631253582461574
+          },
+          "payback": {
+            "years": 0.7748093968883655,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 0.8522903365772021,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 145,
+          "occupancy": 0.55,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 20075,
+          "revpar": 79.75,
+          "roomRevenue": 2910875,
+          "otherRevenue": 501500,
+          "totalRevenue": 3412375,
+          "opex": 1772868.75,
+          "gop": 1639506.25,
+          "managementFee": 102371.25,
+          "propertyExpenses": 100000,
+          "ebitda": 1437135,
+          "replacementReserve": 136495,
+          "noi": 1300640,
+          "value": 3209630.6536438763,
+          "npv": 2209630.6536438763,
+          "dcfValue": 3209630.6536438763,
+          "irr": 1.1631253582461574,
+          "payback": 0.7748093968883655,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 16258000
+        },
+        "feasible": true
+      },
+      {
+        "name": "Muhafazakâr",
+        "inputSnapshot": {
+          "name": "Muhafazakâr",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.45,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1200000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 145,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 145,
+            "occupancy": 0.45,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 16425,
+            "revpar": 65.25,
+            "roomRevenue": 2381625,
+            "otherRevenue": 428500,
+            "totalRevenue": 2810125,
+            "opex": 1833256.25,
+            "gop": 976868.75,
+            "managementFee": 84303.75,
+            "propertyExpenses": 100000,
+            "ebitda": 792565,
+            "replacementReserve": 112405,
+            "noi": 680160
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.45,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 16425,
+                "revpar": 65.25,
+                "roomRevenue": 2381625,
+                "otherRevenue": 428500,
+                "totalRevenue": 2810125,
+                "opex": 1833256.25,
+                "gop": 976868.75,
+                "managementFee": 84303.75,
+                "propertyExpenses": 100000,
+                "ebitda": 792565,
+                "replacementReserve": 112405,
+                "noi": 680160
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 670160,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.45,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 16425,
+                "revpar": 65.25,
+                "roomRevenue": 2381625,
+                "otherRevenue": 428500,
+                "totalRevenue": 2810125,
+                "opex": 1833256.25,
+                "gop": 976868.75,
+                "managementFee": 84303.75,
+                "propertyExpenses": 100000,
+                "ebitda": 792565,
+                "replacementReserve": 112405,
+                "noi": 680160
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 670160,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.45,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 16425,
+                "revpar": 65.25,
+                "roomRevenue": 2381625,
+                "otherRevenue": 428500,
+                "totalRevenue": 2810125,
+                "opex": 1833256.25,
+                "gop": 976868.75,
+                "managementFee": 84303.75,
+                "propertyExpenses": 100000,
+                "ebitda": 792565,
+                "replacementReserve": 112405,
+                "noi": 680160
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 670160,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 1666588.7302779863,
+          "terminalPv": 0,
+          "dcfValue": 1666588.7302779863,
+          "npv": 666588.7302779863,
+          "directCapitalizationValue": 8502000,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 0.4506164260782122
+          },
+          "payback": {
+            "years": 1.4921809717082488,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 1.7055389757669812,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.45,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1200000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 145,
+          "occupancy": 0.45,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 16425,
+          "revpar": 65.25,
+          "roomRevenue": 2381625,
+          "otherRevenue": 428500,
+          "totalRevenue": 2810125,
+          "opex": 1833256.25,
+          "gop": 976868.75,
+          "managementFee": 84303.75,
+          "propertyExpenses": 100000,
+          "ebitda": 792565,
+          "replacementReserve": 112405,
+          "noi": 680160,
+          "value": 1666588.7302779863,
+          "npv": 666588.7302779863,
+          "dcfValue": 1666588.7302779863,
+          "irr": 0.4506164260782122,
+          "payback": 1.4921809717082488,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 8502000
+        },
+        "feasible": true
+      },
+      {
+        "name": "İyimser",
+        "inputSnapshot": {
+          "name": "İyimser",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.65,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 141.25,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 141.25,
+            "occupancy": 0.665,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 24272.5,
+            "revpar": 93.93125,
+            "roomRevenue": 3428490.625,
+            "otherRevenue": 585450,
+            "totalRevenue": 4013940.625,
+            "opex": 1928872.03125,
+            "gop": 2085068.59375,
+            "managementFee": 120418.21875,
+            "propertyExpenses": 100000,
+            "ebitda": 1864650.375,
+            "replacementReserve": 160557.625,
+            "noi": 1704092.75
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 141.25,
+                "occupancy": 0.665,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 24272.5,
+                "revpar": 93.93125,
+                "roomRevenue": 3428490.625,
+                "otherRevenue": 585450,
+                "totalRevenue": 4013940.625,
+                "opex": 1928872.03125,
+                "gop": 2085068.59375,
+                "managementFee": 120418.21875,
+                "propertyExpenses": 100000,
+                "ebitda": 1864650.375,
+                "replacementReserve": 160557.625,
+                "noi": 1704092.75
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1694092.75,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 141.25,
+                "occupancy": 0.665,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 24272.5,
+                "revpar": 93.93125,
+                "roomRevenue": 3428490.625,
+                "otherRevenue": 585450,
+                "totalRevenue": 4013940.625,
+                "opex": 1928872.03125,
+                "gop": 2085068.59375,
+                "managementFee": 120418.21875,
+                "propertyExpenses": 100000,
+                "ebitda": 1864650.375,
+                "replacementReserve": 160557.625,
+                "noi": 1704092.75
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1694092.75,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 141.25,
+                "occupancy": 0.665,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 24272.5,
+                "revpar": 93.93125,
+                "roomRevenue": 3428490.625,
+                "otherRevenue": 585450,
+                "totalRevenue": 4013940.625,
+                "opex": 1928872.03125,
+                "gop": 2085068.59375,
+                "managementFee": 120418.21875,
+                "propertyExpenses": 100000,
+                "ebitda": 1864650.375,
+                "replacementReserve": 160557.625,
+                "noi": 1704092.75
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1694092.75,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 4212957.9282494355,
+          "terminalPv": 0,
+          "dcfValue": 4212957.9282494355,
+          "npv": 3212957.9282494355,
+          "directCapitalizationValue": 21301159.375,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 1.597418353657761
+          },
+          "payback": {
+            "years": 0.5902864527340667,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 0.6493150980074733,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.65,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 141.25,
+          "occupancy": 0.665,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 24272.5,
+          "revpar": 93.93125,
+          "roomRevenue": 3428490.625,
+          "otherRevenue": 585450,
+          "totalRevenue": 4013940.625,
+          "opex": 1928872.03125,
+          "gop": 2085068.59375,
+          "managementFee": 120418.21875,
+          "propertyExpenses": 100000,
+          "ebitda": 1864650.375,
+          "replacementReserve": 160557.625,
+          "noi": 1704092.75,
+          "value": 4212957.9282494355,
+          "npv": 3212957.9282494355,
+          "dcfValue": 4212957.9282494355,
+          "irr": 1.597418353657761,
+          "payback": 0.5902864527340667,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 21301159.375
+        },
+        "feasible": true
+      }
+    ]
+  },
+  "sensitivity": {
+    "title": "Duyarlılık sonuçları",
+    "rows": [
+      {
+        "name": "Duyarlılık 1",
+        "adr": 145,
+        "occupancy": 0.55,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 20075,
+        "revpar": 79.75,
+        "roomRevenue": 2910875,
+        "otherRevenue": 501500,
+        "totalRevenue": 3412375,
+        "opex": 1772868.75,
+        "gop": 1639506.25,
+        "managementFee": 102371.25,
+        "propertyExpenses": 100000,
+        "ebitda": 1437135,
+        "replacementReserve": 136495,
+        "noi": 1300640,
+        "value": 3514732.836626714,
+        "npv": 2514732.836626714,
+        "dcfValue": 3514732.836626714,
+        "irr": 1.1631253582461574,
+        "payback": 0.7748093968883655,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 16258000,
+        "feasible": "Uygun",
+        "parameter": "%5"
+      },
+      {
+        "name": "Duyarlılık 2",
+        "adr": 145,
+        "occupancy": 0.55,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 20075,
+        "revpar": 79.75,
+        "roomRevenue": 2910875,
+        "otherRevenue": 501500,
+        "totalRevenue": 3412375,
+        "opex": 1772868.75,
+        "gop": 1639506.25,
+        "managementFee": 102371.25,
+        "propertyExpenses": 100000,
+        "ebitda": 1437135,
+        "replacementReserve": 136495,
+        "noi": 1300640,
+        "value": 3209630.6536438763,
+        "npv": 2209630.6536438763,
+        "dcfValue": 3209630.6536438763,
+        "irr": 1.1631253582461574,
+        "payback": 0.7748093968883655,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 16258000,
+        "feasible": "Uygun",
+        "parameter": "%10"
+      },
+      {
+        "name": "Duyarlılık 3",
+        "adr": 145,
+        "occupancy": 0.55,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 20075,
+        "revpar": 79.75,
+        "roomRevenue": 2910875,
+        "otherRevenue": 501500,
+        "totalRevenue": 3412375,
+        "opex": 1772868.75,
+        "gop": 1639506.25,
+        "managementFee": 102371.25,
+        "propertyExpenses": 100000,
+        "ebitda": 1437135,
+        "replacementReserve": 136495,
+        "noi": 1300640,
+        "value": 2946821.6651598588,
+        "npv": 1946821.6651598588,
+        "dcfValue": 2946821.6651598588,
+        "irr": 1.1631253582461574,
+        "payback": 0.7748093968883655,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 16258000,
+        "feasible": "Uygun",
+        "parameter": "%15"
+      }
+    ],
+    "messages": [
+      "Tek değişken değişti; diğer varsayımlar sabit tutuldu."
+    ],
+    "raw": [
+      {
+        "name": "Duyarlılık 1",
+        "inputSnapshot": {
+          "name": "Duyarlılık 1",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.05,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 145,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 145,
+            "occupancy": 0.55,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 20075,
+            "revpar": 79.75,
+            "roomRevenue": 2910875,
+            "otherRevenue": 501500,
+            "totalRevenue": 3412375,
+            "opex": 1772868.75,
+            "gop": 1639506.25,
+            "managementFee": 102371.25,
+            "propertyExpenses": 100000,
+            "ebitda": 1437135,
+            "replacementReserve": 136495,
+            "noi": 1300640
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 3514732.836626714,
+          "terminalPv": 0,
+          "dcfValue": 3514732.836626714,
+          "npv": 2514732.836626714,
+          "directCapitalizationValue": 16258000,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 1.1631253582461574
+          },
+          "payback": {
+            "years": 0.7748093968883655,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 0.8135498667327837,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.05,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 145,
+          "occupancy": 0.55,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 20075,
+          "revpar": 79.75,
+          "roomRevenue": 2910875,
+          "otherRevenue": 501500,
+          "totalRevenue": 3412375,
+          "opex": 1772868.75,
+          "gop": 1639506.25,
+          "managementFee": 102371.25,
+          "propertyExpenses": 100000,
+          "ebitda": 1437135,
+          "replacementReserve": 136495,
+          "noi": 1300640,
+          "value": 3514732.836626714,
+          "npv": 2514732.836626714,
+          "dcfValue": 3514732.836626714,
+          "irr": 1.1631253582461574,
+          "payback": 0.7748093968883655,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 16258000
+        },
+        "feasible": true
+      },
+      {
+        "name": "Duyarlılık 2",
+        "inputSnapshot": {
+          "name": "Duyarlılık 2",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 145,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 145,
+            "occupancy": 0.55,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 20075,
+            "revpar": 79.75,
+            "roomRevenue": 2910875,
+            "otherRevenue": 501500,
+            "totalRevenue": 3412375,
+            "opex": 1772868.75,
+            "gop": 1639506.25,
+            "managementFee": 102371.25,
+            "propertyExpenses": 100000,
+            "ebitda": 1437135,
+            "replacementReserve": 136495,
+            "noi": 1300640
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 3209630.6536438763,
+          "terminalPv": 0,
+          "dcfValue": 3209630.6536438763,
+          "npv": 2209630.6536438763,
+          "directCapitalizationValue": 16258000,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 1.1631253582461574
+          },
+          "payback": {
+            "years": 0.7748093968883655,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 0.8522903365772021,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 145,
+          "occupancy": 0.55,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 20075,
+          "revpar": 79.75,
+          "roomRevenue": 2910875,
+          "otherRevenue": 501500,
+          "totalRevenue": 3412375,
+          "opex": 1772868.75,
+          "gop": 1639506.25,
+          "managementFee": 102371.25,
+          "propertyExpenses": 100000,
+          "ebitda": 1437135,
+          "replacementReserve": 136495,
+          "noi": 1300640,
+          "value": 3209630.6536438763,
+          "npv": 2209630.6536438763,
+          "dcfValue": 3209630.6536438763,
+          "irr": 1.1631253582461574,
+          "payback": 0.7748093968883655,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 16258000
+        },
+        "feasible": true
+      },
+      {
+        "name": "Duyarlılık 3",
+        "inputSnapshot": {
+          "name": "Duyarlılık 3",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.15,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 145,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 145,
+            "occupancy": 0.55,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 20075,
+            "revpar": 79.75,
+            "roomRevenue": 2910875,
+            "otherRevenue": 501500,
+            "totalRevenue": 3412375,
+            "opex": 1772868.75,
+            "gop": 1639506.25,
+            "managementFee": 102371.25,
+            "propertyExpenses": 100000,
+            "ebitda": 1437135,
+            "replacementReserve": 136495,
+            "noi": 1300640
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 2946821.6651598588,
+          "terminalPv": 0,
+          "dcfValue": 2946821.6651598588,
+          "npv": 1946821.6651598588,
+          "directCapitalizationValue": 16258000,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 1.1631253582461574
+          },
+          "payback": {
+            "years": 0.7748093968883655,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 0.8910308064216202,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.15,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 145,
+          "occupancy": 0.55,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 20075,
+          "revpar": 79.75,
+          "roomRevenue": 2910875,
+          "otherRevenue": 501500,
+          "totalRevenue": 3412375,
+          "opex": 1772868.75,
+          "gop": 1639506.25,
+          "managementFee": 102371.25,
+          "propertyExpenses": 100000,
+          "ebitda": 1437135,
+          "replacementReserve": 136495,
+          "noi": 1300640,
+          "value": 2946821.6651598588,
+          "npv": 1946821.6651598588,
+          "dcfValue": 2946821.6651598588,
+          "irr": 1.1631253582461574,
+          "payback": 0.7748093968883655,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 16258000
+        },
+        "feasible": true
+      }
+    ]
+  },
+  "stress": {
+    "title": "Stres testi",
+    "rows": [
+      {
+        "name": "Baz",
+        "adr": 145,
+        "occupancy": 0.55,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 20075,
+        "revpar": 79.75,
+        "roomRevenue": 2910875,
+        "otherRevenue": 501500,
+        "totalRevenue": 3412375,
+        "opex": 1772868.75,
+        "gop": 1639506.25,
+        "managementFee": 102371.25,
+        "propertyExpenses": 100000,
+        "ebitda": 1437135,
+        "replacementReserve": 136495,
+        "noi": 1300640,
+        "value": 3209630.6536438763,
+        "npv": 2209630.6536438763,
+        "dcfValue": 3209630.6536438763,
+        "irr": 1.1631253582461574,
+        "payback": 0.7748093968883655,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 16258000,
+        "feasible": "Uygun"
+      },
+      {
+        "name": "What-if",
+        "adr": 130.5,
+        "occupancy": 0.5080000000000001,
+        "availableRoomNights": 36500,
+        "occupiedRoomNights": 18542.000000000004,
+        "revpar": 66.29400000000001,
+        "roomRevenue": 2419731.0000000005,
+        "otherRevenue": 470840.00000000006,
+        "totalRevenue": 2890571.0000000005,
+        "opex": 1900788.55,
+        "gop": 989782.4500000004,
+        "managementFee": 86717.13,
+        "propertyExpenses": 100000,
+        "ebitda": 803065.3200000004,
+        "replacementReserve": 115622.84000000003,
+        "noi": 687442.4800000004,
+        "value": 1572772.1581053284,
+        "npv": 572772.1581053284,
+        "dcfValue": 1572772.1581053284,
+        "irr": 0.45957430228903784,
+        "payback": 1.4761400849855169,
+        "capex": 1030000,
+        "dscr": null,
+        "directCapitalizationValue": 8593031.000000006,
+        "feasible": "Uygun"
+      }
+    ],
+    "messages": [
+      "Talep eğrisi referans doluluk düşüşü kadar aşağı kaydırıldı; doluluk azalışı yüzde puanıdır."
+    ],
+    "raw": {
+      "base": {
+        "name": "Baz",
+        "inputSnapshot": {
+          "name": "Baz",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 145,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 145,
+            "occupancy": 0.55,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 20075,
+            "revpar": 79.75,
+            "roomRevenue": 2910875,
+            "otherRevenue": 501500,
+            "totalRevenue": 3412375,
+            "opex": 1772868.75,
+            "gop": 1639506.25,
+            "managementFee": 102371.25,
+            "propertyExpenses": 100000,
+            "ebitda": 1437135,
+            "replacementReserve": 136495,
+            "noi": 1300640
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 145,
+                "occupancy": 0.55,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 20075,
+                "revpar": 79.75,
+                "roomRevenue": 2910875,
+                "otherRevenue": 501500,
+                "totalRevenue": 3412375,
+                "opex": 1772868.75,
+                "gop": 1639506.25,
+                "managementFee": 102371.25,
+                "propertyExpenses": 100000,
+                "ebitda": 1437135,
+                "replacementReserve": 136495,
+                "noi": 1300640
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 1290640,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 3209630.6536438763,
+          "terminalPv": 0,
+          "dcfValue": 3209630.6536438763,
+          "npv": 2209630.6536438763,
+          "directCapitalizationValue": 16258000,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 1.1631253582461574
+          },
+          "payback": {
+            "years": 0.7748093968883655,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 0.8522903365772021,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.55,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1000000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.1,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 145,
+          "occupancy": 0.55,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 20075,
+          "revpar": 79.75,
+          "roomRevenue": 2910875,
+          "otherRevenue": 501500,
+          "totalRevenue": 3412375,
+          "opex": 1772868.75,
+          "gop": 1639506.25,
+          "managementFee": 102371.25,
+          "propertyExpenses": 100000,
+          "ebitda": 1437135,
+          "replacementReserve": 136495,
+          "noi": 1300640,
+          "value": 3209630.6536438763,
+          "npv": 2209630.6536438763,
+          "dcfValue": 3209630.6536438763,
+          "irr": 1.1631253582461574,
+          "payback": 0.7748093968883655,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 16258000
+        },
+        "feasible": true
+      },
+      "alternative": {
+        "name": "What-if",
+        "inputSnapshot": {
+          "name": "What-if",
+          "financialCase": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.45000000000000007,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "costs": {
+              "fixedOpex": 1200000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.14,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "adr": 130.5,
+          "depth": "investment"
+        },
+        "calculation": {
+          "metrics": {
+            "adr": 130.5,
+            "occupancy": 0.5080000000000001,
+            "availableRoomNights": 36500,
+            "occupiedRoomNights": 18542.000000000004,
+            "revpar": 66.29400000000001,
+            "roomRevenue": 2419731.0000000005,
+            "otherRevenue": 470840.00000000006,
+            "totalRevenue": 2890571.0000000005,
+            "opex": 1900788.55,
+            "gop": 989782.4500000004,
+            "managementFee": 86717.13,
+            "propertyExpenses": 100000,
+            "ebitda": 803065.3200000004,
+            "replacementReserve": 115622.84000000003,
+            "noi": 687442.4800000004
+          },
+          "constraints": {
+            "valid": true,
+            "issues": [],
+            "bindingConstraints": []
+          },
+          "annual": [
+            {
+              "year": 1,
+              "operating": {
+                "adr": 130.5,
+                "occupancy": 0.5080000000000001,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 18542.000000000004,
+                "revpar": 66.29400000000001,
+                "roomRevenue": 2419731.0000000005,
+                "otherRevenue": 470840.00000000006,
+                "totalRevenue": 2890571.0000000005,
+                "opex": 1900788.55,
+                "gop": 989782.4500000004,
+                "managementFee": 86717.13,
+                "propertyExpenses": 100000,
+                "ebitda": 803065.3200000004,
+                "replacementReserve": 115622.84000000003,
+                "noi": 687442.4800000004
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 677442.4800000004,
+              "dscr": null
+            },
+            {
+              "year": 2,
+              "operating": {
+                "adr": 130.5,
+                "occupancy": 0.5080000000000001,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 18542.000000000004,
+                "revpar": 66.29400000000001,
+                "roomRevenue": 2419731.0000000005,
+                "otherRevenue": 470840.00000000006,
+                "totalRevenue": 2890571.0000000005,
+                "opex": 1900788.55,
+                "gop": 989782.4500000004,
+                "managementFee": 86717.13,
+                "propertyExpenses": 100000,
+                "ebitda": 803065.3200000004,
+                "replacementReserve": 115622.84000000003,
+                "noi": 687442.4800000004
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 677442.4800000004,
+              "dscr": null
+            },
+            {
+              "year": 3,
+              "operating": {
+                "adr": 130.5,
+                "occupancy": 0.5080000000000001,
+                "availableRoomNights": 36500,
+                "occupiedRoomNights": 18542.000000000004,
+                "revpar": 66.29400000000001,
+                "roomRevenue": 2419731.0000000005,
+                "otherRevenue": 470840.00000000006,
+                "totalRevenue": 2890571.0000000005,
+                "opex": 1900788.55,
+                "gop": 989782.4500000004,
+                "managementFee": 86717.13,
+                "propertyExpenses": 100000,
+                "ebitda": 803065.3200000004,
+                "replacementReserve": 115622.84000000003,
+                "noi": 687442.4800000004
+              },
+              "tax": 0,
+              "capex": 10000,
+              "workingCapital": 0,
+              "debtService": 0,
+              "cashFlow": 677442.4800000004,
+              "dscr": null
+            }
+          ],
+          "terminalValue": 0,
+          "forecastPv": 1572772.1581053284,
+          "terminalPv": 0,
+          "dcfValue": 1572772.1581053284,
+          "npv": 572772.1581053284,
+          "directCapitalizationValue": 8593031.000000006,
+          "irr": {
+            "status": "UNIQUE",
+            "rate": 0.45957430228903784
+          },
+          "payback": {
+            "years": 1.4761400849855169,
+            "recovered": true
+          },
+          "discountedPayback": {
+            "years": 1.7783916544471783,
+            "recovered": true
+          },
+          "usedAssumptions": {
+            "case": {
+              "schemaVersion": "case.v1",
+              "id": "hotel-finance",
+              "revision": 0,
+              "name": "Örnek Otel",
+              "currency": "USD",
+              "period": {
+                "start": "2026-01-01",
+                "end": "2026-12-31"
+              },
+              "minAdr": 130,
+              "maxAdr": 150,
+              "referenceAdr": 145,
+              "referenceOccupancy": 0.45000000000000007,
+              "demand": {
+                "kind": "linear-sensitivity",
+                "modelVersion": "demand.v1",
+                "adrIncrease": 5,
+                "occupancyDecreasePp": 2,
+                "validMinAdr": 130,
+                "validMaxAdr": 150
+              }
+            },
+            "capacity": {
+              "roomCount": 100,
+              "bedCount": 200,
+              "openDays": 365,
+              "unavailableRoomNights": 0
+            },
+            "costs": {
+              "fixedOpex": 1200000,
+              "variablePerOccupiedRoomNight": 30,
+              "variableRevenueRate": 0.05,
+              "managementFeeRate": 0.03,
+              "propertyExpenses": 100000,
+              "nonOperatingIncome": 0,
+              "replacementReserveRate": 0.04
+            },
+            "otherRevenues": [
+              {
+                "name": "F&B",
+                "fixedAnnual": 100000,
+                "perOccupiedRoomNight": 20
+              }
+            ],
+            "finance": {
+              "forecastHorizon": 3,
+              "discountRate": 0.14,
+              "capRate": 0.08,
+              "revenueGrowth": 0,
+              "costGrowth": 0,
+              "taxRate": 0,
+              "cashFlowMode": "property",
+              "initialInvestment": 1000000,
+              "annualCapex": [
+                10000,
+                10000,
+                10000
+              ],
+              "workingCapitalChanges": [
+                0,
+                0,
+                0
+              ],
+              "annualDebtService": [
+                0,
+                0,
+                0
+              ],
+              "terminal": {
+                "method": "none"
+              }
+            }
+          },
+          "version": "finance.v1"
+        },
+        "kpis": {
+          "adr": 130.5,
+          "occupancy": 0.5080000000000001,
+          "availableRoomNights": 36500,
+          "occupiedRoomNights": 18542.000000000004,
+          "revpar": 66.29400000000001,
+          "roomRevenue": 2419731.0000000005,
+          "otherRevenue": 470840.00000000006,
+          "totalRevenue": 2890571.0000000005,
+          "opex": 1900788.55,
+          "gop": 989782.4500000004,
+          "managementFee": 86717.13,
+          "propertyExpenses": 100000,
+          "ebitda": 803065.3200000004,
+          "replacementReserve": 115622.84000000003,
+          "noi": 687442.4800000004,
+          "value": 1572772.1581053284,
+          "npv": 572772.1581053284,
+          "dcfValue": 1572772.1581053284,
+          "irr": 0.45957430228903784,
+          "payback": 1.4761400849855169,
+          "capex": 1030000,
+          "dscr": null,
+          "directCapitalizationValue": 8593031.000000006
+        },
+        "feasible": true
+      },
+      "delta": {
+        "adr": -14.5,
+        "occupancy": -0.041999999999999926,
+        "availableRoomNights": 0,
+        "occupiedRoomNights": -1532.9999999999964,
+        "revpar": -13.455999999999989,
+        "roomRevenue": -491143.99999999953,
+        "otherRevenue": -30659.99999999994,
+        "totalRevenue": -521803.99999999953,
+        "opex": 127919.80000000005,
+        "gop": -649723.7999999996,
+        "managementFee": -15654.119999999995,
+        "propertyExpenses": 0,
+        "ebitda": -634069.6799999996,
+        "replacementReserve": -20872.159999999974,
+        "noi": -613197.5199999996,
+        "value": -1636858.4955385479,
+        "npv": -1636858.4955385479,
+        "dcfValue": -1636858.4955385479,
+        "irr": -0.7035510559571195,
+        "payback": 0.7013306880971514,
+        "capex": 0,
+        "dscr": null,
+        "directCapitalizationValue": -7664968.999999994
+      }
+    }
+  }
+}

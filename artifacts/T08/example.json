@@ -1,0 +1,21 @@
+{
+  "application": "dist/index.html",
+  "supportedTools": [
+    "max-revpar",
+    "what-if",
+    "ab",
+    "scenarios",
+    "sensitivity",
+    "stress",
+    "max-noi",
+    "max-npv",
+    "max-value",
+    "min-opex",
+    "min-capex",
+    "min-risk",
+    "min-payback",
+    "pareto-revpar-occupancy",
+    "pareto-noi-opex",
+    "pareto-npv-risk"
+  ]
+}

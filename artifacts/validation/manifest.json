@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-07",
+  "runtime": "v24.21.0",
+  "totalTests": 152,
+  "passed": 152,
+  "failed": 0,
+  "tools": [
+    "max-revpar",
+    "what-if",
+    "ab",
+    "scenarios",
+    "sensitivity",
+    "stress",
+    "max-noi",
+    "max-npv",
+    "max-value",
+    "min-opex",
+    "min-capex",
+    "min-risk",
+    "min-payback",
+    "pareto-revpar-occupancy",
+    "pareto-noi-opex",
+    "pareto-npv-risk"
+  ],
+  "tasks": {
+    "T05": {
+      "title": "Analitik MAX RevPAR çözücüsü",
+      "files": [
+        "src/domain/solvers/max-revpar.solver.ts",
+        "tests/unit/t05.test.ts"
+      ]
+    },
+    "T06": {
+      "title": "Sonuç ve açıklama katmanı",
+      "files": [
+        "src/domain/results/result.explainer.ts",
+        "tests/unit/t05.test.ts"
+      ]
+    },
+    "T07": {
+      "title": "Guided Wizard, Case saklama ve kullanıcı akışı",
+      "files": [
+        "src/domain/guide/decision.guide.ts",
+        "src/domain/case/case.repository.ts",
+        "src/features/workbench/workbench.ui.ts",
+        "tests/unit/workbench.test.ts"
+      ]
+    },
+    "T08": {
+      "title": "Grafikler, kullanıcı akışı ve bütünleşik uygulama",
+      "files": [
+        "src/features/workbench/index.template.html",
+        "src/features/workbench/workbench.ui.ts",
+        "tests/unit/workbench.test.ts"
+      ]
+    },
+    "T09": {
+      "title": "Gelir, gider, GOP, EBITDA, NOI ve yatırım skill kütüphanesi",
+      "files": [
+        "src/domain/skills/financial.skills.ts",
+        "src/domain/skills/valuation.skills.ts",
+        "src/domain/finance/financial.engine.ts",
+        "tests/unit/finance.test.ts"
+      ]
+    },
+    "T10": {
+      "title": "What-if, A/B, senaryo, duyarlılık ve stres",
+      "files": [
+        "src/domain/simulation/scenario.engine.ts",
+        "tests/unit/analysis.test.ts"
+      ]
+    },
+    "T11": {
+      "title": "Maksimizasyon, minimizasyon ve Pareto",
+      "files": [
+        "src/domain/optimization/optimization.engine.ts",
+        "src/domain/templates/analysis.templates.ts",
+        "tests/unit/analysis.test.ts",
+        "tests/unit/workbench.test.ts"
+      ]
+    },
+    "T12": {
+      "title": "Tarihsel talep, AI sınırı, yaşam döngüsü ve kapanış denetimi",
+      "files": [
+        "src/domain/skills/historical-demand.skill.ts",
+        "src/domain/guide/ai-assistant.adapter.ts",
+        "src/domain/lifecycle/model.lifecycle.ts",
+        "tests/unit/assistant.test.ts",
+        "tests/unit/lifecycle.test.ts"
+      ]
+    }
+  },
+  "tests": [
+    "tests/unit/analysis.test.ts",
+    "tests/unit/assistant.test.ts",
+    "tests/unit/finance.test.ts",
+    "tests/unit/lifecycle.test.ts",
+    "tests/unit/t01.test.ts",
+    "tests/unit/t02.test.ts",
+    "tests/unit/t03-ui.test.ts",
+    "tests/unit/t03.test.ts",
+    "tests/unit/t04.test.ts",
+    "tests/unit/t05.test.ts",
+    "tests/unit/workbench.test.ts"
+  ],
+  "sourceHashes": {
+    "src/domain/case/case.repository.ts": "f486ed95432083099db4cfa256c10ef64d43b2a57ec2edf00ef53b0419f197f5",
+    "src/domain/case/case.schema.ts": "c823147aacae587e4ed791e75350585b0099681eb9cdab793f3df65d2af5db25",
+    "src/domain/case/case.types.ts": "37454c1690e8e7dc65189c10b09008e36f137984a82bc89ab064c60f0f27d204",
+    "src/domain/constraints/constraint.validator.ts": "1fe574f67ae7f98b63f7e1e907eac4b5886a47dde5d9335a315638e629907c1a",
+    "src/domain/finance/finance.schema.ts": "8194f283a8c6069cca601021ac80ced672bced1554f3189cc0163f2d799c11ed",
+    "src/domain/finance/finance.types.ts": "4f8d14e1b64694d78526ffa3a68dcb9b82b13ef1027c9445714f5b56a59fa269",
+    "src/domain/finance/financial.engine.ts": "c56da2fc8762a37383dec41dcb1063bfb93df7bb78b545a0d1001766d4e28157",
+    "src/domain/guide/ai-assistant.adapter.ts": "f024ff396f71b573b16e4c492f1ec539a5ae4c6b4f940cb27a9fa705d228f67a",
+    "src/domain/guide/decision.guide.ts": "612996e499b7715cb3e44636f6dc86e11b50acbbb79844a54ecff6c9fac125f4",
+    "src/domain/lifecycle/model.lifecycle.ts": "51ede1440ca61575f136ec623671854b0160d1b521557c05e32a08006aa84981",
+    "src/domain/numerics/numerical-policy.ts": "c32e409abf57e25b85f478a642522aea08508707b713006f44ee6971d345fa5b",
+    "src/domain/optimization/optimization.engine.ts": "a1933fdf7d0e209a9fa2c46ccde46d6319270d8077b8ad16249b3bfdab03d2c7",
+    "src/domain/problems/max-revpar.builder.ts": "d726b1dc098a6a3146aa8110aab14ce98f6055e45c0eccf7253646e8043d5c7b",
+    "src/domain/problems/problem.schema.ts": "8a006046466bee1d9af77a1dba59ceb742ae9e55636e693cdc3d1c745bfb96bf",
+    "src/domain/problems/problem.types.ts": "09905e1f94eeb583b190486e9287e59a8d274d6d99bdf492184d536a1f375c92",
+    "src/domain/problems/problem.versions.ts": "272c69a442737fa0f0d629d1826ae3bdaf8bffb4b6c7c14af0aea2ccd46eaccb",
+    "src/domain/readiness/readiness.engine.ts": "1c9e424f36af10747dd1de3a26ccb04e639eb4e5a47ecb6b29924607bcf39843",
+    "src/domain/results/result.explainer.ts": "b2537a28bcaf776efa46d070925934d7a90223757a0a8b3404aeb8673ee921db",
+    "src/domain/simulation/scenario.engine.ts": "656f548b0acc17bff25b491bf4566f14ac560faf5af5cdb6d1ebf3604f37bd89",
+    "src/domain/simulation/simulate-price.ts": "b4e52bc862bf7bef931a14d0884eda2d724402b897fc81693efcee72924d6b13",
+    "src/domain/skills/demand.skill.ts": "ec99d08f4aeb2094d86ac0e46c58ca50ed606b40374443539df885ce6f564ec5",
+    "src/domain/skills/financial.skills.ts": "8431970b72c42b6a83c84a65d008759f14d6da1efd9df60529241ee63fe41d40",
+    "src/domain/skills/historical-demand.skill.ts": "5fc8a56730fbbb85edebafbb8f777d35346778622a21782d1898d37af5b35aaa",
+    "src/domain/skills/revpar.skill.ts": "0d053bc3d05b5a15fcc510903d52bd6664c2925394d230140acbf9626bb077ef",
+    "src/domain/skills/skill.types.ts": "a348af828572e386b683cd01e7b5e2d4ac7a138cca1a14da3b602b3957272b60",
+    "src/domain/skills/valuation.skills.ts": "5f32a23ff424edcdaa096651ae88050b85547577b456e32456e09ca92aa9eee1",
+    "src/domain/solvers/max-revpar.solver.ts": "c1cda38e317928372ece2fcfa289e91a8bb291e5f77fca148c79cd612f093ca2",
+    "src/domain/templates/analysis.templates.ts": "dc11c1678029f3affab740276c95fc2098717f7f651e90fd5eae84434d097d8c",
+    "src/domain/variables/variable.types.ts": "db45b6eeaa70ddbf6d95c41f5dc5ba632d27650baac681beda2e8c24bf4a60b6",
+    "src/features/simulation/simulation.template.html": "67fb463cfead097ecfd332756082bd8a8064b95815fbbeeab1cfb97ea2679a21",
+    "src/features/simulation/simulation.ui.ts": "6b476c04b088619023b22796ee4acf6a67ea0b1cc5e822c5bc97cbeaf3e32fae",
+    "src/features/workbench/analysis.runner.ts": "8226de4f9b8f6eaab986fd12973b82ab885ab75dc00b2a5457cc4c1b3e2f54aa",
+    "src/features/workbench/index.template.html": "12a78da675c42767fa835f12b9b10b64f53e6de20d02ce886ea2dbe1dc4716c7",
+    "src/features/workbench/workbench.ui.ts": "f6b9d0643a0d85037270ddf7448bf3cf82dd0af31dba8c3e1f1a934f34c59bd6"
+  },
+  "testHashes": {
+    "tests/unit/analysis.test.ts": "e17d6ce77f1336c2774853d87515dfd2ee61c4852f26484be851935d9c1a4350",
+    "tests/unit/assistant.test.ts": "38d3f9909e65c088100c5878e2b06a84c5bbf08b5b09b32308af788496128c4e",
+    "tests/unit/finance.test.ts": "5ad773365b23b92d18893501470c2c2224a8316afd778fc95626691150682620",
+    "tests/unit/lifecycle.test.ts": "fdc6425612ea4559f85cbb29f43c9b50b096b8dd3fe1a5868d6505f437a7fe64",
+    "tests/unit/t01.test.ts": "016481a502b2be9cfceb17003cc21ae7056424d71b51860e5549201ebc07fc57",
+    "tests/unit/t02.test.ts": "d83703e8bdb0df45703ef7e2cb9a5fce81fb5cccb14d380021bcf271d1401ca8",
+    "tests/unit/t03-ui.test.ts": "d12dbb3ed6f058f94b767c6107c3ecc5f13065527821cb9993a1b0be40023dae",
+    "tests/unit/t03.test.ts": "306ecbe8c748639d47c84aab1ebb5babd8901e46f53a88f51661f07e9cade2e5",
+    "tests/unit/t04.test.ts": "b2166818f975933e5e1f1f958a4e92c923febb79de24dd9df4bb73e5e47ae804",
+    "tests/unit/t05.test.ts": "c43a85c5e444b71902adf360b88d8e4dff8a729c6f26a5d22911048cae19b930",
+    "tests/unit/workbench.test.ts": "1abbf3c72c7ca9463d41663fdf00de48ea45013db6a2c1c76f99fd7c561862ad"
+  },
+  "scriptHashes": {
+    "scripts/build-simulation.ts": "d35e80f7a1f0c141f10bd018c871d903a458be048e2e68e8b1db4e5dfb32caf9",
+    "scripts/build-workbench.ts": "3e5899a58100797c4d5230186199dce4abd026d3a998c5886915f8664650b046",
+    "scripts/create-all-artifacts.ts": "32c0cc3730b2d8be075132cb86542a3d3000dce5bbb3c74cb2cdc1718f9377ed",
+    "scripts/create-t02-artifacts.ts": "26436d44e3936e4cdac4c514b76f04c01a703013dc20f6647624bf404729facd",
+    "scripts/create-t03-artifacts.ts": "80aa369a48279f8f460664f306cb9108e690f435f291e9d1f5bee9564c64437a",
+    "scripts/create-t04-artifacts.ts": "464a002b188838f110c23ee9f82a510ec9f4ece846c538c4a3f7f29bdcbc7b1f",
+    "scripts/lock-revpar-flow.ts": "42c695a5d117b85ec1a196ec2a976f13acd08ec3f028680b5f38c744988dff26",
+    "scripts/serve.ts": "6df50a46a32edb5d9856cec878297f9c003e1097bb007d5a360357b70916a4e3",
+    "scripts/verify-release.ts": "df93150f7b91c14ed34279f577539cceca3bd74d5b93a7dfd5fa6ac435d4e40e"
+  },
+  "application": {
+    "file": "dist/index.html",
+    "sha256": "0feb80bfe65f95d838f8d3de62d4eaf4b4049979bf2a0acb1ca3bb90daf4fb19"
+  },
+  "lockStatus": "MAX_REVPAR_TECHNICAL_BASELINE_LOCKED_FINANCIAL_MODEL_NOT_LOCKED",
+  "limitations": [
+    "No real-browser screenshot: computer-use permissions unavailable.",
+    "IRR reports non-conventional cash flows instead of choosing an arbitrary root.",
+    "Non-RevPAR optimization is exact over explicit finite alternatives.",
+    "AI adapter is optional; no provider is configured by default."
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "problemVersion": "max-revpar.v1",
+  "caseSnapshot": {
+    "schemaVersion": "case.v1",
+    "id": "example-hotel",
+    "revision": 1,
+    "name": "Örnek Otel",
+    "currency": "USD",
+    "period": {
+      "start": "2026-01-01",
+      "end": "2026-12-31"
+    },
+    "minAdr": 130,
+    "maxAdr": 150,
+    "referenceAdr": 145,
+    "referenceOccupancy": 0.55,
+    "demand": {
+      "kind": "linear-sensitivity",
+      "modelVersion": "demand.v1",
+      "adrIncrease": 5,
+      "occupancyDecreasePp": 2,
+      "validMinAdr": 130,
+      "validMaxAdr": 150
+    }
+  },
+  "objective": {
+    "metric": "revpar",
+    "direction": "max"
+  },
+  "decision": {
+    "metric": "adr",
+    "min": 130,
+    "max": 150
+  },
+  "constraints": {
+    "occupancyMin": 0,
+    "occupancyMax": 1
+  },
+  "calculationVersion": "revpar.v1",
+  "solverVersion": "max-revpar-solver.v1",
+  "numericalPolicyVersion": "numerics.v1"
+}

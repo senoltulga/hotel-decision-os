@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: Draft saklanabilir; aynı eksik veri analiz için reddedilir
+ok 1 - Draft saklanabilir; aynı eksik veri analiz için reddedilir
+  ---
+  duration_ms: 1.271667
+  type: 'test'
+  ...
+# Subtest: Geçerli doğrusal Case kabul edilir; dış nesneyle bağlantısı koparılır
+ok 2 - Geçerli doğrusal Case kabul edilir; dış nesneyle bağlantısı koparılır
+  ---
+  duration_ms: 1.115792
+  type: 'test'
+  ...
+# Subtest: Boş değerler eksiktir, sıfır doluluk geçerlidir
+ok 3 - Boş değerler eksiktir, sıfır doluluk geçerlidir
+  ---
+  duration_ms: 0.170166
+  type: 'test'
+  ...
+# Subtest: Geçersiz dış girdiler şemadan geçemez
+ok 4 - Geçersiz dış girdiler şemadan geçemez
+  ---
+  duration_ms: 0.235625
+  type: 'test'
+  ...
+# Subtest: ADR sınırları: ters aralık reddedilir; tek fiyat geçerlidir
+ok 5 - ADR sınırları: ters aralık reddedilir; tek fiyat geçerlidir
+  ---
+  duration_ms: 0.069791
+  type: 'test'
+  ...
+# Subtest: Tarih, para birimi, revizyon ve sürüm doğrulanır
+ok 6 - Tarih, para birimi, revizyon ve sürüm doğrulanır
+  ---
+  duration_ms: 0.109708
+  type: 'test'
+  ...
+# Subtest: Doğrusal model referansları ve kapsam sınırları zorunludur
+ok 7 - Doğrusal model referansları ve kapsam sınırları zorunludur
+  ---
+  duration_ms: 0.12625
+  type: 'test'
+  ...
+# Subtest: Nokta modeli referanssız kabul edilir; noktalar kopyada sıralanır
+ok 8 - Nokta modeli referanssız kabul edilir; noktalar kopyada sıralanır
+  ---
+  duration_ms: 0.107292
+  type: 'test'
+  ...
+# Subtest: Tek nokta, tekrar ADR, artan doluluk ve alan dışı sınır reddedilir
+ok 9 - Tek nokta, tekrar ADR, artan doluluk ve alan dışı sınır reddedilir
+  ---
+  duration_ms: 0.129583
+  type: 'test'
+  ...
+# Subtest: Desteklenmeyen model ve sürüm reddedilir
+ok 10 - Desteklenmeyen model ve sürüm reddedilir
+  ---
+  duration_ms: 0.1005
+  type: 'test'
+  ...
+# Subtest: Türkçe ondalık ayrıştırma ve eksik-sıfır ayrımı
+ok 11 - Türkçe ondalık ayrıştırma ve eksik-sıfır ayrımı
+  ---
+  duration_ms: 0.1795
+  type: 'test'
+  ...
+# Subtest: Yüzde ve yüzde puanı dönüşümleri ayrıdır
+ok 12 - Yüzde ve yüzde puanı dönüşümleri ayrıdır
+  ---
+  duration_ms: 0.063125
+  type: 'test'
+  ...
+# Subtest: Sayısal politika toleransı sonlu değerlere uygulanır; girdi aralığı gevşetilmez
+ok 13 - Sayısal politika toleransı sonlu değerlere uygulanır; girdi aralığı gevşetilmez
+  ---
+  duration_ms: 0.072833
+  type: 'test'
+  ...
+# Subtest: RevPAR hem derived hem objective rolünü taşır
+ok 14 - RevPAR hem derived hem objective rolünü taşır
+  ---
+  duration_ms: 0.564875
+  type: 'test'
+  ...
+# Subtest: Geçerli Problem değişmez snapshot olarak döner
+ok 15 - Geçerli Problem değişmez snapshot olarak döner
+  ---
+  duration_ms: 0.276875
+  type: 'test'
+  ...
+# Subtest: Problem Case ile tutarsız sınırları ve doğrulanmamış taslağı reddeder
+ok 16 - Problem Case ile tutarsız sınırları ve doğrulanmamış taslağı reddeder
+  ---
+  duration_ms: 0.146875
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71.74175

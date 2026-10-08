@@ -1,0 +1,577 @@
+{
+  "caseDocument": {
+    "version": "case-document.v1",
+    "payload": {
+      "case": {
+        "schemaVersion": "case.v1",
+        "id": "hotel-finance",
+        "revision": 0,
+        "name": "Örnek Otel",
+        "currency": "USD",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "minAdr": 130,
+        "maxAdr": 150,
+        "referenceAdr": 145,
+        "referenceOccupancy": 0.55,
+        "demand": {
+          "kind": "linear-sensitivity",
+          "modelVersion": "demand.v1",
+          "adrIncrease": 5,
+          "occupancyDecreasePp": 2,
+          "validMinAdr": 130,
+          "validMaxAdr": 150
+        }
+      },
+      "capacity": {
+        "roomCount": 100,
+        "bedCount": 200,
+        "openDays": 365,
+        "unavailableRoomNights": 0
+      },
+      "otherRevenues": [
+        {
+          "name": "F&B",
+          "fixedAnnual": 100000,
+          "perOccupiedRoomNight": 20
+        }
+      ],
+      "costs": {
+        "fixedOpex": 1000000,
+        "variablePerOccupiedRoomNight": 30,
+        "variableRevenueRate": 0.05,
+        "managementFeeRate": 0.03,
+        "propertyExpenses": 100000,
+        "nonOperatingIncome": 0,
+        "replacementReserveRate": 0.04
+      },
+      "finance": {
+        "forecastHorizon": 3,
+        "discountRate": 0.1,
+        "capRate": 0.08,
+        "revenueGrowth": 0,
+        "costGrowth": 0,
+        "taxRate": 0,
+        "cashFlowMode": "property",
+        "initialInvestment": 1000000,
+        "annualCapex": [
+          10000,
+          10000,
+          10000
+        ],
+        "workingCapitalChanges": [
+          0,
+          0,
+          0
+        ],
+        "annualDebtService": [
+          0,
+          0,
+          0
+        ],
+        "terminal": {
+          "method": "none"
+        }
+      }
+    }
+  },
+  "toolTemplates": [
+    {
+      "id": "max-revpar",
+      "label": "MAX RevPAR",
+      "family": "maximization",
+      "depth": "pricing",
+      "description": "Talep modeliniz altında oda başına en yüksek geliri sağlayan fiyatı hesaplar.",
+      "whenToUse": "Fiyat aralığı ve fiyat–doluluk ilişkisi biliniyorsa.",
+      "tradeOff": "En yüksek RevPAR en yüksek kâr anlamına gelmez. Talep varsayımı sonucu belirler.",
+      "objectives": [
+        {
+          "metric": "revpar",
+          "direction": "MAX"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "RevPAR",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "what-if",
+      "label": "What-if",
+      "family": "simulation",
+      "depth": "operating",
+      "description": "Seçtiğiniz fiyatın gelir ve gider etkisini baz durumla karşılaştırır.",
+      "whenToUse": "Bir değişikliği uygulamadan önce etkisini görmek için.",
+      "tradeOff": "Bir alternatifin hesabıdır; optimum önerisi değildir.",
+      "objectives": [],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "ab",
+      "label": "A/B karşılaştırması",
+      "family": "simulation",
+      "depth": "operating",
+      "description": "İki açık fiyat alternatifinin işletme sonuçlarını karşılaştırır.",
+      "whenToUse": "İki seçeneğin hangisinin amacınıza uygun olduğunu görmek için.",
+      "tradeOff": "Dönem, para birimi ve diğer varsayımlar karşılaştırılabilir olmalıdır.",
+      "objectives": [],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "scenarios",
+      "label": "Senaryo analizi",
+      "family": "simulation",
+      "depth": "investment",
+      "description": "Muhafazakâr, baz ve iyimser varsayım paketlerini karşılaştırır.",
+      "whenToUse": "Fiyat, talep ve maliyetler birlikte değişebiliyorsa.",
+      "tradeOff": "Senaryolar tahmin garantisi veya olasılık değildir; etkilerini siz belirtirsiniz.",
+      "objectives": [],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    },
+    {
+      "id": "sensitivity",
+      "label": "Duyarlılık analizi",
+      "family": "simulation",
+      "depth": "investment",
+      "description": "Tek varsayımın farklı değerlerinde sonuçların değişimini gösterir.",
+      "whenToUse": "Sonucu hangi girdinin etkilediğini araştırmak için.",
+      "tradeOff": "Diğer varsayımlar sabit tutulur; gerçek hayattaki ortak değişimleri temsil etmeyebilir.",
+      "objectives": [],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    },
+    {
+      "id": "stress",
+      "label": "Stres testi",
+      "family": "simulation",
+      "depth": "investment",
+      "description": "Olumsuz fiyat, doluluk, gider ve iskonto koşullarını birlikte hesaplar.",
+      "whenToUse": "Zor koşullarda dayanıklılığı görmek için.",
+      "tradeOff": "Doluluk düşüşü yüzde puanıdır; test bir gerçekleşme olasılığı vermez.",
+      "objectives": [],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    },
+    {
+      "id": "max-noi",
+      "label": "MAX NOI",
+      "family": "maximization",
+      "depth": "operating",
+      "description": "Açık karar seçenekleri arasında en yüksek net işletme gelirini bulur.",
+      "whenToUse": "Oda gelirinin yanı sıra gider ve diğer gelirleri de değerlendirmek için.",
+      "tradeOff": "Sonuç tanımladığınız seçenek kümesi için geçerlidir; incelenmeyen fiyatları kapsamaz.",
+      "objectives": [
+        {
+          "metric": "noi",
+          "direction": "MAX"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "max-npv",
+      "label": "MAX NPV",
+      "family": "maximization",
+      "depth": "investment",
+      "description": "Yatırım seçenekleri arasında en yüksek net bugünkü değeri bulur.",
+      "whenToUse": "Yıllık nakit akışları ve yatırım tutarları karşılaştırılacaksa.",
+      "tradeOff": "İskonto, terminal değer ve nakit akışı bazının tutarlı olması gerekir.",
+      "objectives": [
+        {
+          "metric": "npv",
+          "direction": "MAX"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    },
+    {
+      "id": "max-value",
+      "label": "MAX yatırım değeri",
+      "family": "maximization",
+      "depth": "investment",
+      "description": "Seçenekler arasında en yüksek DCF değerini bulur.",
+      "whenToUse": "Aynı finansal varsayımlar altında yatırım değerlerini karşılaştırmak için.",
+      "tradeOff": "DCF değeri alış maliyetini düşmeden önceki değerdir; NPV ile aynı değildir.",
+      "objectives": [
+        {
+          "metric": "value",
+          "direction": "MAX"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    },
+    {
+      "id": "min-opex",
+      "label": "MIN OPEX",
+      "family": "minimization",
+      "depth": "operating",
+      "description": "Gelir, doluluk ve hizmet kısıtları altında en düşük işletme giderini seçer.",
+      "whenToUse": "Gider azaltma seçeneklerini değerlendirmek için.",
+      "tradeOff": "Hizmet kalitesi seçenekler için sizin verdiğiniz ölçümdür; maliyetin kalite etkisi uydurulmaz.",
+      "objectives": [
+        {
+          "metric": "opex",
+          "direction": "MIN"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "min-capex",
+      "label": "MIN CapEx",
+      "family": "minimization",
+      "depth": "investment",
+      "description": "Kısıtları karşılayan seçeneklerde başlangıç yatırımı ve yıllık CapEx toplamını azaltır.",
+      "whenToUse": "Aynı hedefi karşılayabilen yatırım seçenekleri varsa.",
+      "tradeOff": "Başlangıç yatırımı ile ek yıllık CapEx ayrı girilir; rezerv gideri tekrar dahil edilmez.",
+      "objectives": [
+        {
+          "metric": "capex",
+          "direction": "MIN"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    },
+    {
+      "id": "min-risk",
+      "label": "MIN risk endeksi",
+      "family": "minimization",
+      "depth": "operating",
+      "description": "Açık seçeneklere verdiğiniz risk endeksini en düşük yapan uygun seçeneği bulur.",
+      "whenToUse": "Karşılaştırılabilir risk puanlarını siz sağlayabiliyorsanız.",
+      "tradeOff": "Risk endeksi sizin değerlendirdiğiniz 0–1 puanıdır; hesaplanmış bir kayıp olasılığı değildir.",
+      "objectives": [
+        {
+          "metric": "risk",
+          "direction": "MIN"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "min-payback",
+      "label": "MIN geri ödeme süresi",
+      "family": "minimization",
+      "depth": "investment",
+      "description": "İşletme nakit akışlarıyla en hızlı geri ödenen uygun yatırımı seçer.",
+      "whenToUse": "Sermayenin geri kazanılma süresini karşılaştırmak için.",
+      "tradeOff": "Geri ödeme toplam getiriyi ve terminal satışı kapsamaz; NPV de incelenmelidir.",
+      "objectives": [
+        {
+          "metric": "payback",
+          "direction": "MIN"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    },
+    {
+      "id": "pareto-revpar-occupancy",
+      "label": "RevPAR ↔ doluluk",
+      "family": "multi-objective",
+      "depth": "operating",
+      "description": "RevPAR ve doluluk arasında baskın olmayan seçenekleri gösterir.",
+      "whenToUse": "Gelir ile doluluğu birlikte değerlendirmek için.",
+      "tradeOff": "Tek bir kazanan dayatılmaz; tercih yapmanız için Pareto seçenekleri gösterilir.",
+      "objectives": [
+        {
+          "metric": "revpar",
+          "direction": "MAX"
+        },
+        {
+          "metric": "occupancy",
+          "direction": "MAX"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "pareto-noi-opex",
+      "label": "NOI ↔ OPEX",
+      "family": "multi-objective",
+      "depth": "operating",
+      "description": "NOI artışı ve OPEX azalması arasında Pareto alternatiflerini gösterir.",
+      "whenToUse": "Gider ile kârlılık hedefleri çatışıyorsa.",
+      "tradeOff": "Verilen seçenekler dışındaki stratejiler değerlendirilmez.",
+      "objectives": [
+        {
+          "metric": "noi",
+          "direction": "MAX"
+        },
+        {
+          "metric": "opex",
+          "direction": "MIN"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck"
+      ]
+    },
+    {
+      "id": "pareto-npv-risk",
+      "label": "NPV ↔ risk / CapEx",
+      "family": "multi-objective",
+      "depth": "investment",
+      "description": "NPV, risk endeksi ve CapEx arasında üç hedefli Pareto kümesini bulur.",
+      "whenToUse": "Getiri, sermaye ihtiyacı ve risk tercihleri birlikte ele alınacaksa.",
+      "tradeOff": "Risk puanlarının kaynağı size aittir; piyasa riski kendiliğinden tahmin edilmez.",
+      "objectives": [
+        {
+          "metric": "npv",
+          "direction": "MAX"
+        },
+        {
+          "metric": "risk",
+          "direction": "MIN"
+        },
+        {
+          "metric": "capex",
+          "direction": "MIN"
+        }
+      ],
+      "skillGraph": [
+        "Demand",
+        "Capacity",
+        "RevPAR",
+        "RoomRevenue",
+        "OtherRevenue",
+        "TotalRevenue",
+        "OPEX",
+        "GOP",
+        "EBITDA",
+        "NOI",
+        "ConstraintCheck",
+        "DirectCapitalization",
+        "CashFlow",
+        "DSCR",
+        "TerminalValue",
+        "DCF",
+        "NPV",
+        "IRR",
+        "Payback"
+      ]
+    }
+  ]
+}

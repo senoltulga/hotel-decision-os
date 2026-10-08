@@ -1,0 +1,31 @@
+{
+  "name": "hotel-decision-support-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "pretest": "node scripts/build-simulation.ts && node scripts/build-workbench.ts",
+    "test": "node --test tests/unit/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "artifact:t02": "node scripts/create-t02-artifacts.ts",
+    "build:simulation": "node scripts/build-simulation.ts",
+    "artifact:t03": "node scripts/create-t03-artifacts.ts",
+    "artifact:t04": "node scripts/create-t04-artifacts.ts",
+    "build": "node scripts/build-workbench.ts",
+    "start": "node scripts/serve.ts",
+    "artifact:all": "node scripts/create-all-artifacts.ts",
+    "check": "npm run typecheck && npm test",
+    "verify:release": "node scripts/verify-release.ts",
+    "baseline:revpar": "node scripts/lock-revpar-flow.ts"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.4",
+    "esbuild": "^0.28.2",
+    "jsdom": "^30.1.2",
+    "typescript": "^7.0.2"
+  }
+}

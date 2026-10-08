@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hotel Decision Support Engine</title>
+  <style>
+    :root { color-scheme: light dark; --bg: light-dark(#f5f6f8,#151820); --panel: light-dark(#fff,#202530); --ink: light-dark(#192332,#edf2fa); --muted: light-dark(#536276,#bbc8da); --line: light-dark(#d7dfe8,#3d495d); --accent: light-dark(#245fc2,#8db6ff); --error: light-dark(#a52525,#ff9e9e); }
+    * { box-sizing: border-box; } body { margin:0; font:16px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--ink); }
+    header, main { max-width:1180px; margin:auto; padding:24px; } header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; }
+    h1 { font-size:24px; margin:0; } h2 { font-size:21px; margin:0 0 12px; } h3 { font-size:17px; } p { margin:8px 0; } small,.muted { color:var(--muted); }
+    .toolbar,.actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; } section { margin-bottom:20px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:22px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:16px; }
+    label { display:grid; gap:6px; font-weight:500; } input,select,textarea,button { font:inherit; color:inherit; }
+    input,select,textarea { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:7px; background:var(--panel); } textarea { min-height:95px; }
+    button { padding:10px 15px; border:1px solid var(--line); border-radius:7px; background:var(--panel); cursor:pointer; } button.primary { background:var(--accent); color:light-dark(#fff,#0d2449); border-color:var(--accent); font-weight:600; }
+    button:disabled { opacity:.5; cursor:default; } :focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+    .step { color:var(--muted); } .status { padding:12px 0; } .error { color:var(--error); } [hidden] { display:none!important; }
+    details { margin:14px 0; } summary { cursor:pointer; } .cards { display:flex; flex-wrap:wrap; gap:12px; } .stat { flex:1 1 180px; background:var(--bg); padding:16px; border-radius:8px; } .stat strong { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
+    .table-wrap { overflow-x:auto; } table { width:100%; border-collapse:collapse; margin:14px 0; } th,td { text-align:left; padding:10px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; } th { font-weight:600; }
+    .chart { display:block; width:100%; height:240px; } .chart text { fill:var(--ink); font-size:12px; } .banner { padding:12px 0; color:var(--muted); }
+    a { color:var(--accent); } .import { max-width:240px; } @media(max-width:600px) { header,main { padding:14px; } .panel { padding:16px; } .toolbar { width:100%; } }
+  </style>
+</head>
+<body>
+<header><div><h1>Hotel Decision Support Engine</h1><div class="muted">Varsayımlarını tanımla · seçenekleri karşılaştır · kararını açıkla</div></div>
+  <div class="toolbar"><button data-action="example">Örneği yükle</button><button data-action="save">Taslağı kaydet</button><button data-action="export">Case’i indir</button><label class="import">Case yükle<input type="file" accept="application/json,.json" data-action="import"></label></div>
+</header>
+<main id="hdse-workbench">
+  <div class="banner" data-part="notice" aria-live="polite"></div>
+  <section class="panel"><h2>Ne yapmak istiyorsunuz?</h2>
+    <div class="grid"><label>Amacını yaz<input data-field="intent" placeholder="Örn. oda fiyatını belirlemek"><small>Kural tabanlı rehber; hesaplamayı AI yapmaz.</small></label><label>Analiz aracı<select data-field="tool"></select></label></div>
+    <div data-part="recommendations"></div>
+    <div data-part="tool-description"></div>
+    <button class="primary" data-action="approve">Bu araçla devam et</button>
+  </section>
+  <section class="panel" data-part="inputs" hidden>
+    <div class="step">1. Case ve varsayımlar</div><h2>Analiz için gereken bilgiler</h2>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><input type="checkbox" data-action="missing-only" style="width:auto" checked>Yalnız eksik veya geçersiz Case alanlarını göster</label>
+    <div data-group="case"></div><div data-group="pricing"></div>
+    <div data-group="operating" hidden></div><div data-group="investment" hidden></div>
+    <div data-group="analysis"></div>
+    <div class="status" data-part="readiness" aria-live="polite"></div>
+    <div class="error" data-part="errors" role="alert"></div>
+    <div data-part="warnings"></div>
+    <button class="primary" data-action="review">Varsayımları gözden geçir</button>
+  </section>
+  <section class="panel" data-part="review" hidden><div class="step">2. Hesaplama öncesi onay</div><h2>Kullanılacak varsayımlar</h2><div data-part="summary"></div><button class="primary" data-action="run">Onayla ve hesapla</button></section>
+  <section class="panel" data-part="results" hidden><div class="step">3. Sonuç</div><h2 data-part="result-title"></h2><div class="cards" data-part="metrics"></div><div data-part="messages"></div><div data-part="result-table"></div><div data-part="plots"></div><div data-part="forecast"></div><details><summary>Hesaplama izi ve kullanılan varsayımlar</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere" data-part="trace"></pre></details><button data-action="download-result">Sonucu indir</button></section>
+  <p class="muted">Hesaplar girilen talep ve finans varsayımlarına bağlıdır. Örnek veriler piyasa verisi değildir. Sonuçlar gerçekleşecek talebi garanti etmez.</p>
+</main>
+<!-- HDSE_APP_SCRIPT -->
+</body></html>

@@ -1,0 +1,924 @@
+TAP version 13
+# Subtest: What-if aynı hesaplama zincirinde fark üretir ve baz değişmez
+ok 1 - What-if aynı hesaplama zincirinde fark üretir ve baz değişmez
+  ---
+  duration_ms: 6.440625
+  type: 'test'
+  ...
+# Subtest: A/B farklı para birimi ve dönemleri karşılaştırmaz
+ok 2 - A/B farklı para birimi ve dönemleri karşılaştırmaz
+  ---
+  duration_ms: 1.060458
+  type: 'test'
+  ...
+# Subtest: Senaryo paketleri ve duyarlılık sonuçlarını üretir
+ok 3 - Senaryo paketleri ve duyarlılık sonuçlarını üretir
+  ---
+  duration_ms: 1.662833
+  type: 'test'
+  ...
+# Subtest: Stres yüzde puanı ve göreli maliyet değişimini ayırır
+ok 4 - Stres yüzde puanı ve göreli maliyet değişimini ayırır
+  ---
+  duration_ms: 0.508542
+  type: 'test'
+  ...
+# Subtest: Fiyat kümesinde MAX NOI ve MAX NPV deterministik seçilir
+ok 5 - Fiyat kümesinde MAX NOI ve MAX NPV deterministik seçilir
+  ---
+  duration_ms: 21.712
+  type: 'test'
+  ...
+# Subtest: MIN OPEX ve kalite kısıtı kötü hizmet seçeneğini eler
+ok 6 - MIN OPEX ve kalite kısıtı kötü hizmet seçeneğini eler
+  ---
+  duration_ms: 0.445583
+  type: 'test'
+  ...
+# Subtest: MIN CapEx, risk ve payback hedefleri ayrı çalışır
+ok 7 - MIN CapEx, risk ve payback hedefleri ayrı çalışır
+  ---
+  duration_ms: 1.570583
+  type: 'test'
+  ...
+# Subtest: Piyasa cap/discount rate karar değişkenine dönüştürülemez
+ok 8 - Piyasa cap/discount rate karar değişkenine dönüştürülemez
+  ---
+  duration_ms: 0.149167
+  type: 'test'
+  ...
+# Subtest: Pareto cephesinde baskın alternatifler elenir
+ok 9 - Pareto cephesinde baskın alternatifler elenir
+  ---
+  duration_ms: 1.138042
+  type: 'test'
+  ...
+# Subtest: DSCR ve hesaplanamayan metrik kısıtları uygulanır
+ok 10 - DSCR ve hesaplanamayan metrik kısıtları uygulanır
+  ---
+  duration_ms: 0.738625
+  type: 'test'
+  ...
+# Subtest: Tarihsel uyum aynı segmenti ister ve negatif fiyat ilişkisini çıkarır
+ok 11 - Tarihsel uyum aynı segmenti ister ve negatif fiyat ilişkisini çıkarır
+  ---
+  duration_ms: 0.430417
+  type: 'test'
+  ...
+# Subtest: Wizard onaysız çalışmaz; sonuç girdiler değişince eski olur
+ok 12 - Wizard onaysız çalışmaz; sonuç girdiler değişince eski olur
+  ---
+  duration_ms: 0.176958
+  type: 'test'
+  ...
+# Subtest: Case dışa aktarım / import sürümlüdür, bozuk veriler reddedilir
+ok 13 - Case dışa aktarım / import sürümlüdür, bozuk veriler reddedilir
+  ---
+  duration_ms: 0.240917
+  type: 'test'
+  ...
+# Subtest: Dört analiz ailesi ve bütün şablonlar kayıtlıdır
+ok 14 - Dört analiz ailesi ve bütün şablonlar kayıtlıdır
+  ---
+  duration_ms: 0.189875
+  type: 'test'
+  ...
+# Subtest: AI önerisi doğrulanır ve kullanıcı onayı ister; hesaplama başlatmaz
+ok 15 - AI önerisi doğrulanır ve kullanıcı onayı ister; hesaplama başlatmaz
+  ---
+  duration_ms: 0.966417
+  type: 'test'
+  ...
+# Subtest: AI sayısal varsayım ve izinsiz aracı probleme ekleyemez
+ok 16 - AI sayısal varsayım ve izinsiz aracı probleme ekleyemez
+  ---
+  duration_ms: 0.240416
+  type: 'test'
+  ...
+# Subtest: AI sağlayıcı hatası deterministik akışı durdurmaz
+ok 17 - AI sağlayıcı hatası deterministik akışı durdurmaz
+  ---
+  duration_ms: 0.17725
+  type: 'test'
+  ...
+# Subtest: ADR oda gelirinden hesaplanır; satış yoksa null
+ok 18 - ADR oda gelirinden hesaplanır; satış yoksa null
+  ---
+  duration_ms: 0.514417
+  type: 'test'
+  ...
+# Subtest: Kapasite açık gün ve kullanılamayan oda gecelerini içerir
+ok 19 - Kapasite açık gün ve kullanılamayan oda gecelerini içerir
+  ---
+  duration_ms: 0.28325
+  type: 'test'
+  ...
+# Subtest: Gelir ve GOP bağımsız elle hesapla tutarlı
+ok 20 - Gelir ve GOP bağımsız elle hesapla tutarlı
+  ---
+  duration_ms: 0.485167
+  type: 'test'
+  ...
+# Subtest: GOP EBITDA NOI köprüsünde tutarlar yalnız bir kez düşülür
+ok 21 - GOP EBITDA NOI köprüsünde tutarlar yalnız bir kez düşülür
+  ---
+  duration_ms: 2.346958
+  type: 'test'
+  ...
+# Subtest: EBITDA ve NOI negatif işletme sonuçlarını destekler
+ok 22 - EBITDA ve NOI negatif işletme sonuçlarını destekler
+  ---
+  duration_ms: 0.137792
+  type: 'test'
+  ...
+# Subtest: Nakitte debt yalnız equity modunda düşülür
+ok 23 - Nakitte debt yalnız equity modunda düşülür
+  ---
+  duration_ms: 0.150083
+  type: 'test'
+  ...
+# Subtest: DSCR sıfır borç servisinde null olur
+ok 24 - DSCR sıfır borç servisinde null olur
+  ---
+  duration_ms: 0.158042
+  type: 'test'
+  ...
+# Subtest: NPV t=0 nakdini tekrar iskonto etmez
+ok 25 - NPV t=0 nakdini tekrar iskonto etmez
+  ---
+  duration_ms: 0.195917
+  type: 'test'
+  ...
+# Subtest: Direct cap ve terminal exit gelecek yıl NOI ile hesaplanır
+ok 26 - Direct cap ve terminal exit gelecek yıl NOI ile hesaplanır
+  ---
+  duration_ms: 0.234584
+  type: 'test'
+  ...
+# Subtest: Gordon modeli r>g koşulunu zorunlu tutar
+ok 27 - Gordon modeli r>g koşulunu zorunlu tutar
+  ---
+  duration_ms: 0.196833
+  type: 'test'
+  ...
+# Subtest: DCF terminal değeri ufuk sonunda bir defa indirger
+ok 28 - DCF terminal değeri ufuk sonunda bir defa indirger
+  ---
+  duration_ms: 0.182167
+  type: 'test'
+  ...
+# Subtest: IRR bağımsız tek dönem ve Microsoft nakit örneği ile tutarlı
+ok 29 - IRR bağımsız tek dönem ve Microsoft nakit örneği ile tutarlı
+  ---
+  duration_ms: 0.80775
+  type: 'test'
+  ...
+# Subtest: IRR negatif oran, köksüz ve çok işaret değişimli durumu ayırır
+ok 30 - IRR negatif oran, köksüz ve çok işaret değişimli durumu ayırır
+  ---
+  duration_ms: 0.227458
+  type: 'test'
+  ...
+# Subtest: Geri ödeme ufukta olmazsa null; kesirli yıl ve iskonto desteklenir
+ok 31 - Geri ödeme ufukta olmazsa null; kesirli yıl ve iskonto desteklenir
+  ---
+  duration_ms: 0.166583
+  type: 'test'
+  ...
+# Subtest: Yatırım motoru NPV ve borç nakit bazını tutarlı taşır
+ok 32 - Yatırım motoru NPV ve borç nakit bazını tutarlı taşır
+  ---
+  duration_ms: 1.537208
+  type: 'test'
+  ...
+# Subtest: Büyüme/CapEx ufku ve terminal değer hataları engellenir
+ok 33 - Büyüme/CapEx ufku ve terminal değer hataları engellenir
+  ---
+  duration_ms: 0.223667
+  type: 'test'
+  ...
+# Subtest: Finans readiness seçilen analiz için gereken katmanı kontrol eder
+ok 34 - Finans readiness seçilen analiz için gereken katmanı kontrol eder
+  ---
+  duration_ms: 1.518959
+  type: 'test'
+  ...
+# Subtest: Gider/gelir kalemi geçersiz sayıları ve yinelenen isimleri kabul etmez
+ok 35 - Gider/gelir kalemi geçersiz sayıları ve yinelenen isimleri kabul etmez
+  ---
+  duration_ms: 0.128916
+  type: 'test'
+  ...
+# Subtest: Özkaynak satışında kalan borç terminal değerden bir kez düşülür
+ok 36 - Özkaynak satışında kalan borç terminal değerden bir kez düşülür
+  ---
+  duration_ms: 0.778125
+  type: 'test'
+  ...
+# Subtest: Gelir/gider büyümesi bağımsız ölçeklenir; yıl çizelgeleri aynen kullanılır
+ok 37 - Gelir/gider büyümesi bağımsız ölçeklenir; yıl çizelgeleri aynen kullanılır
+  ---
+  duration_ms: 0.524792
+  type: 'test'
+  ...
+# Subtest: Finans readiness tüm eksik finans alanlarını tek seferde bildirir
+ok 38 - Finans readiness tüm eksik finans alanlarını tek seferde bildirir
+  ---
+  duration_ms: 0.268625
+  type: 'test'
+  ...
+# Subtest: Finans readiness eksik ve bozuk alanı birlikte bildirir; BLOCKED önceliklidir
+ok 39 - Finans readiness eksik ve bozuk alanı birlikte bildirir; BLOCKED önceliklidir
+  ---
+  duration_ms: 0.210917
+  type: 'test'
+  ...
+# Subtest: Yıllık finans modelinde kısmi dönem yıllık olarak sessizce yorumlanmaz
+ok 40 - Yıllık finans modelinde kısmi dönem yıllık olarak sessizce yorumlanmaz
+  ---
+  duration_ms: 0.196458
+  type: 'test'
+  ...
+# Subtest: DRAFT → VALIDATED → LOCKED → BLUEPRINT sırası ve kanıtlar korunur
+ok 41 - DRAFT → VALIDATED → LOCKED → BLUEPRINT sırası ve kanıtlar korunur
+  ---
+  duration_ms: 3.171
+  type: 'test'
+  ...
+# Subtest: Test kanıtı veya kabul olmadan kilitlenemez
+ok 42 - Test kanıtı veya kabul olmadan kilitlenemez
+  ---
+  duration_ms: 0.106458
+  type: 'test'
+  ...
+# Subtest: Kilitlenen davranış aynı sürümde tekrar tasarım durumuna geçirilemez
+ok 43 - Kilitlenen davranış aynı sürümde tekrar tasarım durumuna geçirilemez
+  ---
+  duration_ms: 0.124125
+  type: 'test'
+  ...
+# Subtest: Kabul tarihi takvimde gerçekten mevcut olmalı
+ok 44 - Kabul tarihi takvimde gerçekten mevcut olmalı
+  ---
+  duration_ms: 0.060042
+  type: 'test'
+  ...
+# Subtest: Draft saklanabilir; aynı eksik veri analiz için reddedilir
+ok 45 - Draft saklanabilir; aynı eksik veri analiz için reddedilir
+  ---
+  duration_ms: 0.699791
+  type: 'test'
+  ...
+# Subtest: Geçerli doğrusal Case kabul edilir; dış nesneyle bağlantısı koparılır
+ok 46 - Geçerli doğrusal Case kabul edilir; dış nesneyle bağlantısı koparılır
+  ---
+  duration_ms: 5.790417
+  type: 'test'
+  ...
+# Subtest: Boş değerler eksiktir, sıfır doluluk geçerlidir
+ok 47 - Boş değerler eksiktir, sıfır doluluk geçerlidir
+  ---
+  duration_ms: 0.199625
+  type: 'test'
+  ...
+# Subtest: Geçersiz dış girdiler şemadan geçemez
+ok 48 - Geçersiz dış girdiler şemadan geçemez
+  ---
+  duration_ms: 0.274083
+  type: 'test'
+  ...
+# Subtest: ADR sınırları: ters aralık reddedilir; tek fiyat geçerlidir
+ok 49 - ADR sınırları: ters aralık reddedilir; tek fiyat geçerlidir
+  ---
+  duration_ms: 0.082
+  type: 'test'
+  ...
+# Subtest: Tarih, para birimi, revizyon ve sürüm doğrulanır
+ok 50 - Tarih, para birimi, revizyon ve sürüm doğrulanır
+  ---
+  duration_ms: 0.134833
+  type: 'test'
+  ...
+# Subtest: Doğrusal model referansları ve kapsam sınırları zorunludur
+ok 51 - Doğrusal model referansları ve kapsam sınırları zorunludur
+  ---
+  duration_ms: 0.152791
+  type: 'test'
+  ...
+# Subtest: Nokta modeli referanssız kabul edilir; noktalar kopyada sıralanır
+ok 52 - Nokta modeli referanssız kabul edilir; noktalar kopyada sıralanır
+  ---
+  duration_ms: 0.118667
+  type: 'test'
+  ...
+# Subtest: Tek nokta, tekrar ADR, artan doluluk ve alan dışı sınır reddedilir
+ok 53 - Tek nokta, tekrar ADR, artan doluluk ve alan dışı sınır reddedilir
+  ---
+  duration_ms: 0.142833
+  type: 'test'
+  ...
+# Subtest: Desteklenmeyen model ve sürüm reddedilir
+ok 54 - Desteklenmeyen model ve sürüm reddedilir
+  ---
+  duration_ms: 0.114416
+  type: 'test'
+  ...
+# Subtest: Türkçe ondalık ayrıştırma ve eksik-sıfır ayrımı
+ok 55 - Türkçe ondalık ayrıştırma ve eksik-sıfır ayrımı
+  ---
+  duration_ms: 0.202375
+  type: 'test'
+  ...
+# Subtest: Yüzde ve yüzde puanı dönüşümleri ayrıdır
+ok 56 - Yüzde ve yüzde puanı dönüşümleri ayrıdır
+  ---
+  duration_ms: 0.064834
+  type: 'test'
+  ...
+# Subtest: Sayısal politika toleransı sonlu değerlere uygulanır; girdi aralığı gevşetilmez
+ok 57 - Sayısal politika toleransı sonlu değerlere uygulanır; girdi aralığı gevşetilmez
+  ---
+  duration_ms: 0.07975
+  type: 'test'
+  ...
+# Subtest: RevPAR hem derived hem objective rolünü taşır
+ok 58 - RevPAR hem derived hem objective rolünü taşır
+  ---
+  duration_ms: 0.336959
+  type: 'test'
+  ...
+# Subtest: Geçerli Problem değişmez snapshot olarak döner
+ok 59 - Geçerli Problem değişmez snapshot olarak döner
+  ---
+  duration_ms: 0.429833
+  type: 'test'
+  ...
+# Subtest: Problem Case ile tutarsız sınırları ve doğrulanmamış taslağı reddeder
+ok 60 - Problem Case ile tutarsız sınırları ve doğrulanmamış taslağı reddeder
+  ---
+  duration_ms: 0.242292
+  type: 'test'
+  ...
+# Subtest: RevPAR: bağımsız referans hesabı ve ham hassasiyet
+ok 61 - RevPAR: bağımsız referans hesabı ve ham hassasiyet
+  ---
+  duration_ms: 0.513792
+  type: 'test'
+  ...
+# Subtest: RevPAR: geçersiz fiyatlar, yüzde formatı ve sonlu olmayan veri reddedilir
+ok 62 - RevPAR: geçersiz fiyatlar, yüzde formatı ve sonlu olmayan veri reddedilir
+  ---
+  duration_ms: 7.132208
+  type: 'test'
+  ...
+# Subtest: Doğrusal model: referans, aralık uçları ve iç nokta
+ok 63 - Doğrusal model: referans, aralık uçları ve iç nokta
+  ---
+  duration_ms: 1.148708
+  type: 'test'
+  ...
+# Subtest: Yüzde puanı düşüşü göreli yüzde düşüşüne dönüştürülmez
+ok 64 - Yüzde puanı düşüşü göreli yüzde düşüşüne dönüştürülmez
+  ---
+  duration_ms: 0.134583
+  type: 'test'
+  ...
+# Subtest: Sabit doluluk ve tek fiyat aralığı desteklenir
+ok 65 - Sabit doluluk ve tek fiyat aralığı desteklenir
+  ---
+  duration_ms: 0.128167
+  type: 'test'
+  ...
+# Subtest: Eksik model, sınır ve doğrusal referanslar reddedilir
+ok 66 - Eksik model, sınır ve doğrusal referanslar reddedilir
+  ---
+  duration_ms: 0.182834
+  type: 'test'
+  ...
+# Subtest: Model ve fiyat alanı dışında değerlendirme yapılmaz
+ok 67 - Model ve fiyat alanı dışında değerlendirme yapılmaz
+  ---
+  duration_ms: 0.133416
+  type: 'test'
+  ...
+# Subtest: Uçlarda fiziksel sınır ihlali sessizce kırpılmaz
+ok 68 - Uçlarda fiziksel sınır ihlali sessizce kırpılmaz
+  ---
+  duration_ms: 0.079375
+  type: 'test'
+  ...
+# Subtest: Yalnızca istenen analiz aralığı fiziksel olarak doğrulanır
+ok 69 - Yalnızca istenen analiz aralığı fiziksel olarak doğrulanır
+  ---
+  duration_ms: 0.074084
+  type: 'test'
+  ...
+# Subtest: Sayısal taşma başarıya çevrilmez
+ok 70 - Sayısal taşma başarıya çevrilmez
+  ---
+  duration_ms: 0.109583
+  type: 'test'
+  ...
+# Subtest: Senaryo noktaları: referanssız interpolasyon ve her segment ucu
+ok 71 - Senaryo noktaları: referanssız interpolasyon ve her segment ucu
+  ---
+  duration_ms: 0.190625
+  type: 'test'
+  ...
+# Subtest: Senaryo modelinde kırpılmış segmentler ve tek fiyat
+ok 72 - Senaryo modelinde kırpılmış segmentler ve tek fiyat
+  ---
+  duration_ms: 0.1085
+  type: 'test'
+  ...
+# Subtest: Senaryo noktalarında fiziksel 0 ve 1 sınırları
+ok 73 - Senaryo noktalarında fiziksel 0 ve 1 sınırları
+  ---
+  duration_ms: 0.064917
+  type: 'test'
+  ...
+# Subtest: Bağımsız segment örneği: 100/.8 ve 200/.2 için ara değer
+ok 74 - Bağımsız segment örneği: 100/.8 ve 200/.2 için ara değer
+  ---
+  duration_ms: 0.061584
+  type: 'test'
+  ...
+# Subtest: Geçersiz nokta modelleri ve ekstrapolasyon reddedilir
+ok 75 - Geçersiz nokta modelleri ve ekstrapolasyon reddedilir
+  ---
+  duration_ms: 0.108959
+  type: 'test'
+  ...
+# Subtest: Snapshot, deterministik tekrar ve girdi mutasyonu
+ok 76 - Snapshot, deterministik tekrar ve girdi mutasyonu
+  ---
+  duration_ms: 0.181541
+  type: 'test'
+  ...
+# Subtest: Segment içindeki doluluk monoton ve fiziksel sınırlar içinde kalır
+ok 77 - Segment içindeki doluluk monoton ve fiziksel sınırlar içinde kalır
+  ---
+  duration_ms: 0.169917
+  type: 'test'
+  ...
+# Subtest: Ekran ilk açılışta referans hesabını ve iki grafiği gösterir
+ok 78 - Ekran ilk açılışta referans hesabını ve iki grafiği gösterir
+  ---
+  duration_ms: 70.278333
+  type: 'test'
+  ...
+# Subtest: Girdi değişimi eski sonucu gizler; hesapla yeni sonucu üretir
+ok 79 - Girdi değişimi eski sonucu gizler; hesapla yeni sonucu üretir
+  ---
+  duration_ms: 23.606833
+  type: 'test'
+  ...
+# Subtest: Eksik veri hesaplamayı engeller ve açıklanır
+ok 80 - Eksik veri hesaplamayı engeller ve açıklanır
+  ---
+  duration_ms: 17.672
+  type: 'test'
+  ...
+# Subtest: Geçersiz yüzde ve fiziksel model hesaplamayı engeller
+ok 81 - Geçersiz yüzde ve fiziksel model hesaplamayı engeller
+  ---
+  duration_ms: 17.316541
+  type: 'test'
+  ...
+# Subtest: Minimum doluluk ihlali hesapta açıkça gösterilir
+ok 82 - Minimum doluluk ihlali hesapta açıkça gösterilir
+  ---
+  duration_ms: 18.854083
+  type: 'test'
+  ...
+# Subtest: Nokta modeline geçiş hesapları değiştirir; yanlış nokta reddedilir
+ok 83 - Nokta modeline geçiş hesapları değiştirir; yanlış nokta reddedilir
+  ---
+  duration_ms: 22.39875
+  type: 'test'
+  ...
+# Subtest: Slider canlı hesaplar; analiz dışı elle girilen fiyat sonuç üretmez
+ok 84 - Slider canlı hesaplar; analiz dışı elle girilen fiyat sonuç üretmez
+  ---
+  duration_ms: 17.106166
+  type: 'test'
+  ...
+# Subtest: Para birimi etiketi yenilenir; metin girdisi kod olarak yorumlanmaz
+ok 85 - Para birimi etiketi yenilenir; metin girdisi kod olarak yorumlanmaz
+  ---
+  duration_ms: 16.827458
+  type: 'test'
+  ...
+# Subtest: Hazır Case READY; eksik ve hata listeleri boş
+ok 86 - Hazır Case READY; eksik ve hata listeleri boş
+  ---
+  duration_ms: 2.920416
+  type: 'test'
+  ...
+# Subtest: Eksik model INCOMPLETE; kullanıcıya yalnız eksik alan sorulur
+ok 87 - Eksik model INCOMPLETE; kullanıcıya yalnız eksik alan sorulur
+  ---
+  duration_ms: 0.453417
+  type: 'test'
+  ...
+# Subtest: Eksik talep parametreleri hata yerine tamamlama alanına dönüşür
+ok 88 - Eksik talep parametreleri hata yerine tamamlama alanına dönüşür
+  ---
+  duration_ms: 0.551542
+  type: 'test'
+  ...
+# Subtest: Eksik dönem gerçek iki tarih alanı olarak açıklanır
+ok 89 - Eksik dönem gerçek iki tarih alanı olarak açıklanır
+  ---
+  duration_ms: 0.185541
+  type: 'test'
+  ...
+# Subtest: Geçersiz veri BLOCKED önceliği taşır, eksikler yine görünür
+ok 90 - Geçersiz veri BLOCKED önceliği taşır, eksikler yine görünür
+  ---
+  duration_ms: 0.219416
+  type: 'test'
+  ...
+# Subtest: Talep alanı dışı sınır ve fiziksel doluluk BLOCKED
+ok 91 - Talep alanı dışı sınır ve fiziksel doluluk BLOCKED
+  ---
+  duration_ms: 0.286541
+  type: 'test'
+  ...
+# Subtest: Karşılanamayan minimum doluluk readiness engeli değildir
+ok 92 - Karşılanamayan minimum doluluk readiness engeli değildir
+  ---
+  duration_ms: 0.226541
+  type: 'test'
+  ...
+# Subtest: Referanssız noktalar hazır, tek referans alanı eksik kabul edilir
+ok 93 - Referanssız noktalar hazır, tek referans alanı eksik kabul edilir
+  ---
+  duration_ms: 0.34775
+  type: 'test'
+  ...
+# Subtest: Baz ölçüm ile model uyuşmazlığı uyarı olarak açıklanır
+ok 94 - Baz ölçüm ile model uyuşmazlığı uyarı olarak açıklanır
+  ---
+  duration_ms: 0.277084
+  type: 'test'
+  ...
+# Subtest: Geçersiz Case ve bilinmeyen model düzeltme gerektirir
+ok 95 - Geçersiz Case ve bilinmeyen model düzeltme gerektirir
+  ---
+  duration_ms: 0.218083
+  type: 'test'
+  ...
+# Subtest: ADR ve doluluk kısıtları doğru denetlenir
+ok 96 - ADR ve doluluk kısıtları doğru denetlenir
+  ---
+  duration_ms: 0.260667
+  type: 'test'
+  ...
+# Subtest: Bağlayıcı kısıtlar ve tek fiyatın iki sınırı
+ok 97 - Bağlayıcı kısıtlar ve tek fiyatın iki sınırı
+  ---
+  duration_ms: 0.131208
+  type: 'test'
+  ...
+# Subtest: Kısıt toleransı ham sonucu değiştirmez; gerçek ihlali gizlemez
+ok 98 - Kısıt toleransı ham sonucu değiştirmez; gerçek ihlali gizlemez
+  ---
+  duration_ms: 0.173
+  type: 'test'
+  ...
+# Subtest: Hazır olmayan veri ile simülasyon sonucu veya eğri üretilmez
+ok 99 - Hazır olmayan veri ile simülasyon sonucu veya eğri üretilmez
+  ---
+  duration_ms: 0.196917
+  type: 'test'
+  ...
+# Subtest: Simülasyon fiyatı skills üzerinden doğru hesaplanır
+ok 100 - Simülasyon fiyatı skills üzerinden doğru hesaplanır
+  ---
+  duration_ms: 0.260666
+  type: 'test'
+  ...
+# Subtest: Simülasyonda kısıt ihlali açık görünür; fiyat dışı sonuç hesaplanmaz
+ok 101 - Simülasyonda kısıt ihlali açık görünür; fiyat dışı sonuç hesaplanmaz
+  ---
+  duration_ms: 0.378
+  type: 'test'
+  ...
+# Subtest: Simülasyon tek fiyatı ve senaryo segmentlerini korur
+ok 102 - Simülasyon tek fiyatı ve senaryo segmentlerini korur
+  ---
+  duration_ms: 0.495292
+  type: 'test'
+  ...
+# Subtest: Hazır Case standart hedef, karar, sınırlar ve sürümler üretir
+ok 103 - Hazır Case standart hedef, karar, sınırlar ve sürümler üretir
+  ---
+  duration_ms: 3.656375
+  type: 'test'
+  ...
+# Subtest: Minimum doluluk varsayılanla değiştirilmez; sıfır geçerlidir
+ok 104 - Minimum doluluk varsayılanla değiştirilmez; sıfır geçerlidir
+  ---
+  duration_ms: 0.731875
+  type: 'test'
+  ...
+# Subtest: Eksik Case problem üretmez; eksik alanları açıklar
+ok 105 - Eksik Case problem üretmez; eksik alanları açıklar
+  ---
+  duration_ms: 0.441833
+  type: 'test'
+  ...
+# Subtest: Geçersiz, alan dışı veya fiziksel olarak bozuk model problem üretmez
+ok 106 - Geçersiz, alan dışı veya fiziksel olarak bozuk model problem üretmez
+  ---
+  duration_ms: 0.37225
+  type: 'test'
+  ...
+# Subtest: Sahte veya eski READY etiketi hazır olmayan Case’i geçiremez
+ok 107 - Sahte veya eski READY etiketi hazır olmayan Case’i geçiremez
+  ---
+  duration_ms: 0.181291
+  type: 'test'
+  ...
+# Subtest: Case ve readiness sonucu sonradan değişse bile problem değişmez
+ok 108 - Case ve readiness sonucu sonradan değişse bile problem değişmez
+  ---
+  duration_ms: 0.575542
+  type: 'test'
+  ...
+# Subtest: İç içe nokta dizileri, kısıtlar ve hedef derin dondurulur
+ok 109 - İç içe nokta dizileri, kısıtlar ve hedef derin dondurulur
+  ---
+  duration_ms: 1.283292
+  type: 'test'
+  ...
+# Subtest: Referanssız noktalar referans veri uydurmadan problem üretir
+ok 110 - Referanssız noktalar referans veri uydurmadan problem üretir
+  ---
+  duration_ms: 0.319125
+  type: 'test'
+  ...
+# Subtest: Aynı girdi aynı problem JSON’unu üretir; import tekrar doğrulanır
+ok 111 - Aynı girdi aynı problem JSON’unu üretir; import tekrar doğrulanır
+  ---
+  duration_ms: 0.539
+  type: 'test'
+  ...
+# Subtest: Karşılanamayan doluluk problemi engellemez; uyarı korunur
+ok 112 - Karşılanamayan doluluk problemi engellemez; uyarı korunur
+  ---
+  duration_ms: 0.209292
+  type: 'test'
+  ...
+# Subtest: Tek ADR seçeneği ve sıfır duyarlılık problem sözleşmesinde korunur
+ok 113 - Tek ADR seçeneği ve sıfır duyarlılık problem sözleşmesinde korunur
+  ---
+  duration_ms: 0.128041
+  type: 'test'
+  ...
+# Subtest: İçe aktarılan bozulan sürüm, hedef, kısıt ve fiziksel model reddedilir
+ok 114 - İçe aktarılan bozulan sürüm, hedef, kısıt ve fiziksel model reddedilir
+  ---
+  duration_ms: 0.224584
+  type: 'test'
+  ...
+# Subtest: Problem envelope dışında kalan dış özellikler taşınmaz
+ok 115 - Problem envelope dışında kalan dış özellikler taşınmaz
+  ---
+  duration_ms: 0.901959
+  type: 'test'
+  ...
+# Subtest: A01: iç analitik optimum
+ok 116 - A01: iç analitik optimum
+  ---
+  duration_ms: 2.672292
+  type: 'test'
+  ...
+# Subtest: A02: minimum doluluk optimumu sınıra taşır
+ok 117 - A02: minimum doluluk optimumu sınıra taşır
+  ---
+  duration_ms: 0.256167
+  type: 'test'
+  ...
+# Subtest: A03: uygulanabilir fiyat yok
+ok 118 - A03: uygulanabilir fiyat yok
+  ---
+  duration_ms: 0.146
+  type: 'test'
+  ...
+# Subtest: A04: sabit talep üst fiyat sınırını seçer
+ok 119 - A04: sabit talep üst fiyat sınırını seçer
+  ---
+  duration_ms: 0.162583
+  type: 'test'
+  ...
+# Subtest: A05: tek fiyat
+ok 120 - A05: tek fiyat
+  ---
+  duration_ms: 0.136292
+  type: 'test'
+  ...
+# Subtest: A06: parçalı modelde sınır optimumu
+ok 121 - A06: parçalı modelde sınır optimumu
+  ---
+  duration_ms: 0.296917
+  type: 'test'
+  ...
+# Subtest: A07: bağımsız segment optimumu
+ok 122 - A07: bağımsız segment optimumu
+  ---
+  duration_ms: 0.164
+  type: 'test'
+  ...
+# Subtest: Eşit hedefte düşük fiyat seçilir
+ok 123 - Eşit hedefte düşük fiyat seçilir
+  ---
+  duration_ms: 0.118625
+  type: 'test'
+  ...
+# Subtest: Geçersiz problem çalıştırılamaz
+ok 124 - Geçersiz problem çalıştırılamaz
+  ---
+  duration_ms: 0.092459
+  type: 'test'
+  ...
+# Subtest: Sonuç açıklaması baz, sürümler ve yuvarlanmış uygulama fiyatını taşır
+ok 125 - Sonuç açıklaması baz, sürümler ve yuvarlanmış uygulama fiyatını taşır
+  ---
+  duration_ms: 8.584292
+  type: 'test'
+  ...
+# Subtest: Yuvarlanmış fiyatın sınır ihlali gizlenmez
+ok 126 - Yuvarlanmış fiyatın sınır ihlali gizlenmez
+  ---
+  duration_ms: 0.294792
+  type: 'test'
+  ...
+# Subtest: Çözücü deterministik tekrar üretir
+ok 127 - Çözücü deterministik tekrar üretir
+  ---
+  duration_ms: 0.271958
+  type: 'test'
+  ...
+# Subtest: Boş başlangıç: açıklama görünür, araç onaylanmadan form veya sonuç açılmaz
+ok 128 - Boş başlangıç: açıklama görünür, araç onaylanmadan form veya sonuç açılmaz
+  ---
+  duration_ms: 112.349833
+  type: 'test'
+  ...
+# Subtest: MAX RevPAR uçtan uca Case → araç → veri → özet → sonuç
+ok 129 - MAX RevPAR uçtan uca Case → araç → veri → özet → sonuç
+  ---
+  duration_ms: 112.9935
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: what-if
+ok 130 - Uçtan uca araç: what-if
+  ---
+  duration_ms: 81.706666
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: ab
+ok 131 - Uçtan uca araç: ab
+  ---
+  duration_ms: 81.026542
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: scenarios
+ok 132 - Uçtan uca araç: scenarios
+  ---
+  duration_ms: 90.467292
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: sensitivity
+ok 133 - Uçtan uca araç: sensitivity
+  ---
+  duration_ms: 82.99025
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: stress
+ok 134 - Uçtan uca araç: stress
+  ---
+  duration_ms: 84.301875
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: max-noi
+ok 135 - Uçtan uca araç: max-noi
+  ---
+  duration_ms: 76.986125
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: max-npv
+ok 136 - Uçtan uca araç: max-npv
+  ---
+  duration_ms: 90.599083
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: max-value
+ok 137 - Uçtan uca araç: max-value
+  ---
+  duration_ms: 92.48425
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: min-opex
+ok 138 - Uçtan uca araç: min-opex
+  ---
+  duration_ms: 76.396833
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: min-capex
+ok 139 - Uçtan uca araç: min-capex
+  ---
+  duration_ms: 88.804625
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: min-risk
+ok 140 - Uçtan uca araç: min-risk
+  ---
+  duration_ms: 74.240083
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: min-payback
+ok 141 - Uçtan uca araç: min-payback
+  ---
+  duration_ms: 89.702292
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: pareto-revpar-occupancy
+ok 142 - Uçtan uca araç: pareto-revpar-occupancy
+  ---
+  duration_ms: 94.903708
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: pareto-noi-opex
+ok 143 - Uçtan uca araç: pareto-noi-opex
+  ---
+  duration_ms: 80.662875
+  type: 'test'
+  ...
+# Subtest: Uçtan uca araç: pareto-npv-risk
+ok 144 - Uçtan uca araç: pareto-npv-risk
+  ---
+  duration_ms: 89.766958
+  type: 'test'
+  ...
+# Subtest: Eksik ve bozuk veri solver aktivasyonunu engeller
+ok 145 - Eksik ve bozuk veri solver aktivasyonunu engeller
+  ---
+  duration_ms: 93.581833
+  type: 'test'
+  ...
+# Subtest: Nokta ve tarihsel talep modelleri aynı optimum akışında çalışır
+ok 146 - Nokta ve tarihsel talep modelleri aynı optimum akışında çalışır
+  ---
+  duration_ms: 91.057833
+  type: 'test'
+  ...
+# Subtest: Manuel karar seçenekleriyle MIN OPEX kalite kısıtını uygular
+ok 147 - Manuel karar seçenekleriyle MIN OPEX kalite kısıtını uygular
+  ---
+  duration_ms: 103.378667
+  type: 'test'
+  ...
+# Subtest: Taslak saklama id ve verileri korur; yeniden açılışta onay yeniden gerekir
+ok 148 - Taslak saklama id ve verileri korur; yeniden açılışta onay yeniden gerekir
+  ---
+  duration_ms: 71.632125
+  type: 'test'
+  ...
+# Subtest: Uygulanabilir çözüm yokken optimum sayı gösterilmez
+ok 149 - Uygulanabilir çözüm yokken optimum sayı gösterilmez
+  ---
+  duration_ms: 68.904083
+  type: 'test'
+  ...
+# Subtest: Stres ve senaryo ekranı nokta talebiyle de çalışır
+ok 150 - Stres ve senaryo ekranı nokta talebiyle de çalışır
+  ---
+  duration_ms: 191.978625
+  type: 'test'
+  ...
+# Subtest: Eksik alan görünümü geçerli girdileri tekrar istemez; düzenleme ile açılabilir
+ok 151 - Eksik alan görünümü geçerli girdileri tekrar istemez; düzenleme ile açılabilir
+  ---
+  duration_ms: 81.66025
+  type: 'test'
+  ...
+# Subtest: Yatırım ekranı borç, exit-cap, Gordon ve ufuk hatalarını kontrol eder
+ok 152 - Yatırım ekranı borç, exit-cap, Gordon ve ufuk hatalarını kontrol eder
+  ---
+  duration_ms: 205.72425
+  type: 'test'
+  ...
+1..152
+# tests 152
+# suites 0
+# pass 152
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2854.306833
+
+Exit code: 0

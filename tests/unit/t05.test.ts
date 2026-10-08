@@ -1,0 +1,21 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildMaxRevparProblem } from '../../src/domain/problems/max-revpar.builder.ts';
+import { solveMaxRevpar } from '../../src/domain/solvers/max-revpar.solver.ts';
+import { explainRevparResult } from '../../src/domain/results/result.explainer.ts';
+const base = () => ({ schemaVersion: 'case.v1', id: 'hotel', revision: 0, name: 'Otel', currency: 'USD', period: { start: '2026-01-01', end: '2026-12-31' }, minAdr: 130, maxAdr: 150, referenceAdr: 145, referenceOccupancy: .55,
+  demand: { kind: 'linear-sensitivity', modelVersion: 'demand.v1', adrIncrease: 5, occupancyDecreasePp: 2, validMinAdr: 130, validMaxAdr: 150 } });
+const solve = (input: unknown) => { const b = buildMaxRevparProblem(input); assert.ok(b.success); return solveMaxRevpar(b.problem); };
+const close = (x: number, y: number) => assert.ok(Math.abs(x - y) < 1e-8, `${x} != ${y}`);
+test('A01: iç analitik optimum', () => { const s = solve(base()); assert.equal(s.status, 'OPTIMAL'); if (s.status === 'OPTIMAL') { close(s.optimalAdr, 141.25); close(s.expectedOccupancy, .565); close(s.maximumRevpar, 79.80625); assert.deepEqual(s.bindingConstraints, []); } });
+test('A02: minimum doluluk optimumu sınıra taşır', () => { const s = solve({ ...base(), minOccupancy: .6 }); assert.equal(s.status, 'OPTIMAL'); if (s.status === 'OPTIMAL') { close(s.optimalAdr, 132.5); close(s.maximumRevpar, 79.5); assert.ok(s.bindingConstraints.includes('minOccupancy')); } });
+test('A03: uygulanabilir fiyat yok', () => assert.equal(solve({ ...base(), minOccupancy: .7 }).status, 'INFEASIBLE'));
+test('A04: sabit talep üst fiyat sınırını seçer', () => { const c = base(); c.demand.occupancyDecreasePp = 0; const s = solve(c); assert.equal(s.status, 'OPTIMAL'); if (s.status === 'OPTIMAL') { close(s.optimalAdr, 150); close(s.maximumRevpar, 82.5); } });
+test('A05: tek fiyat', () => { const s = solve({ ...base(), minAdr: 145, maxAdr: 145 }); assert.equal(s.status, 'OPTIMAL'); if (s.status === 'OPTIMAL') close(s.maximumRevpar, 79.75); });
+test('A06: parçalı modelde sınır optimumu', () => { const s = solve({ ...base(), referenceAdr: undefined, referenceOccupancy: undefined, demand: { kind: 'scenario-points', modelVersion: 'demand.v1', points: [{ adr: 130, occupancy: .65 }, { adr: 145, occupancy: .55 }, { adr: 150, occupancy: .5 }] } }); assert.equal(s.status, 'OPTIMAL'); if (s.status === 'OPTIMAL') { close(s.optimalAdr, 130); close(s.maximumRevpar, 84.5); } });
+test('A07: bağımsız segment optimumu', () => { const s = solve({ ...base(), minAdr: 100, maxAdr: 200, referenceAdr: undefined, referenceOccupancy: undefined, demand: { kind: 'scenario-points', modelVersion: 'demand.v1', points: [{ adr: 100, occupancy: .8 }, { adr: 200, occupancy: .2 }] } }); assert.equal(s.status, 'OPTIMAL'); if (s.status === 'OPTIMAL') { close(s.optimalAdr, 116.6666666667); close(s.expectedOccupancy, .7); close(s.maximumRevpar, 81.6666666667); } });
+test('Eşit hedefte düşük fiyat seçilir', () => { const c = base(); c.referenceOccupancy = 0; c.demand.occupancyDecreasePp = 0; const s = solve(c); assert.equal(s.status, 'OPTIMAL'); if (s.status === 'OPTIMAL') close(s.optimalAdr, 130); });
+test('Geçersiz problem çalıştırılamaz', () => assert.equal(solveMaxRevpar({ status: 'READY' }).status, 'INVALID_PROBLEM'));
+test('Sonuç açıklaması baz, sürümler ve yuvarlanmış uygulama fiyatını taşır', () => { const s = solve(base()); const explanation = explainRevparResult(s); assert.ok(explanation.messages.join(' ').includes('garanti etmez')); assert.ok('application' in explanation); });
+test('Yuvarlanmış fiyatın sınır ihlali gizlenmez', () => { const s = solve({ ...base(), minOccupancy: .600005 }); const e = explainRevparResult(s); assert.ok(e.application); assert.equal(e.application.feasible, false); });
+test('Çözücü deterministik tekrar üretir', () => assert.deepEqual(solve(base()), solve(base())));

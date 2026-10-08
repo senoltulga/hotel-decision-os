@@ -1,0 +1,49 @@
+{
+  "title": "Talep varsayımı altında en yüksek RevPAR",
+  "messages": [
+    "141,25 USD ADR → %56,5 doluluk → 79,8063 USD RevPAR.",
+    "Baz RevPAR 79,75; mutlak fark 0,0563 USD.",
+    "Optimum fiyat aralığının içinde; aktif sınır yok.",
+    "Sonuç belirtilen talep modeli ve kısıtlar altında hesaplanmıştır. Gerçekleşecek talebi garanti etmez; NOI veya kâr optimumu değildir."
+  ],
+  "delta": {
+    "absolute": 0.056250000000005684,
+    "relative": 0.000705329153605087
+  },
+  "application": {
+    "adr": 141.25,
+    "occupancy": 0.5650000000000001,
+    "revpar": 79.80625,
+    "feasible": true
+  },
+  "usedAssumptions": {
+    "schemaVersion": "case.v1",
+    "id": "hotel-finance",
+    "revision": 0,
+    "name": "Örnek Otel",
+    "currency": "USD",
+    "period": {
+      "start": "2026-01-01",
+      "end": "2026-12-31"
+    },
+    "minAdr": 130,
+    "maxAdr": 150,
+    "referenceAdr": 145,
+    "referenceOccupancy": 0.55,
+    "demand": {
+      "kind": "linear-sensitivity",
+      "modelVersion": "demand.v1",
+      "adrIncrease": 5,
+      "occupancyDecreasePp": 2,
+      "validMinAdr": 130,
+      "validMaxAdr": 150
+    }
+  },
+  "versions": {
+    "problem": "max-revpar.v1",
+    "demand": "demand.v1",
+    "calculation": "revpar.v1",
+    "solver": "max-revpar-solver.v1",
+    "numerical": "numerics.v1"
+  }
+}

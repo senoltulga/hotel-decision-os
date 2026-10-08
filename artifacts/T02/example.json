@@ -1,0 +1,144 @@
+{
+  "runtime": "v24.21.0",
+  "demandVersion": "demand.v1",
+  "revparVersion": "revpar.v1",
+  "note": "Fiyatlar örnek girdidir; optimumu seçen çözücü henüz uygulanmadı.",
+  "examples": [
+    {
+      "input": {
+        "minAdr": 130,
+        "maxAdr": 150,
+        "referenceAdr": 145,
+        "referenceOccupancy": 0.55,
+        "demand": {
+          "kind": "linear-sensitivity",
+          "modelVersion": "demand.v1",
+          "adrIncrease": 5,
+          "occupancyDecreasePp": 2,
+          "validMinAdr": 130,
+          "validMaxAdr": 150
+        }
+      },
+      "segments": [
+        {
+          "minAdr": 130,
+          "maxAdr": 150,
+          "occupancyAtMin": 0.6100000000000001,
+          "occupancyAtMax": 0.53
+        }
+      ],
+      "results": [
+        {
+          "adr": 130,
+          "occupancy": 0.6100000000000001,
+          "revpar": 79.30000000000001
+        },
+        {
+          "adr": 141.25,
+          "occupancy": 0.5650000000000001,
+          "revpar": 79.80625
+        },
+        {
+          "adr": 145,
+          "occupancy": 0.55,
+          "revpar": 79.75
+        },
+        {
+          "adr": 150,
+          "occupancy": 0.53,
+          "revpar": 79.5
+        }
+      ],
+      "outsideDomain": {
+        "success": false,
+        "issues": [
+          {
+            "code": "OUTSIDE_DEMAND_DOMAIN",
+            "path": "adr",
+            "message": "Fiyat derlenen analiz aralığının dışında; ekstrapolasyon yapılmaz."
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "minAdr": 130,
+        "maxAdr": 150,
+        "demand": {
+          "kind": "scenario-points",
+          "modelVersion": "demand.v1",
+          "points": [
+            {
+              "adr": 130,
+              "occupancy": 0.65
+            },
+            {
+              "adr": 145,
+              "occupancy": 0.55
+            },
+            {
+              "adr": 150,
+              "occupancy": 0.5
+            }
+          ]
+        }
+      },
+      "segments": [
+        {
+          "minAdr": 130,
+          "maxAdr": 145,
+          "occupancyAtMin": 0.65,
+          "occupancyAtMax": 0.55
+        },
+        {
+          "minAdr": 145,
+          "maxAdr": 150,
+          "occupancyAtMin": 0.55,
+          "occupancyAtMax": 0.5
+        }
+      ],
+      "results": [
+        {
+          "adr": 130,
+          "occupancy": 0.65,
+          "revpar": 84.5
+        },
+        {
+          "adr": 141.25,
+          "occupancy": 0.5750000000000001,
+          "revpar": 81.21875000000001
+        },
+        {
+          "adr": 145,
+          "occupancy": 0.55,
+          "revpar": 79.75
+        },
+        {
+          "adr": 150,
+          "occupancy": 0.5,
+          "revpar": 75
+        }
+      ],
+      "outsideDomain": {
+        "success": false,
+        "issues": [
+          {
+            "code": "OUTSIDE_DEMAND_DOMAIN",
+            "path": "adr",
+            "message": "Fiyat derlenen analiz aralığının dışında; ekstrapolasyon yapılmaz."
+          }
+        ]
+      }
+    }
+  ],
+  "invalidPhysicalModel": {
+    "success": false,
+    "issues": [
+      {
+        "code": "INVALID_OCCUPANCY",
+        "path": "demand",
+        "message": "Model analiz aralığında 0–1 dışında doluluk üretiyor; fiyat aralığını veya modeli düzeltin."
+      }
+    ]
+  }
+}

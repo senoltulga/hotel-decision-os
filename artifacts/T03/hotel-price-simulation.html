@@ -1,0 +1,640 @@
+<section id="hdse-price-simulation">
+  <h2>Fiyat simülasyonu</h2>
+  <div class="viz-controls">
+    <label class="form-label">Para birimi<select class="form-select" data-field="currency"><option>USD</option><option>TRY</option><option>EUR</option></select></label>
+    <label class="form-label">Talep modeli<select class="form-select" data-field="model"><option value="linear-sensitivity">Doğrusal duyarlılık</option><option value="scenario-points">Senaryo noktaları</option></select></label>
+  </div>
+  <details>
+    <summary>Otel ve dönem</summary>
+    <div class="viz-controls">
+      <label class="form-label">Otel adı<input class="form-control" data-field="name" value="Örnek Otel"></label>
+      <label class="form-label">Başlangıç<input type="date" class="form-control" data-field="start" value="2026-01-01"></label>
+      <label class="form-label">Bitiş<input type="date" class="form-control" data-field="end" value="2026-12-31"></label>
+    </div>
+  </details>
+  <div class="viz-controls">
+    <label class="form-label">Minimum ADR<input class="form-control" inputmode="decimal" data-field="minAdr" value="130"></label>
+    <label class="form-label">Maksimum ADR<input class="form-control" inputmode="decimal" data-field="maxAdr" value="150"></label>
+    <label class="form-label">Minimum doluluk (%) · isteğe bağlı<input class="form-control" inputmode="decimal" data-field="minOccupancy" value="" placeholder="Örn. 45"></label>
+  </div>
+  <div data-part="linear">
+    <div class="viz-controls">
+      <label class="form-label">Referans ADR<input class="form-control" inputmode="decimal" data-field="referenceAdr" value="145"></label>
+      <label class="form-label">Referans doluluk (%)<input class="form-control" inputmode="decimal" data-field="referenceOccupancy" value="55"></label>
+      <label class="form-label">ADR artışı<input class="form-control" inputmode="decimal" data-field="adrIncrease" value="5"></label>
+      <label class="form-label">Doluluk düşüşü (yüzde puanı)<input class="form-control" inputmode="decimal" data-field="occupancyDecreasePp" value="2"></label>
+    </div>
+    <details>
+      <summary>Talep modelinin geçerli fiyat aralığı</summary>
+      <div class="viz-controls">
+        <label class="form-label">Model minimum ADR<input class="form-control" inputmode="decimal" data-field="validMinAdr" value="130"></label>
+        <label class="form-label">Model maksimum ADR<input class="form-control" inputmode="decimal" data-field="validMaxAdr" value="150"></label>
+      </div>
+    </details>
+  </div>
+  <div data-part="points" hidden>
+    <label class="form-label">Fiyat; doluluk (%) · her satır bir nokta<textarea class="form-control" rows="3" data-field="points">130;65
+145;55
+150;50</textarea></label>
+  </div>
+  <hr>
+  <div class="viz-controls">
+    <label class="form-label">Denenecek ADR<input class="form-control" inputmode="decimal" data-field="selectedAdr" value="145"></label>
+    <button class="btn btn-primary" type="button" data-action="calculate">Simülasyonu hesapla</button>
+  </div>
+  <label class="form-label">ADR seçimi<input class="form-range" type="range" min="130" max="150" step="0.01" value="145" data-action="slider"></label>
+  <div data-part="status" aria-live="polite"></div>
+  <div data-part="errors" role="alert"></div>
+  <div data-part="warnings" aria-live="polite"></div>
+  <div data-part="results" hidden>
+    <div class="viz-grid" aria-live="polite">
+      <div class="card viz-stat"><span>Denenecek ADR</span><div class="viz-stat-value tabular-nums" data-value="adr"></div></div>
+      <div class="card viz-stat"><span>Beklenen doluluk</span><div class="viz-stat-value tabular-nums" data-value="occupancy"></div></div>
+      <div class="card viz-stat"><span>RevPAR</span><div class="viz-stat-value tabular-nums" data-value="revpar"></div></div>
+    </div>
+    <div data-part="constraint" aria-live="polite"></div>
+    <figure>
+      <figcaption>ADR → Doluluk</figcaption>
+      <svg class="hdse-chart" data-chart="occupancy" role="img" aria-label="Fiyata göre beklenen doluluk ve seçilen fiyat"></svg>
+    </figure>
+    <figure>
+      <figcaption>ADR → RevPAR</figcaption>
+      <svg class="hdse-chart" data-chart="revpar" role="img" aria-label="Fiyata göre RevPAR ve seçilen fiyat"></svg>
+    </figure>
+  </div>
+</section>
+<style>
+#hdse-price-simulation { display: grid; gap: 12px; }
+#hdse-price-simulation figure { margin: 0; min-width: 0; }
+#hdse-price-simulation .hdse-chart { display: block; width: 100%; height: 205px; overflow: visible; }
+#hdse-price-simulation .hdse-chart text { fill: var(--foreground); }
+#hdse-price-simulation [hidden] { display: none; }
+#hdse-price-simulation [data-part="errors"] { color: var(--destructive); }
+</style>
+<script>
+"use strict";
+(() => {
+  // src/domain/numerics/numerical-policy.ts
+  var NUMERICAL_POLICY = Object.freeze({
+    version: "numerics.v1",
+    ratioTolerance: 1e-10,
+    relativeTolerance: 1e-10,
+    moneyDisplayDigits: 2,
+    occupancyDisplayDigits: 2
+  });
+  function nearlyEqual(x, y) {
+    return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) <= NUMERICAL_POLICY.relativeTolerance * Math.max(1, Math.abs(x), Math.abs(y));
+  }
+  function ratioEqual(x, y) {
+    return Number.isFinite(x) && Number.isFinite(y) && Math.abs(x - y) <= NUMERICAL_POLICY.ratioTolerance;
+  }
+  function parseNumericInput(value) {
+    if (value == null || typeof value === "string" && value.trim() === "") return void 0;
+    if (typeof value === "number") {
+      if (!Number.isFinite(value)) throw new TypeError("Sonlu bir say\u0131 gerekli.");
+      return value;
+    }
+    if (typeof value !== "string" || !/^[+-]?\d+(?:[.,]\d+)?$/.test(value.trim())) {
+      throw new TypeError("Binlik ay\u0131r\u0131c\u0131 kullanmadan bir say\u0131 girin.");
+    }
+    const parsed = Number(value.trim().replace(",", "."));
+    if (!Number.isFinite(parsed)) throw new TypeError("Sonlu bir say\u0131 gerekli.");
+    return parsed;
+  }
+  function percentageToRatio(value) {
+    if (!Number.isFinite(value) || value < 0 || value > 100) throw new RangeError("Y\xFCzde 0\u2013100 aras\u0131nda olmal\u0131.");
+    return value / 100;
+  }
+
+  // src/domain/case/case.schema.ts
+  function isRecord(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+  var absent = (value) => value === void 0 || value === null || typeof value === "string" && value.trim() === "";
+  var finite = (value) => typeof value === "number" && Number.isFinite(value);
+  function validDate(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = /* @__PURE__ */ new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }
+  function validateCase(input, mode = "draft") {
+    const issues = [];
+    const add = (code, path, message) => issues.push({ code, path, message });
+    if (!isRecord(input)) return { success: false, issues: [{ code: "INVALID_CASE", path: "", message: "Case bir nesne olmal\u0131." }] };
+    let data;
+    try {
+      data = structuredClone(input);
+    } catch {
+      return { success: false, issues: [{ code: "INVALID_CASE", path: "", message: "Case yaln\u0131zca kopyalanabilir veri i\xE7ermeli." }] };
+    }
+    for (const key of Object.keys(data)) if (absent(data[key])) delete data[key];
+    if (data.schemaVersion !== "case.v1") add("UNSUPPORTED_SCHEMA", "schemaVersion", "case.v1 gerekli.");
+    if (typeof data.id !== "string" || !data.id.trim()) add("REQUIRED_FIELD", "id", "Case kimli\u011Fi gerekli.");
+    if (!Number.isSafeInteger(data.revision) || data.revision < 0) add("INVALID_REVISION", "revision", "Revizyon negatif olmayan g\xFCvenli tam say\u0131 olmal\u0131.");
+    const required = (key) => {
+      if (mode === "analysis" && absent(data[key])) add("REQUIRED_FIELD", key, "Analiz i\xE7in bu alan gerekli.");
+    };
+    for (const key of ["name", "currency", "period", "minAdr", "maxAdr", "demand"]) required(key);
+    if (data.name !== void 0 && (typeof data.name !== "string" || !data.name.trim())) add("INVALID_NAME", "name", "Case ad\u0131 metin olmal\u0131.");
+    if (data.currency !== void 0 && (typeof data.currency !== "string" || !Intl.supportedValuesOf("currency").includes(data.currency))) add("INVALID_CURRENCY", "currency", "Desteklenen a\xE7\u0131k para birimi kodu gerekli.");
+    for (const key of ["referenceAdr", "minAdr", "maxAdr"]) {
+      if (data[key] !== void 0 && (!finite(data[key]) || data[key] <= 0)) add("INVALID_NUMBER", key, "ADR sonlu ve s\u0131f\u0131rdan b\xFCy\xFCk olmal\u0131.");
+    }
+    for (const key of ["referenceOccupancy", "minOccupancy"]) {
+      if (data[key] !== void 0 && (!finite(data[key]) || data[key] < 0 || data[key] > 1)) add("INVALID_OCCUPANCY", key, "Doluluk 0\u20131 aras\u0131nda olmal\u0131.");
+    }
+    if (finite(data.minAdr) && finite(data.maxAdr) && data.minAdr > data.maxAdr) add("INVALID_ADR_RANGE", "minAdr", "Minimum ADR maksimum ADR\u2019yi a\u015Famaz.");
+    if (data.assumptionNotes !== void 0 && typeof data.assumptionNotes !== "string") add("INVALID_TEXT", "assumptionNotes", "Varsay\u0131m a\xE7\u0131klamas\u0131 metin olmal\u0131.");
+    if (data.period !== void 0) {
+      if (!isRecord(data.period)) add("INVALID_PERIOD", "period", "D\xF6nem nesnesi gerekli.");
+      else {
+        for (const key of ["start", "end"]) {
+          if (absent(data.period[key])) {
+            delete data.period[key];
+            if (mode === "analysis") add("REQUIRED_FIELD", `period.${key}`, "D\xF6nem tarihi gerekli.");
+          } else if (!validDate(data.period[key])) add("INVALID_PERIOD", `period.${key}`, "Ge\xE7erli YYYY-MM-DD tarihi gerekli.");
+        }
+        if (validDate(data.period.start) && validDate(data.period.end) && data.period.start > data.period.end) add("INVALID_PERIOD", "period", "Ba\u015Flang\u0131\xE7 biti\u015Ften sonra olamaz.");
+      }
+    }
+    if (data.demand !== void 0) {
+      const demand = data.demand;
+      if (!isRecord(demand)) add("INVALID_DEMAND", "demand", "Talep modeli nesne olmal\u0131.");
+      else {
+        if (demand.modelVersion !== "demand.v1") add("UNSUPPORTED_MODEL_VERSION", "demand.modelVersion", "demand.v1 gerekli.");
+        if (demand.kind === "linear-sensitivity") {
+          for (const key of ["adrIncrease", "validMinAdr", "validMaxAdr"]) {
+            if (!finite(demand[key]) || demand[key] <= 0) add("INVALID_NUMBER", `demand.${key}`, "Sonlu pozitif say\u0131 gerekli.");
+          }
+          if (!finite(demand.occupancyDecreasePp) || demand.occupancyDecreasePp < 0) add("INVALID_NUMBER", "demand.occupancyDecreasePp", "Negatif olmayan sonlu y\xFCzde puan\u0131 gerekli.");
+          if (finite(demand.validMinAdr) && finite(demand.validMaxAdr)) {
+            if (demand.validMinAdr > demand.validMaxAdr) add("INVALID_ADR_RANGE", "demand", "Model fiyat aral\u0131\u011F\u0131 ge\xE7ersiz.");
+            if (finite(data.referenceAdr) && (data.referenceAdr < demand.validMinAdr || data.referenceAdr > demand.validMaxAdr)) add("OUTSIDE_DEMAND_DOMAIN", "referenceAdr", "Referans ADR model aral\u0131\u011F\u0131nda olmal\u0131.");
+            if (finite(data.minAdr) && data.minAdr < demand.validMinAdr || finite(data.maxAdr) && data.maxAdr > demand.validMaxAdr) add("OUTSIDE_DEMAND_DOMAIN", "demand", "Optimizasyon aral\u0131\u011F\u0131 model alan\u0131n\u0131 a\u015Famaz.");
+          }
+          if (mode === "analysis") for (const key of ["referenceAdr", "referenceOccupancy"]) required(key);
+        } else if (demand.kind === "scenario-points") {
+          if (!Array.isArray(demand.points) || demand.points.length < 2) add("INVALID_POINTS", "demand.points", "En az iki farkl\u0131 fiyat noktas\u0131 gerekli.");
+          else {
+            let pointsValid = true;
+            demand.points.forEach((point, index) => {
+              if (!isRecord(point) || !finite(point.adr) || point.adr <= 0 || !finite(point.occupancy) || point.occupancy < 0 || point.occupancy > 1) {
+                pointsValid = false;
+                add("INVALID_POINT", `demand.points.${index}`, "Pozitif ADR ve 0\u20131 doluluk gerekli.");
+              }
+            });
+            if (pointsValid) {
+              const points = demand.points.sort((a, b) => a.adr - b.adr);
+              for (let i = 1; i < points.length; i++) {
+                if (points[i].adr === points[i - 1].adr) add("DUPLICATE_ADR_POINT", "demand.points", "Tekrarlanan ADR noktas\u0131 var.");
+                if (points[i].occupancy > points[i - 1].occupancy) add("NON_MONOTONE_DEMAND", "demand.points", "Doluluk fiyatla artamaz.");
+              }
+              if (finite(data.minAdr) && data.minAdr < points[0].adr || finite(data.maxAdr) && data.maxAdr > points.at(-1).adr) add("OUTSIDE_DEMAND_DOMAIN", "demand.points", "Optimizasyon aral\u0131\u011F\u0131 noktalar\u0131n alan\u0131n\u0131 a\u015Famaz.");
+            }
+          }
+          if (mode === "analysis" && (data.referenceAdr !== void 0 || data.referenceOccupancy !== void 0)) for (const key of ["referenceAdr", "referenceOccupancy"]) required(key);
+        } else add("UNSUPPORTED_DEMAND_MODEL", "demand.kind", "Desteklenmeyen talep modeli.");
+      }
+    }
+    return issues.length ? { success: false, issues } : { success: true, data, issues: [] };
+  }
+  function validateCaseForAnalysis(input) {
+    return validateCase(input, "analysis");
+  }
+
+  // src/domain/skills/skill.types.ts
+  function failure(code, path, message) {
+    return { success: false, issues: [{ code, path, message }] };
+  }
+
+  // src/domain/skills/demand.skill.ts
+  var DEMAND_SKILL_VERSION = "demand.v1";
+  function compileDemand(input) {
+    if (!isRecord(input)) return failure("INVALID_DEMAND", "demand", "Talep girdisi nesne olmal\u0131.");
+    const parsed = validateCase({
+      schemaVersion: "case.v1",
+      id: "demand-validation",
+      revision: 0,
+      demand: input.demand,
+      minAdr: input.minAdr,
+      maxAdr: input.maxAdr,
+      referenceAdr: input.referenceAdr,
+      referenceOccupancy: input.referenceOccupancy
+    });
+    if (!parsed.success) return { success: false, issues: parsed.issues };
+    const data = parsed.data;
+    const missing2 = [];
+    for (const key of ["demand", "minAdr", "maxAdr"]) {
+      if (data[key] === void 0) missing2.push({ code: "REQUIRED_FIELD", path: key, message: "Talep hesab\u0131 i\xE7in alan gerekli." });
+    }
+    if (data.demand?.kind === "linear-sensitivity") {
+      for (const key of ["referenceAdr", "referenceOccupancy"]) {
+        if (data[key] === void 0) missing2.push({ code: "REQUIRED_FIELD", path: key, message: "Do\u011Frusal model i\xE7in referans gerekli." });
+      }
+    }
+    if (missing2.length) return { success: false, issues: missing2 };
+    const demand = data.demand;
+    const minAdr = data.minAdr;
+    const maxAdr = data.maxAdr;
+    let segments;
+    let evaluate;
+    if (demand.kind === "linear-sensitivity") {
+      const slope = demand.occupancyDecreasePp / 100 / demand.adrIncrease;
+      if (!Number.isFinite(slope)) return failure("NUMERICAL_ERROR", "demand", "Duyarl\u0131l\u0131k katsay\u0131s\u0131 hesaplanamad\u0131.");
+      const referenceAdr = data.referenceAdr;
+      const referenceOccupancy = data.referenceOccupancy;
+      evaluate = (adr) => referenceOccupancy - slope * (adr - referenceAdr);
+      segments = [{ minAdr, maxAdr, occupancyAtMin: evaluate(minAdr), occupancyAtMax: evaluate(maxAdr) }];
+    } else {
+      const points = demand.points;
+      const interpolate = (adr, left, right) => {
+        if (adr === left.adr) return left.occupancy;
+        if (adr === right.adr) return right.occupancy;
+        const fraction = (adr - left.adr) / (right.adr - left.adr);
+        return left.occupancy + fraction * (right.occupancy - left.occupancy);
+      };
+      evaluate = (adr) => {
+        for (let i = 1; i < points.length; i++) {
+          if (adr <= points[i].adr) return interpolate(adr, points[i - 1], points[i]);
+        }
+        return Number.NaN;
+      };
+      segments = [];
+      for (let i = 1; i < points.length; i++) {
+        const left = Math.max(minAdr, points[i - 1].adr);
+        const right = Math.min(maxAdr, points[i].adr);
+        if (left <= right) segments.push({ minAdr: left, maxAdr: right, occupancyAtMin: interpolate(left, points[i - 1], points[i]), occupancyAtMax: interpolate(right, points[i - 1], points[i]) });
+      }
+    }
+    for (const segment of segments) {
+      for (const occupancy of [segment.occupancyAtMin, segment.occupancyAtMax]) {
+        if (!Number.isFinite(occupancy)) return failure("NUMERICAL_ERROR", "demand", "Talep hesab\u0131 sonlu sonu\xE7 \xFCretmedi.");
+        if (occupancy < 0 || occupancy > 1) return failure("INVALID_OCCUPANCY", "demand", "Model analiz aral\u0131\u011F\u0131nda 0\u20131 d\u0131\u015F\u0131nda doluluk \xFCretiyor; fiyat aral\u0131\u011F\u0131n\u0131 veya modeli d\xFCzeltin.");
+      }
+    }
+    const occupancyAt = (adr) => {
+      if (!Number.isFinite(adr) || adr <= 0) return failure("INVALID_NUMBER", "adr", "ADR sonlu ve pozitif olmal\u0131.");
+      if (adr < minAdr || adr > maxAdr) return failure("OUTSIDE_DEMAND_DOMAIN", "adr", "Fiyat derlenen analiz aral\u0131\u011F\u0131n\u0131n d\u0131\u015F\u0131nda; ekstrapolasyon yap\u0131lmaz.");
+      const value = evaluate(adr);
+      if (!Number.isFinite(value)) return failure("NUMERICAL_ERROR", "demand", "Talep hesab\u0131 sonlu sonu\xE7 \xFCretmedi.");
+      if (value < 0 || value > 1) return failure("INVALID_OCCUPANCY", "demand", "Doluluk 0\u20131 aral\u0131\u011F\u0131 d\u0131\u015F\u0131nda; k\u0131rpma yap\u0131lmaz.");
+      return { success: true, value };
+    };
+    return { success: true, value: Object.freeze({
+      modelVersion: DEMAND_SKILL_VERSION,
+      kind: demand.kind,
+      minAdr,
+      maxAdr,
+      segments: Object.freeze(segments.map((segment) => Object.freeze(segment))),
+      occupancyAt
+    }) };
+  }
+
+  // src/domain/readiness/readiness.engine.ts
+  var reasons = {
+    name: "Analizi hangi otele ait oldu\u011Funu belirterek saklamak i\xE7in otel ad\u0131 gerekli.",
+    currency: "ADR ve RevPAR tutarlar\u0131n\u0131 ayn\u0131 para biriminde yorumlamak i\xE7in gerekli.",
+    "period.start": "Talep varsay\u0131m\u0131n\u0131n ba\u015Flang\u0131\xE7 d\xF6nemini belirtmek i\xE7in gerekli.",
+    "period.end": "Talep varsay\u0131m\u0131n\u0131n biti\u015F d\xF6nemini belirtmek i\xE7in gerekli.",
+    minAdr: "Hesaplamada izin verilen en d\xFC\u015F\xFCk fiyat\u0131 belirlemek i\xE7in gerekli.",
+    maxAdr: "Hesaplamada izin verilen en y\xFCksek fiyat\u0131 belirlemek i\xE7in gerekli.",
+    demand: "Fiyat de\u011Fi\u015Fti\u011Finde dolulu\u011Fun nas\u0131l de\u011Fi\u015Fece\u011Fini belirlemek i\xE7in talep modeli gerekli.",
+    "demand.kind": "Hangi talep modelinin kullan\u0131laca\u011F\u0131n\u0131 se\xE7in.",
+    referenceAdr: "Do\u011Frusal talebi ba\u011Flamak veya baz kar\u015F\u0131la\u015Ft\u0131rmas\u0131 yapmak i\xE7in referans fiyat gerekli.",
+    referenceOccupancy: "Referans fiyattaki doluluk oran\u0131n\u0131 bilmek i\xE7in gerekli.",
+    "demand.adrIncrease": "Doluluk d\xFC\u015F\xFC\u015F\xFCn\xFCn hangi fiyat art\u0131\u015F\u0131 i\xE7in ge\xE7erli oldu\u011Funu belirtmek i\xE7in gerekli.",
+    "demand.occupancyDecreasePp": "Fiyat art\u0131\u015F\u0131na kar\u015F\u0131 doluluk d\xFC\u015F\xFC\u015F\xFCn\xFC y\xFCzde puan\u0131 olarak tan\u0131mlamak i\xE7in gerekli.",
+    "demand.validMinAdr": "Talep varsay\u0131m\u0131n\u0131n ge\xE7erli oldu\u011Fu en d\xFC\u015F\xFCk fiyat\u0131 belirtmek i\xE7in gerekli.",
+    "demand.validMaxAdr": "Talep varsay\u0131m\u0131n\u0131n ge\xE7erli oldu\u011Fu en y\xFCksek fiyat\u0131 belirtmek i\xE7in gerekli.",
+    "demand.points": "Fiyat\u2013doluluk ili\u015Fkisini en az iki noktadan kurmak i\xE7in gerekli."
+  };
+  function at(input, path) {
+    return path.split(".").reduce((value, key) => isRecord(value) ? value[key] : void 0, input);
+  }
+  function missing(value) {
+    return value == null || typeof value === "string" && value.trim() === "";
+  }
+  function inputKind(path) {
+    if (path === "demand" || path === "demand.kind") return "model";
+    if (path === "demand.points") return "points";
+    if (path.startsWith("period.")) return "date";
+    if (path.includes("Occupancy")) return "ratio";
+    if (["name", "currency", "id", "demand.modelVersion"].includes(path)) return "text";
+    return "number";
+  }
+  function checkMaxRevparReadiness(input) {
+    const parsed = validateCaseForAnalysis(input);
+    const missingFields = [];
+    const issues = [];
+    const warnings = [];
+    const appendMissing = (path) => {
+      if (!missingFields.some((field2) => field2.path === path)) missingFields.push({ path, reason: reasons[path] ?? "Analiz s\xF6zle\u015Fmesini tamamlamak i\xE7in bu alan gerekli.", inputKind: inputKind(path) });
+    };
+    if (!parsed.success) {
+      for (const issue of parsed.issues) {
+        if (issue.path && missing(at(input, issue.path)) && (issue.code === "REQUIRED_FIELD" || reasons[issue.path])) {
+          if (issue.path === "period") {
+            appendMissing("period.start");
+            appendMissing("period.end");
+          } else appendMissing(issue.path);
+        } else issues.push({ ...issue, remediation: `\u201C${issue.path || "Case"}\u201D alan\u0131n\u0131 d\xFCzeltip haz\u0131rl\u0131k kontrol\xFCn\xFC tekrar \xE7al\u0131\u015Ft\u0131r\u0131n.` });
+      }
+      if (missingFields.some((field2) => field2.path === "period")) {
+        missingFields.splice(missingFields.findIndex((field2) => field2.path === "period"), 1);
+        appendMissing("period.start");
+        appendMissing("period.end");
+      }
+      return { status: issues.length ? "BLOCKED" : "INCOMPLETE", missingFields, issues, warnings };
+    }
+    const compiled = compileDemand(parsed.data);
+    if (!compiled.success) return {
+      status: "BLOCKED",
+      missingFields,
+      issues: compiled.issues.map((issue) => ({ ...issue, remediation: "Talep parametrelerini veya analiz fiyat aral\u0131\u011F\u0131n\u0131 d\xFCzeltin; doluluk 0\u20131 i\xE7inde kalmal\u0131." })),
+      warnings
+    };
+    if (parsed.data.assumptionNotes?.trim()) warnings.push({ code: "ASSUMPTION_NOTES", message: parsed.data.assumptionNotes });
+    const highestOccupancy = Math.max(...compiled.value.segments.map((segment) => segment.occupancyAtMin));
+    if (parsed.data.minOccupancy !== void 0 && parsed.data.minOccupancy - highestOccupancy > NUMERICAL_POLICY.ratioTolerance) {
+      warnings.push({ code: "NO_FEASIBLE_OCCUPANCY", message: "Veri haz\u0131r, ancak bu talep modeliyle fiyat aral\u0131\u011F\u0131ndaki hi\xE7bir fiyat minimum doluluk \u015Fart\u0131n\u0131 kar\u015F\u0131lam\u0131yor." });
+    }
+    if (parsed.data.demand.kind === "scenario-points" && parsed.data.referenceAdr !== void 0 && parsed.data.referenceOccupancy !== void 0) {
+      const prediction = compiled.value.occupancyAt(parsed.data.referenceAdr);
+      if (!prediction.success) warnings.push({ code: "REFERENCE_OUTSIDE_ANALYSIS_RANGE", message: "Referans fiyat analiz aral\u0131\u011F\u0131 d\u0131\u015F\u0131nda; baz \xF6l\xE7\xFCm\xFC model kalibrasyonu say\u0131lmaz." });
+      else if (Math.abs(prediction.value - parsed.data.referenceOccupancy) > NUMERICAL_POLICY.ratioTolerance) warnings.push({ code: "REFERENCE_MODEL_MISMATCH", message: "Baz doluluk \xF6l\xE7\xFCm\xFC talep modelinden farkl\u0131; baz \xF6l\xE7\xFCm\xFC ve model varsay\u0131m\u0131 ayr\u0131 de\u011Ferlendirilmelidir." });
+    }
+    return { status: "READY", missingFields, issues, warnings, caseSnapshot: parsed.data };
+  }
+
+  // src/domain/skills/revpar.skill.ts
+  function calculateRevpar(adr, occupancy) {
+    if (!Number.isFinite(adr) || adr <= 0) return failure("INVALID_NUMBER", "adr", "ADR sonlu ve pozitif olmal\u0131.");
+    if (!Number.isFinite(occupancy) || occupancy < 0 || occupancy > 1) return failure("INVALID_OCCUPANCY", "occupancy", "Doluluk 0\u20131 oran\u0131 olmal\u0131.");
+    const value = adr * occupancy;
+    if (!Number.isFinite(value)) return failure("NUMERICAL_ERROR", "revpar", "RevPAR sonlu de\u011Fil.");
+    return { success: true, value };
+  }
+
+  // src/domain/constraints/constraint.validator.ts
+  function validateCandidate(adr, occupancy, bounds) {
+    const issues = [];
+    const bindingConstraints = [];
+    const add = (code, path, message) => issues.push({ code, path, message });
+    if (!bounds || !Number.isFinite(bounds.minAdr) || !Number.isFinite(bounds.maxAdr) || bounds.minAdr <= 0 || bounds.minAdr > bounds.maxAdr) add("INVALID_ADR_RANGE", "bounds", "Ge\xE7erli pozitif fiyat aral\u0131\u011F\u0131 gerekli.");
+    if (bounds?.minOccupancy !== void 0 && (!Number.isFinite(bounds.minOccupancy) || bounds.minOccupancy < 0 || bounds.minOccupancy > 1)) add("INVALID_OCCUPANCY", "minOccupancy", "Minimum doluluk 0\u20131 oran\u0131 olmal\u0131.");
+    if (!Number.isFinite(adr) || adr <= 0) add("INVALID_NUMBER", "adr", "ADR sonlu ve pozitif olmal\u0131.");
+    if (!Number.isFinite(occupancy) || occupancy < 0 || occupancy > 1) add("INVALID_OCCUPANCY", "occupancy", "Doluluk 0\u20131 oran\u0131 olmal\u0131.");
+    if (issues.length) return { valid: false, issues, bindingConstraints };
+    if (adr < bounds.minAdr && !nearlyEqual(adr, bounds.minAdr)) add("ADR_BELOW_MIN", "adr", "Fiyat minimum ADR s\u0131n\u0131r\u0131n\u0131n alt\u0131nda.");
+    if (adr > bounds.maxAdr && !nearlyEqual(adr, bounds.maxAdr)) add("ADR_ABOVE_MAX", "adr", "Fiyat maksimum ADR s\u0131n\u0131r\u0131n\u0131n \xFCst\xFCnde.");
+    if (bounds.minOccupancy !== void 0 && occupancy < bounds.minOccupancy && !ratioEqual(occupancy, bounds.minOccupancy)) add("MIN_OCCUPANCY_VIOLATION", "occupancy", "Beklenen doluluk minimum doluluk \u015Fart\u0131n\u0131 kar\u015F\u0131lam\u0131yor.");
+    if (nearlyEqual(adr, bounds.minAdr)) bindingConstraints.push("minAdr");
+    if (nearlyEqual(adr, bounds.maxAdr)) bindingConstraints.push("maxAdr");
+    if (bounds.minOccupancy !== void 0 && ratioEqual(occupancy, bounds.minOccupancy)) bindingConstraints.push("minOccupancy");
+    if (ratioEqual(occupancy, 0)) bindingConstraints.push("zeroOccupancy");
+    if (ratioEqual(occupancy, 1)) bindingConstraints.push("fullOccupancy");
+    return { valid: issues.length === 0, issues, bindingConstraints };
+  }
+
+  // src/domain/simulation/simulate-price.ts
+  function simulatePrice(input, adr) {
+    const readiness = checkMaxRevparReadiness(input);
+    if (readiness.status !== "READY" || !readiness.caseSnapshot) return { readiness, issues: [] };
+    const snapshot = readiness.caseSnapshot;
+    const compiled = compileDemand(snapshot);
+    if (!compiled.success) return { readiness, issues: compiled.issues };
+    const model = compiled.value;
+    const occupancy = model.occupancyAt(adr);
+    if (!occupancy.success) return { readiness, issues: occupancy.issues };
+    const revpar = calculateRevpar(adr, occupancy.value);
+    if (!revpar.success) return { readiness, issues: revpar.issues };
+    const bounds = { minAdr: snapshot.minAdr, maxAdr: snapshot.maxAdr, minOccupancy: snapshot.minOccupancy };
+    const constraints = validateCandidate(adr, occupancy.value, bounds);
+    const prices = /* @__PURE__ */ new Set([snapshot.minAdr, snapshot.maxAdr, adr]);
+    for (const segment of model.segments) {
+      prices.add(segment.minAdr);
+      prices.add(segment.maxAdr);
+    }
+    for (let i = 1; i < 80; i++) prices.add(snapshot.minAdr + (snapshot.maxAdr - snapshot.minAdr) * i / 80);
+    const curve = [];
+    for (const price of [...prices].sort((a, b) => a - b)) {
+      const q = model.occupancyAt(price);
+      if (!q.success) return { readiness, issues: q.issues };
+      const r = calculateRevpar(price, q.value);
+      if (!r.success) return { readiness, issues: r.issues };
+      curve.push({ adr: price, occupancy: q.value, revpar: r.value, feasible: validateCandidate(price, q.value, bounds).valid });
+    }
+    return { readiness, issues: [], selected: { adr, occupancy: occupancy.value, revpar: revpar.value, feasible: constraints.valid, constraints }, curve };
+  }
+
+  // src/features/simulation/simulation.ui.ts
+  var root = document.getElementById("hdse-price-simulation");
+  var field = (name) => root.querySelector(`[data-field="${name}"]`);
+  var part = (name) => root.querySelector(`[data-part="${name}"]`);
+  var button = root.querySelector('[data-action="calculate"]');
+  var slider = root.querySelector('[data-action="slider"]');
+  var format = (n) => n.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  var displayed;
+  var revision = 0;
+  function readInput() {
+    const parsingIssues = [];
+    const number = (key, percent = false) => {
+      try {
+        const n = parseNumericInput(field(key).value);
+        return percent && n !== void 0 ? percentageToRatio(n) : n;
+      } catch {
+        parsingIssues.push(`${field(key).parentElement?.textContent?.trim()}: ge\xE7erli ${percent ? "0\u2013100 aras\u0131nda y\xFCzde" : "say\u0131"} girin.`);
+        return void 0;
+      }
+    };
+    const model = field("model").value;
+    let demand;
+    let referenceAdr;
+    let referenceOccupancy;
+    if (model === "linear-sensitivity") {
+      referenceAdr = number("referenceAdr");
+      referenceOccupancy = number("referenceOccupancy", true);
+      demand = { kind: model, modelVersion: "demand.v1", adrIncrease: number("adrIncrease"), occupancyDecreasePp: number("occupancyDecreasePp"), validMinAdr: number("validMinAdr"), validMaxAdr: number("validMaxAdr") };
+    } else {
+      const text = field("points").value.trim();
+      const points = text ? text.split("\n").filter((line) => line.trim()).map((line, i) => {
+        const cells = line.split(";");
+        try {
+          if (cells.length !== 2) throw new Error();
+          const adr = parseNumericInput(cells[0]);
+          const percent = parseNumericInput(cells[1]);
+          if (adr === void 0 || percent === void 0) throw new Error();
+          return { adr, occupancy: percentageToRatio(percent) };
+        } catch {
+          parsingIssues.push(`Senaryo noktas\u0131 ${i + 1}: fiyat; doluluk (%) bi\xE7iminde iki ge\xE7erli say\u0131 girin.`);
+          return { adr: NaN, occupancy: NaN };
+        }
+      }) : void 0;
+      demand = { kind: model, modelVersion: "demand.v1", points };
+    }
+    const input = {
+      schemaVersion: "case.v1",
+      id: "simulation-case",
+      revision,
+      name: field("name").value,
+      currency: field("currency").value,
+      period: { start: field("start").value, end: field("end").value },
+      minAdr: number("minAdr"),
+      maxAdr: number("maxAdr"),
+      minOccupancy: number("minOccupancy", true),
+      referenceAdr,
+      referenceOccupancy,
+      demand
+    };
+    const selectedAdr = number("selectedAdr");
+    return { input, selectedAdr, parsingIssues };
+  }
+  function lines(element, messages) {
+    element.replaceChildren(...messages.map((message) => {
+      const line = document.createElement("div");
+      line.textContent = message;
+      return line;
+    }));
+  }
+  function showReadiness(readiness, parsingIssues, selectedAdr) {
+    const ready = readiness.status === "READY" && !parsingIssues.length && selectedAdr !== void 0;
+    button.disabled = !ready;
+    lines(part("errors"), [...parsingIssues, ...readiness.missingFields.map((f) => f.reason), ...readiness.issues.map((i) => `${i.message} ${i.remediation}`), ...selectedAdr === void 0 ? ["Denenecek ADR gerekli."] : []]);
+    lines(part("warnings"), readiness.warnings.map((w) => w.message));
+    part("status").textContent = parsingIssues.length ? "Ge\xE7ersiz giri\u015F \u2014 hesaplama engellendi." : readiness.status === "READY" ? "Veri haz\u0131r." : readiness.status === "INCOMPLETE" ? "Eksik bilgiler var \u2014 hesaplama engellendi." : "Veri d\xFCzeltmesi gerekli \u2014 hesaplama engellendi.";
+    const snapshot = readiness.caseSnapshot;
+    slider.disabled = !snapshot || !ready;
+    if (snapshot) {
+      slider.min = String(snapshot.minAdr);
+      slider.max = String(snapshot.maxAdr);
+      slider.disabled ||= snapshot.minAdr === snapshot.maxAdr;
+      if (selectedAdr !== void 0) slider.value = String(selectedAdr);
+    }
+  }
+  function refresh(calculate = false) {
+    const isLinear = field("model").value === "linear-sensitivity";
+    part("linear").hidden = !isLinear;
+    part("points").hidden = isLinear;
+    const { input, selectedAdr, parsingIssues } = readInput();
+    const readiness = checkMaxRevparReadiness(input);
+    showReadiness(readiness, parsingIssues, selectedAdr);
+    displayed = void 0;
+    part("results").hidden = true;
+    part("constraint").textContent = "";
+    if (!calculate) {
+      if (readiness.status === "READY" && !parsingIssues.length) part("status").textContent += " Girdiler de\u011Fi\u015Fti; yeniden hesaplay\u0131n.";
+      return;
+    }
+    if (button.disabled || selectedAdr === void 0) return;
+    const result = simulatePrice(input, selectedAdr);
+    if (result.issues.length || !result.selected) {
+      lines(part("errors"), result.issues.map((i) => i.message));
+      return;
+    }
+    displayed = result;
+    part("results").hidden = false;
+    const selected = result.selected;
+    for (const [metric, text] of Object.entries({ adr: `${format(selected.adr)} ${input.currency}`, occupancy: `%${format(selected.occupancy * 100)}`, revpar: `${format(selected.revpar)} ${input.currency}` })) {
+      root.querySelector(`[data-value="${metric}"]`).textContent = text;
+    }
+    part("status").textContent = "Sim\xFClasyon g\xFCncel.";
+    part("constraint").textContent = selected.feasible ? "Se\xE7ilen fiyat k\u0131s\u0131tlar\u0131 kar\u015F\u0131l\u0131yor." : "Se\xE7ilen fiyat k\u0131s\u0131t\u0131 kar\u015F\u0131lam\u0131yor: " + selected.constraints.issues.map((i) => i.message).join(" ");
+    drawCharts();
+  }
+  var svgNs = "http://www.w3.org/2000/svg";
+  function node(tag, attrs, text) {
+    const element = document.createElementNS(svgNs, tag);
+    for (const [key, value] of Object.entries(attrs)) element.setAttribute(key, String(value));
+    if (text) element.textContent = text;
+    return element;
+  }
+  function drawCharts() {
+    if (!displayed?.selected || !displayed.curve?.length) return;
+    const points = displayed.curve;
+    for (const metric of ["occupancy", "revpar"]) {
+      const svg = root.querySelector(`[data-chart="${metric}"]`);
+      const width = Math.max(280, svg.getBoundingClientRect().width || root.getBoundingClientRect().width || 736);
+      const height = 205;
+      const left = 70;
+      const right = width - 18;
+      const top = 12;
+      const bottom = 154;
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      const minP = points[0].adr;
+      const maxP = points.at(-1).adr;
+      const factor = metric === "occupancy" ? 100 : 1;
+      const values = points.map((point) => point[metric] * factor);
+      const minimum = Math.min(...values);
+      const maximum = Math.max(...values);
+      const padding = Math.max((maximum - minimum) * 0.15, maximum === 0 ? 1 : Math.abs(maximum) * 5e-3);
+      const low = Math.max(0, minimum - padding);
+      const high = maximum + padding;
+      const x = (price) => minP === maxP ? (left + right) / 2 : left + (price - minP) / (maxP - minP) * (right - left);
+      const y = (v) => bottom - (v - low) / (high - low) * (bottom - top);
+      const oldPath = svg.querySelector("path[data-series]")?.getAttribute("d");
+      svg.replaceChildren();
+      svg.append(node("title", {}, `${metric === "occupancy" ? "Doluluk" : "RevPAR"} \u2014 se\xE7ilen ADR ${format(displayed.selected.adr)}`));
+      svg.append(node("rect", { x: left, y: top, width: right - left, height: bottom - top, fill: "none", stroke: "var(--border)" }));
+      const tickCount = width < 400 ? 2 : 3;
+      for (let i = 0; i <= tickCount; i++) {
+        const v = low + (high - low) * i / tickCount;
+        svg.append(node("line", { x1: left, x2: right, y1: y(v), y2: y(v), stroke: "var(--border)" }));
+        svg.append(node("text", { x: left - 7, y: y(v) + 4, "text-anchor": "end", class: "text-small" }, format(v)));
+        if (minP !== maxP || i === 0) {
+          const p = minP === maxP ? minP : minP + (maxP - minP) * i / tickCount;
+          svg.append(node("text", { x: x(p), y: bottom + 20, "text-anchor": i === 0 && minP !== maxP ? "start" : i === tickCount ? "end" : "middle", class: "text-small" }, format(p)));
+        }
+      }
+      svg.append(node("text", { x: (left + right) / 2, y: height - 7, "text-anchor": "middle", class: "text-small" }, `ADR (${field("currency").value})`));
+      svg.append(node("text", { transform: `translate(15 ${(top + bottom) / 2}) rotate(-90)`, "text-anchor": "middle", class: "text-small" }, metric === "occupancy" ? "Doluluk (%)" : `RevPAR (${field("currency").value})`));
+      const d = points.map((point, i) => `${i ? "L" : "M"}${x(point.adr)},${y(point[metric] * factor)}`).join(" ");
+      const path = node("path", { d, fill: "none", stroke: "var(--viz-series-1)", "stroke-width": 2, "data-series": metric });
+      svg.append(path);
+      if (oldPath && oldPath.split("L").length === d.split("L").length && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        const animation = node("animate", { attributeName: "d", from: oldPath, to: d, dur: ".2s", fill: "freeze" });
+        path.append(animation);
+        animation.beginElement?.();
+      }
+      const selected = displayed.selected;
+      svg.append(node("circle", { cx: x(selected.adr), cy: y(selected[metric] * factor), r: 5, fill: "var(--viz-series-1)", "data-tooltip": `${format(selected.adr)} ${field("currency").value} \u2192 ${format(selected[metric] * factor)} ${metric === "occupancy" ? "%" : field("currency").value}` }));
+    }
+  }
+  var host = window;
+  function restore(fields) {
+    if (!fields) return;
+    root.querySelectorAll("[data-field]").forEach((input) => {
+      const value = fields[input.dataset.field];
+      if (typeof value === "string") input.value = value;
+    });
+  }
+  function save() {
+    const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((input) => [input.dataset.field, input.value]));
+    host.openai?.setWidgetState?.({ modelContent: { model: fields.model, selectedAdr: fields.selectedAdr, currency: fields.currency }, privateContent: { fields } }).catch(() => {
+    });
+  }
+  root.addEventListener("input", (event) => {
+    if (!(event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement || event.target instanceof HTMLTextAreaElement)) return;
+    revision++;
+    if (event.target === slider) {
+      field("selectedAdr").value = slider.value;
+      refresh(true);
+    } else refresh();
+    save();
+  });
+  button.addEventListener("click", () => {
+    refresh(true);
+    save();
+  });
+  window.addEventListener("openai:set_globals", (event) => {
+    const state = event.detail?.globals?.widgetState;
+    if (state?.privateContent?.fields) {
+      restore(state.privateContent.fields);
+      refresh();
+    }
+  });
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(drawCharts).observe(root);
+  restore(host.openai?.widgetState?.privateContent?.fields);
+  refresh(true);
+})();
+
+</script>

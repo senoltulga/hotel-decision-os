@@ -1,0 +1,89 @@
+{
+  "valid": {
+    "input": {
+      "schemaVersion": "case.v1",
+      "id": "example-hotel",
+      "revision": 0,
+      "name": "Örnek Otel",
+      "currency": "USD",
+      "period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31"
+      },
+      "minAdr": 130,
+      "maxAdr": 150,
+      "referenceAdr": 145,
+      "referenceOccupancy": 0.55,
+      "demand": {
+        "kind": "linear-sensitivity",
+        "modelVersion": "demand.v1",
+        "adrIncrease": 5,
+        "occupancyDecreasePp": 2,
+        "validMinAdr": 130,
+        "validMaxAdr": 150
+      }
+    },
+    "output": {
+      "success": true,
+      "data": {
+        "schemaVersion": "case.v1",
+        "id": "example-hotel",
+        "revision": 0,
+        "name": "Örnek Otel",
+        "currency": "USD",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "minAdr": 130,
+        "maxAdr": 150,
+        "referenceAdr": 145,
+        "referenceOccupancy": 0.55,
+        "demand": {
+          "kind": "linear-sensitivity",
+          "modelVersion": "demand.v1",
+          "adrIncrease": 5,
+          "occupancyDecreasePp": 2,
+          "validMinAdr": 130,
+          "validMaxAdr": 150
+        }
+      },
+      "issues": []
+    }
+  },
+  "incomplete": {
+    "input": {
+      "schemaVersion": "case.v1",
+      "id": "example-hotel",
+      "revision": 0,
+      "name": "Örnek Otel",
+      "currency": "USD",
+      "period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31"
+      },
+      "minAdr": null,
+      "maxAdr": 150,
+      "referenceAdr": 145,
+      "referenceOccupancy": 0.55,
+      "demand": {
+        "kind": "linear-sensitivity",
+        "modelVersion": "demand.v1",
+        "adrIncrease": 5,
+        "occupancyDecreasePp": 2,
+        "validMinAdr": 130,
+        "validMaxAdr": 150
+      }
+    },
+    "output": {
+      "success": false,
+      "issues": [
+        {
+          "code": "REQUIRED_FIELD",
+          "path": "minAdr",
+          "message": "Analiz için bu alan gerekli."
+        }
+      ]
+    }
+  }
+}

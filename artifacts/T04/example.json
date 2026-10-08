@@ -1,0 +1,231 @@
+{
+  "runtime": "v24.21.0",
+  "ready": {
+    "input": {
+      "schemaVersion": "case.v1",
+      "id": "example-hotel",
+      "revision": 1,
+      "name": "Örnek Otel",
+      "currency": "USD",
+      "period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31"
+      },
+      "minAdr": 130,
+      "maxAdr": 150,
+      "referenceAdr": 145,
+      "referenceOccupancy": 0.55,
+      "demand": {
+        "kind": "linear-sensitivity",
+        "modelVersion": "demand.v1",
+        "adrIncrease": 5,
+        "occupancyDecreasePp": 2,
+        "validMinAdr": 130,
+        "validMaxAdr": 150
+      }
+    },
+    "output": {
+      "success": true,
+      "problem": {
+        "problemVersion": "max-revpar.v1",
+        "caseSnapshot": {
+          "schemaVersion": "case.v1",
+          "id": "example-hotel",
+          "revision": 1,
+          "name": "Örnek Otel",
+          "currency": "USD",
+          "period": {
+            "start": "2026-01-01",
+            "end": "2026-12-31"
+          },
+          "minAdr": 130,
+          "maxAdr": 150,
+          "referenceAdr": 145,
+          "referenceOccupancy": 0.55,
+          "demand": {
+            "kind": "linear-sensitivity",
+            "modelVersion": "demand.v1",
+            "adrIncrease": 5,
+            "occupancyDecreasePp": 2,
+            "validMinAdr": 130,
+            "validMaxAdr": 150
+          }
+        },
+        "objective": {
+          "metric": "revpar",
+          "direction": "max"
+        },
+        "decision": {
+          "metric": "adr",
+          "min": 130,
+          "max": 150
+        },
+        "constraints": {
+          "occupancyMin": 0,
+          "occupancyMax": 1
+        },
+        "calculationVersion": "revpar.v1",
+        "solverVersion": "max-revpar-solver.v1",
+        "numericalPolicyVersion": "numerics.v1"
+      },
+      "readiness": {
+        "status": "READY",
+        "missingFields": [],
+        "issues": [],
+        "warnings": [],
+        "caseSnapshot": {
+          "schemaVersion": "case.v1",
+          "id": "example-hotel",
+          "revision": 1,
+          "name": "Örnek Otel",
+          "currency": "USD",
+          "period": {
+            "start": "2026-01-01",
+            "end": "2026-12-31"
+          },
+          "minAdr": 130,
+          "maxAdr": 150,
+          "referenceAdr": 145,
+          "referenceOccupancy": 0.55,
+          "demand": {
+            "kind": "linear-sensitivity",
+            "modelVersion": "demand.v1",
+            "adrIncrease": 5,
+            "occupancyDecreasePp": 2,
+            "validMinAdr": 130,
+            "validMaxAdr": 150
+          }
+        }
+      },
+      "issues": []
+    }
+  },
+  "incomplete": {
+    "success": false,
+    "readiness": {
+      "status": "INCOMPLETE",
+      "missingFields": [
+        {
+          "path": "demand",
+          "reason": "Fiyat değiştiğinde doluluğun nasıl değişeceğini belirlemek için talep modeli gerekli.",
+          "inputKind": "model"
+        }
+      ],
+      "issues": [],
+      "warnings": []
+    },
+    "issues": [
+      {
+        "code": "REQUIRED_FIELD",
+        "path": "demand",
+        "message": "Fiyat değiştiğinde doluluğun nasıl değişeceğini belirlemek için talep modeli gerekli."
+      }
+    ]
+  },
+  "blocked": {
+    "success": false,
+    "readiness": {
+      "status": "BLOCKED",
+      "missingFields": [],
+      "issues": [
+        {
+          "code": "INVALID_OCCUPANCY",
+          "path": "demand",
+          "message": "Model analiz aralığında 0–1 dışında doluluk üretiyor; fiyat aralığını veya modeli düzeltin.",
+          "remediation": "Talep parametrelerini veya analiz fiyat aralığını düzeltin; doluluk 0–1 içinde kalmalı."
+        }
+      ],
+      "warnings": []
+    },
+    "issues": [
+      {
+        "code": "INVALID_OCCUPANCY",
+        "path": "demand",
+        "message": "Model analiz aralığında 0–1 dışında doluluk üretiyor; fiyat aralığını veya modeli düzeltin.",
+        "remediation": "Talep parametrelerini veya analiz fiyat aralığını düzeltin; doluluk 0–1 içinde kalmalı."
+      }
+    ]
+  },
+  "validButInfeasibleWarning": {
+    "success": true,
+    "problem": {
+      "problemVersion": "max-revpar.v1",
+      "caseSnapshot": {
+        "schemaVersion": "case.v1",
+        "id": "example-hotel",
+        "revision": 1,
+        "name": "Örnek Otel",
+        "currency": "USD",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "minAdr": 130,
+        "maxAdr": 150,
+        "referenceAdr": 145,
+        "referenceOccupancy": 0.55,
+        "demand": {
+          "kind": "linear-sensitivity",
+          "modelVersion": "demand.v1",
+          "adrIncrease": 5,
+          "occupancyDecreasePp": 2,
+          "validMinAdr": 130,
+          "validMaxAdr": 150
+        },
+        "minOccupancy": 0.7
+      },
+      "objective": {
+        "metric": "revpar",
+        "direction": "max"
+      },
+      "decision": {
+        "metric": "adr",
+        "min": 130,
+        "max": 150
+      },
+      "constraints": {
+        "occupancyMin": 0.7,
+        "occupancyMax": 1
+      },
+      "calculationVersion": "revpar.v1",
+      "solverVersion": "max-revpar-solver.v1",
+      "numericalPolicyVersion": "numerics.v1"
+    },
+    "readiness": {
+      "status": "READY",
+      "missingFields": [],
+      "issues": [],
+      "warnings": [
+        {
+          "code": "NO_FEASIBLE_OCCUPANCY",
+          "message": "Veri hazır, ancak bu talep modeliyle fiyat aralığındaki hiçbir fiyat minimum doluluk şartını karşılamıyor."
+        }
+      ],
+      "caseSnapshot": {
+        "schemaVersion": "case.v1",
+        "id": "example-hotel",
+        "revision": 1,
+        "name": "Örnek Otel",
+        "currency": "USD",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "minAdr": 130,
+        "maxAdr": 150,
+        "referenceAdr": 145,
+        "referenceOccupancy": 0.55,
+        "demand": {
+          "kind": "linear-sensitivity",
+          "modelVersion": "demand.v1",
+          "adrIncrease": 5,
+          "occupancyDecreasePp": 2,
+          "validMinAdr": 130,
+          "validMaxAdr": 150
+        },
+        "minOccupancy": 0.7
+      }
+    },
+    "issues": []
+  }
+}

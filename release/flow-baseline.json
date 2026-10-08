@@ -1,0 +1,29 @@
+{
+  "status": "LOCKED",
+  "scope": "Technical MAX RevPAR v1.0 behavior; not financial-model certification or visual business acceptance",
+  "record": {
+    "modelId": "MAX RevPAR Flow",
+    "version": "1.0",
+    "state": "BLUEPRINT",
+    "evidence": [
+      "MAX_REVPAR_V1_IMPLEMENTATION_CONTRACT.md",
+      "tests/unit/t05.test.ts",
+      "tests/unit/workbench.test.ts",
+      "artifacts/validation/test-results.tap",
+      "artifacts/validation/manifest.json",
+      "MASTER_BLUEPRINT_HOTEL_DECISION_SUPPORT_ENGINE.md — implementation appendix"
+    ],
+    "acceptance": {
+      "by": "Codex — kullanıcı talimatıyla teknik kabul",
+      "date": "2026-10-07",
+      "reason": "Blueprint test bazlı LOCK kapısı: bağımsız analitik örnekler, readiness/kısıt testleri ve uçtan uca davranış testleri başarılı. Kabul yalnız teknik MAX RevPAR sözleşmesi kapsamındadır."
+    }
+  },
+  "sourceHashes": {
+    "src/domain/skills/revpar.skill.ts": "0d053bc3d05b5a15fcc510903d52bd6664c2925394d230140acbf9626bb077ef",
+    "src/domain/skills/demand.skill.ts": "ec99d08f4aeb2094d86ac0e46c58ca50ed606b40374443539df885ce6f564ec5",
+    "src/domain/numerics/numerical-policy.ts": "c32e409abf57e25b85f478a642522aea08508707b713006f44ee6971d345fa5b",
+    "src/domain/solvers/max-revpar.solver.ts": "c1cda38e317928372ece2fcfa289e91a8bb291e5f77fca148c79cd612f093ca2",
+    "src/domain/problems/max-revpar.builder.ts": "d726b1dc098a6a3146aa8110aab14ce98f6055e45c0eccf7253646e8043d5c7b"
+  }
+}

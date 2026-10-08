@@ -1,0 +1,74 @@
+<section id="hdse-price-simulation">
+  <h2>Fiyat simülasyonu</h2>
+  <div class="viz-controls">
+    <label class="form-label">Para birimi<select class="form-select" data-field="currency"><option>USD</option><option>TRY</option><option>EUR</option></select></label>
+    <label class="form-label">Talep modeli<select class="form-select" data-field="model"><option value="linear-sensitivity">Doğrusal duyarlılık</option><option value="scenario-points">Senaryo noktaları</option></select></label>
+  </div>
+  <details>
+    <summary>Otel ve dönem</summary>
+    <div class="viz-controls">
+      <label class="form-label">Otel adı<input class="form-control" data-field="name" value="Örnek Otel"></label>
+      <label class="form-label">Başlangıç<input type="date" class="form-control" data-field="start" value="2026-01-01"></label>
+      <label class="form-label">Bitiş<input type="date" class="form-control" data-field="end" value="2026-12-31"></label>
+    </div>
+  </details>
+  <div class="viz-controls">
+    <label class="form-label">Minimum ADR<input class="form-control" inputmode="decimal" data-field="minAdr" value="130"></label>
+    <label class="form-label">Maksimum ADR<input class="form-control" inputmode="decimal" data-field="maxAdr" value="150"></label>
+    <label class="form-label">Minimum doluluk (%) · isteğe bağlı<input class="form-control" inputmode="decimal" data-field="minOccupancy" value="" placeholder="Örn. 45"></label>
+  </div>
+  <div data-part="linear">
+    <div class="viz-controls">
+      <label class="form-label">Referans ADR<input class="form-control" inputmode="decimal" data-field="referenceAdr" value="145"></label>
+      <label class="form-label">Referans doluluk (%)<input class="form-control" inputmode="decimal" data-field="referenceOccupancy" value="55"></label>
+      <label class="form-label">ADR artışı<input class="form-control" inputmode="decimal" data-field="adrIncrease" value="5"></label>
+      <label class="form-label">Doluluk düşüşü (yüzde puanı)<input class="form-control" inputmode="decimal" data-field="occupancyDecreasePp" value="2"></label>
+    </div>
+    <details>
+      <summary>Talep modelinin geçerli fiyat aralığı</summary>
+      <div class="viz-controls">
+        <label class="form-label">Model minimum ADR<input class="form-control" inputmode="decimal" data-field="validMinAdr" value="130"></label>
+        <label class="form-label">Model maksimum ADR<input class="form-control" inputmode="decimal" data-field="validMaxAdr" value="150"></label>
+      </div>
+    </details>
+  </div>
+  <div data-part="points" hidden>
+    <label class="form-label">Fiyat; doluluk (%) · her satır bir nokta<textarea class="form-control" rows="3" data-field="points">130;65
+145;55
+150;50</textarea></label>
+  </div>
+  <hr>
+  <div class="viz-controls">
+    <label class="form-label">Denenecek ADR<input class="form-control" inputmode="decimal" data-field="selectedAdr" value="145"></label>
+    <button class="btn btn-primary" type="button" data-action="calculate">Simülasyonu hesapla</button>
+  </div>
+  <label class="form-label">ADR seçimi<input class="form-range" type="range" min="130" max="150" step="0.01" value="145" data-action="slider"></label>
+  <div data-part="status" aria-live="polite"></div>
+  <div data-part="errors" role="alert"></div>
+  <div data-part="warnings" aria-live="polite"></div>
+  <div data-part="results" hidden>
+    <div class="viz-grid" aria-live="polite">
+      <div class="card viz-stat"><span>Denenecek ADR</span><div class="viz-stat-value tabular-nums" data-value="adr"></div></div>
+      <div class="card viz-stat"><span>Beklenen doluluk</span><div class="viz-stat-value tabular-nums" data-value="occupancy"></div></div>
+      <div class="card viz-stat"><span>RevPAR</span><div class="viz-stat-value tabular-nums" data-value="revpar"></div></div>
+    </div>
+    <div data-part="constraint" aria-live="polite"></div>
+    <figure>
+      <figcaption>ADR → Doluluk</figcaption>
+      <svg class="hdse-chart" data-chart="occupancy" role="img" aria-label="Fiyata göre beklenen doluluk ve seçilen fiyat"></svg>
+    </figure>
+    <figure>
+      <figcaption>ADR → RevPAR</figcaption>
+      <svg class="hdse-chart" data-chart="revpar" role="img" aria-label="Fiyata göre RevPAR ve seçilen fiyat"></svg>
+    </figure>
+  </div>
+</section>
+<style>
+#hdse-price-simulation { display: grid; gap: 12px; }
+#hdse-price-simulation figure { margin: 0; min-width: 0; }
+#hdse-price-simulation .hdse-chart { display: block; width: 100%; height: 205px; overflow: visible; }
+#hdse-price-simulation .hdse-chart text { fill: var(--foreground); }
+#hdse-price-simulation [hidden] { display: none; }
+#hdse-price-simulation [data-part="errors"] { color: var(--destructive); }
+</style>
+<!-- HDSE_SCRIPT -->
