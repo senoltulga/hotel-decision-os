@@ -1,0 +1,2 @@
+-- Uygulandı: Supabase proje nipsqpbwvfifxmoopqbi, migration gm_beta_v1
+-- Tablolar: gm_projects, gm_quotas, gm_usage_events, gm_feedback; RLS; gm_quota_status(), gm_consume(text)
