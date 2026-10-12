@@ -1,4 +1,4 @@
--- Gelir Motoru SaaS — çekirdek şema (taslak, uygulanmadı)
+-- Gelir Motoru SaaS — çekirdek şema (uygulandı: hotel-gelir-motoru, eu-central-1)
 create extension if not exists pgcrypto;
 
 create type member_role as enum ('owner','editor','viewer');
@@ -119,4 +119,25 @@ begin
   if old.status = 'locked' then raise exception 'kilitli sürüm değiştirilemez'; end if;
   return new;
 end $$;
-create trigger sets_locked before update or delete on assumption_sets for each row execute function block_locked_edit();
+create trigger sets_locked before update on assumption_sets for each row execute function block_locked_edit();
+
+-- çalışma alanını açan otomatik owner olur
+create function add_owner_membership() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into memberships(workspace_id, user_id, role) values (new.id, new.created_by, 'owner');
+  return new;
+end $$;
+create trigger ws_owner_auto after insert on workspaces for each row execute function add_owner_membership();
+
+-- kayıtta profil oluştur
+create function handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into profiles(id, full_name) values (new.id, new.raw_user_meta_data->>'full_name') on conflict do nothing;
+  return new;
+end $$;
+create trigger on_auth_user_created after insert on auth.users for each row execute function handle_new_user();
+
+revoke execute on function add_owner_membership() from public, anon, authenticated;
+revoke execute on function handle_new_user() from public, anon, authenticated;
+revoke execute on function enforce_limits() from public, anon, authenticated;
+revoke execute on function block_locked_edit() from public, anon, authenticated;
