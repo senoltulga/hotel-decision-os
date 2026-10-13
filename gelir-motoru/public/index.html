@@ -2723,7 +2723,7 @@ function renderVT(){
  const el=document.getElementById("vtp");if(!el)return;
  el.innerHTML=`<div class="plhead"><h2 style="font-size:16px">Şablon · Değer hesapla</h2><span class="code">mülk kartı → gelir → gider → getiri oranı → değer</span></div>
  <p class="note">Bir gayrimenkulün <b>gelir değerini</b> bulmak için adım adım şablon: oda geliri ve diğer gelirler, giderler ve rezervlerle NOI hesaplanır, getiri oranıyla (cap rate) değere çevrilir. Ana modelden bağımsızdır; dilerseniz Payback şablonundaki değerleri alabilirsiniz.</p>
- <div id="vtin"></div><div id="vtres"></div>`;
+ <div class="oz-row" id="vtout"><button type="button" class="btn" data-vtx="print">Yazdır / PDF</button><button type="button" class="btn" data-vtx="html">Rapor indir (.html)</button><button type="button" class="btn" data-vtx="rcsv">Sonuç CSV (Excel)</button><button type="button" class="btn" data-vtx="icsv">Girdi CSV indir</button></div><details class="dc-g" style="margin:8px 0"><summary><b>Dosyadan yükle (CSV)</b></summary><p class="note">Önce "Şablonu metin kutusuna koy" ile mevcut girdileri CSV olarak alın, Excel ya da metin düzenleyicide değiştirip dosya olarak yükleyin ya da buraya yapıştırın. Format açıklaması dosyanın ilk satırlarında.</p><div class="oz-row"><label>Dosya<input type="file" id="vtimpf" accept=".csv,.txt,text/csv,text/plain"></label><button type="button" class="btn" data-vtx="tpl">Şablonu metin kutusuna koy</button></div><textarea id="vtimptxt" rows="8" style="width:100%;margin-top:8px;font-family:var(--mono);font-size:12px" placeholder="veya CSV içeriğini buraya yapıştırın"></textarea><div id="vtimpmsg"></div></details><div id="vtin"></div><div id="vtres"></div>`;
  renderVTin();renderVTres()}
 window.renderVT=renderVT;
 /* kabuk */
@@ -2775,6 +2775,64 @@ document.addEventListener("change",e=>{const el=e.target;if(!el||!el.dataset)ret
  if(el.dataset.wzvf){e.stopImmediatePropagation();const k=el.dataset.wzvf;if(k.startsWith("cap."))VT.cap[+k.slice(4)]=+el.value||0;else if(k==="name"||k==="cur")VT[k]=el.value;else VT[k]=+el.value||0}
 },true);
 document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-wzvgo]");if(!t)return;e.preventDefault();e.stopImmediatePropagation();VIEWSEC="vt";OPEN.add("tp");showView();renderVT();renderMenu()},true);
+/* çıktı + CSV içe/dışa aktarma */
+const VTCSV_HELP="# Değer hesapla girdi dosyası. Ayırıcı ; (noktalı virgül). Ondalık için nokta ya da virgül, binlik ayırıcı kullanmayın.\n# mulk;anahtar;değer   anahtarlar: ad, konum, tur, oda, yatak, para, kur, doluluk, adr, buyume, gider_artisi, ufuk, teklif, emsal\n# gelir;ad;tutar;para;donem   para: cur (ana birim) ya da TL · donem: ay ya da yil\n# gider;ad;değer;para;donem;kategori;hesap   kategori: dept, und, own, res · hesap: pctRoom (oda gelirinin %'si), pctGross (brüt gelirin %'si), fixed (sabit tutar; para ve donem gerekir)\n# mevsim;a1;a2;...;a12   aylık ağırlıklar\n# getiri;düşük|baz|yüksek;getiri oranı %;NOI sapması %";
+const vtn=x=>String(x).replace(".",",");
+function vtToCsv(){const V=VT,o=[VTCSV_HELP],L=(...a)=>o.push(a.join(";"));
+ L("mulk","ad",V.name);L("mulk","konum",V.loc||"");L("mulk","tur",V.type||"");L("mulk","oda",V.units);L("mulk","yatak",V.beds||0);L("mulk","para",V.cur);L("mulk","kur",vtn(V.fx||0));L("mulk","doluluk",vtn(V.occ));L("mulk","adr",vtn(V.adr));L("mulk","buyume",vtn(V.g||0));L("mulk","gider_artisi",vtn(V.f||0));L("mulk","ufuk",V.hz);L("mulk","teklif",vtn(V.offer||0));L("mulk","emsal",vtn(V.comp||0));
+ L("mevsim",...V.season.map(vtn));
+ V.rev.forEach(x=>L("gelir",x.name,vtn(x.val),x.ccy==="TL"?"TL":"cur",x.per==="year"?"yil":"ay"));
+ V.exp.forEach(x=>x.kind==="fixed"?L("gider",x.name,vtn(x.val),x.ccy==="TL"?"TL":"cur",x.per==="year"?"yil":"ay",x.cat,"fixed"):L("gider",x.name,vtn(x.val),"","",x.cat,x.kind));
+ ["Düşük","Baz","Yüksek"].forEach((n,i)=>L("getiri",n,vtn(VT.cap[i]),vtn(VT.dev[i])));
+ return o.join("\n")}
+function vtFromCsv(txt){const bad=[],V=JSON.parse(JSON.stringify(VT0())),keep=new Set(),nv=x=>{const n=parseFloat(String(x).replace(",","."));return Number.isFinite(n)?n:NaN};
+ V.rev=[];V.exp=[];let nr=0,ne=0,seen=0;
+ txt.split(/\r?\n/).forEach((l,i)=>{l=l.replace(/^﻿/,"").trim();if(!l||l.startsWith("#"))return;const p=l.split(/[;\t]/).map(x=>x.trim()),t=p[0].toLowerCase(),ln="satır "+(i+1)+": ";
+  if(t==="mulk"){const k=(p[1]||"").toLowerCase(),v=p[2];const M={ad:["name","s"],konum:["loc","s"],tur:["type","s"],oda:["units","n"],yatak:["beds","n"],para:["cur","s"],kur:["fx","n"],doluluk:["occ","n"],adr:["adr","n"],buyume:["g","n"],gider_artisi:["f","n"],ufuk:["hz","n"],teklif:["offer","n"],emsal:["comp","n"]}[k];
+   if(!M){bad.push(ln+"bilinmeyen mülk anahtarı "+p[1]);return}if(M[1]==="s")V[M[0]]=v||"";else{const n=nv(v);if(Number.isNaN(n)){bad.push(ln+"sayısal değil");return}V[M[0]]=n}seen++;return}
+  if(t==="mevsim"){const a=p.slice(1,13).map(nv);if(a.length<12||a.some(Number.isNaN)){bad.push(ln+"12 sayısal ağırlık gerekli");return}V.season=a;seen++;return}
+  if(t==="gelir"){const n=nv(p[2]);if(!p[1]||Number.isNaN(n)){bad.push(ln+"ad ve tutar gerekli");return}V.rev.push({id:"r"+(nr++),name:p[1],on:1,type:"fixed",val:n,ccy:(p[3]||"").toUpperCase()==="TL"?"TL":"cur",per:/^y/i.test(p[4]||"")?"year":"month"});seen++;return}
+  if(t==="gider"){const n=nv(p[2]),kind=p[6]||"fixed",cat=(p[5]||"und").toLowerCase();if(!p[1]||Number.isNaN(n)){bad.push(ln+"ad ve değer gerekli");return}if(!["pctRoom","pctGross","fixed"].includes(kind)){bad.push(ln+"bilinmeyen hesap "+kind);return}if(!CATL[cat]){bad.push(ln+"bilinmeyen kategori "+p[5]);return}
+   V.exp.push({id:"e"+(ne++),name:p[1],on:1,kind,val:n,cat,ccy:(p[3]||"").toUpperCase()==="TL"?"TL":"cur",per:/^y/i.test(p[4]||"")?"year":"month"});seen++;return}
+  if(t==="getiri"){const k=({"düşük":0,"dusuk":0,"baz":1,"yüksek":2,"yuksek":2})[(p[1]||"").toLowerCase()],c=nv(p[2]),d=p[3]===undefined||p[3]===""?undefined:nv(p[3]);if(k===undefined||Number.isNaN(c)){bad.push(ln+"getiri satırı: düşük|baz|yüksek ve oran gerekli");return}V.cap[k]=c;if(d!==undefined&&!Number.isNaN(d))V.dev[k]=d;seen++;return}
+  bad.push(ln+"bilinmeyen satır türü "+p[0])});
+ if(!seen)bad.push("Tanınan satır yok");
+ if(!V.rev.length&&!V.exp.length&&seen)bad.push("Uyarı: gelir ve gider satırı yok");
+ return{V,bad,nr,ne,seen}}
+const dl=(name,mime,data)=>{try{const b=new Blob([data],{type:mime}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return true}catch(e){return false}};
+const slug=()=>(VT.name||"rapor").toLowerCase().replace(/[^a-z0-9ğüşıöç]+/gi,"-").replace(/^-|-$/g,"")||"rapor";
+function vtReportHtml(){
+ const miss=vtMissing();if(miss.length)return null;const V=VT,c=vtCalc(),d=new Date().toLocaleDateString("tr-TR");
+ const res=document.createElement("div");res.innerHTML=document.getElementById("vtres").innerHTML;res.querySelectorAll(".oz-row,textarea,button").forEach(e=>e.remove());
+ const ex=(l)=>l.filter(x=>x.on).map(x=>`<tr><td>${esc(x.name)}</td><td style="text-align:right">${x.kind&&x.kind!=="fixed"?x.val+(x.kind==="pctRoom"?" % oda geliri":" % brüt gelir"):f0(x.val)+" "+(x.ccy==="TL"?"TL":esc(V.cur))+(x.per==="year"?" / yıl":" / ay")}</td>${x.cat?`<td>${CATL[x.cat]}</td>`:"<td></td>"}</tr>`).join("");
+ return `<h1>${esc(V.name)} · Gelir değeri raporu</h1><p class="sub">${esc([V.loc,V.type].filter(Boolean).join(" · "))}${V.loc||V.type?" · ":""}${d} · ${esc(V.cur)}${V.fx>0?" · 1 "+esc(V.cur)+" = "+f2(V.fx)+" TL":""}</p>
+ <h2>Varsayımlar</h2><table><tbody><tr><td>Oda / ünite</td><td style="text-align:right">${V.units}</td></tr><tr><td>Yıllık ortalama doluluk</td><td style="text-align:right">%${f1(V.occ)}</td></tr><tr><td>ADR (oda başı)</td><td style="text-align:right">${f2(V.adr)} ${esc(V.cur)}</td></tr><tr><td>Gelir büyümesi / gider artışı</td><td style="text-align:right">%${f1(V.g||0)} / %${f1(V.f||0)}</td></tr><tr><td>Getiri oranları (düşük / baz / yüksek)</td><td style="text-align:right">%${V.cap.map(f1).join(" / %")}</td></tr><tr><td>NOI sapmaları</td><td style="text-align:right">${V.dev.map(x=>(x>0?"+":"")+x).join(" / ")}%</td></tr></tbody></table>
+ <h3>Diğer gelirler</h3><table><tbody>${ex(V.rev)||'<tr><td>Yok</td></tr>'}</tbody></table><h3>Giderler</h3><table><tbody>${ex(V.exp)}</tbody></table>
+ <h2>Sonuçlar</h2>${res.innerHTML}`}
+const REPCSS="body{font:13px/1.45 system-ui,Arial,sans-serif;color:#111;background:#fff;margin:24px;max-width:900px}h1{font-size:20px;margin:0}h2{font-size:16px;margin:18px 0 6px;border-bottom:1px solid #999}h3{font-size:14px;margin:12px 0 4px}.sub{color:#555;margin:2px 0 8px}table{border-collapse:collapse;width:100%;margin:4px 0}td,th{border:1px solid #bbb;padding:3px 6px;text-align:left}th{background:#eee}.note{color:#444;font-size:12px}.dc-g{margin:8px 0;break-inside:avoid}.wrap{overflow:visible}";
+function vtPrint(){const h=vtReportHtml();if(!h){alert("Önce zorunlu alanları tamamlayın.");return}
+ let pr=document.getElementById("vtprint");if(!pr){pr=document.createElement("div");pr.id="vtprint";document.body.appendChild(pr);const st=document.createElement("style");st.textContent="#vtprint{display:none}@media print{body.vtprinting>*:not(#vtprint){display:none!important}body.vtprinting #vtprint{display:block!important;position:static;"+"}body.vtprinting #vtprint,body.vtprinting #vtprint *{visibility:visible!important}body.vtprinting{background:#fff!important}"+REPCSS.replace(/body\{[^}]*\}/,"")+"#vtprint{color:#111;background:#fff}}";document.head.appendChild(st)}
+ pr.innerHTML=h;document.body.classList.add("vtprinting");const done=()=>{document.body.classList.remove("vtprinting");window.removeEventListener("afterprint",done)};window.addEventListener("afterprint",done);setTimeout(done,60000);try{window.print()}catch(e){done()}}
+function vtResultCsv(){const c=vtCalc(),V=VT,o=[],L=(...a)=>o.push(a.join(";"));
+ L("Mülk",V.name);L("Para birimi",V.cur);L();L("Ay","Doluluk %","Oda geliri","Diğer gelir","Brüt gelir","İşletme gideri","GOP","Sabit+FF&E","NOI");
+ c.months.forEach((m,i)=>L(MON[i],vtn((m.occ*100).toFixed(1)),Math.round(m.room),Math.round(m.other),Math.round(m.gross),Math.round(m.dept+m.und),Math.round(m.gop),Math.round(m.own+m.res),Math.round(m.net)));
+ L();L("Senaryo","Düşük","Baz","Yüksek");L("NOI",...c.scen.map(s=>Math.round(s.n)));L("Getiri oranı %",...c.scen.map(s=>vtn(s.c)));L("Tahmini değer",...c.scen.map(s=>s.v?Math.round(s.v):""));L("Oda başına",...c.scen.map(s=>s.per?Math.round(s.per):""));
+ L();L("Duyarlılık: getiri oranı \\ NOI sapması %",...c.devs);c.caps.forEach((cp,i)=>L(vtn(cp),...c.grid[i].map(v=>v?Math.round(v):"")));
+ L();L("Hedef yıl","Azami fiyat");c.tgt.forEach(t=>L(t.y,t.p!=null?Math.round(t.p):""));
+ return "﻿"+o.join("\n")}
+let VTI={text:"",prev:null};
+function vtImpPrev(){const m=document.getElementById("vtimpmsg");if(!m)return;VTI.text=document.getElementById("vtimptxt").value;if(!VTI.text.trim()){VTI.prev=null;m.innerHTML="";return}
+ const r=vtFromCsv(VTI.text);VTI.prev=r;m.innerHTML=`<div class="oz-res">Önizleme: <b>${esc(r.V.name)}</b> · ${r.V.units} oda · doluluk %${f1(r.V.occ)} · ADR ${f2(r.V.adr)} · ${r.nr} gelir, ${r.ne} gider kalemi. Uygulanırsa Değer hesapla girdileri bununla değişir.</div>${r.bad.length?`<div class="oz-res oz-bad">${r.bad.slice(0,8).map(esc).join(" · ")}${r.bad.length>8?" …":""}</div>`:""}${!r.seen||!(r.V.exp.length)?"":""}<div class="oz-row"><button type="button" class="btn" data-vtx="apply">Uygula</button></div>`}
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-vtx]");if(!t)return;e.preventDefault();e.stopImmediatePropagation();const a=t.dataset.vtx;
+ if(a==="print")vtPrint();
+ else if(a==="html"){const h=vtReportHtml();if(!h){alert("Önce zorunlu alanları tamamlayın.");return}dl(slug()+"-deger-raporu.html","text/html",`<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(VT.name)} · Gelir değeri raporu</title><style>${REPCSS}</style></head><body>${h}</body></html>`)}
+ else if(a==="rcsv"){if(vtMissing().length){alert("Önce zorunlu alanları tamamlayın.");return}dl(slug()+"-sonuc.csv","text/csv",vtResultCsv())}
+ else if(a==="icsv")dl(slug()+"-girdi.csv","text/csv","﻿"+vtToCsv());
+ else if(a==="tpl"){document.getElementById("vtimptxt").value=vtToCsv();vtImpPrev()}
+ else if(a==="apply"){const r=VTI.prev;if(!r||!r.seen)return;VT={...VT0(),...r.V};VTI={text:"",prev:null};renderVT()}
+},true);
+document.addEventListener("change",e=>{const el=e.target;if(!el||el.id!=="vtimpf")return;const f=el.files&&el.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{document.getElementById("vtimptxt").value=String(rd.result||"");vtImpPrev()};rd.readAsText(f,"utf-8")},true);
+document.addEventListener("input",e=>{if(e.target&&e.target.id==="vtimptxt")vtImpPrev()},true);
 /* proje kaydı */
 const ps=window.projSnap;window.projSnap=function(){const s=ps.apply(this,arguments);s.data.vt=JSON.parse(JSON.stringify(VT));return s};
 const pa=window.projApply;window.projApply=function(o){const er=pa.apply(this,arguments);if(!er&&o&&o.data&&o.data.vt){VT={...VT0(),...o.data.vt}}return er};
