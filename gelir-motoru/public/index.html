@@ -2904,6 +2904,165 @@ const rm0=window.renderMenu;window.renderMenu=function(){const r=rm0.apply(this,
 refresh();
 })();
 </script>
+<script>
+/* ===== Yardım: her ekran için rehberli tur + "Örnekle doldur" ===== */
+(function(){
+const CASE_TP={"v":2,"name":"Suat Pay Otel (EUR)","units":20,"hz":25,"g":0,"f":0,"season":[40,42,50,62,72,82,92,95,84,68,48,45],"inv":[{"id":"buy","name":"Sat\u0131n alma bedeli","on":1,"amt":1142494},{"id":"reno:A","name":"Renovasyon A \u00b7 i\u00e7 mek\u00e2n + FF&E","on":1,"amt":0},{"id":"reno:B","name":"Renovasyon B \u00b7 MEP + g\u00fcvenlik","on":1,"amt":0},{"id":"reno:C","name":"Renovasyon C \u00b7 d\u0131\u015f cephe + havuz","on":1,"amt":0},{"id":"reno:D","name":"Renovasyon D \u00b7 di\u011fer","on":1,"amt":0},{"id":"wc","name":"\u0130\u015fletme sermayesi","on":1,"amt":0}],"rev":[{"id":"res","name":"Residence geliri (ADR \u00d7 doluluk)","on":1,"type":"room"},{"id":"com","name":"Ticari kira","on":1,"type":"fixed","val":21699.82},{"id":"rest","name":"Restoran + havuz kiras\u0131","on":0,"type":"fixed","val":150000}],"exp":[{"id":"dist","name":"Da\u011f\u0131t\u0131m ve \u00f6deme komisyonu","on":1,"kind":"pctRoom","val":12,"cat":"dept"},{"id":"ops","name":"Operasyon ve m\u00fclk y\u00f6netimi","on":0,"kind":"pctRoom","val":10,"cat":"dept"},{"id":"hk","name":"HK, sarf ve misafir hizmeti","on":1,"kind":"pctRoom","val":14,"cat":"dept"},{"id":"mnt","name":"Rutin bak\u0131m ve teknik servis","on":1,"kind":"pctRoom","val":2.5,"cat":"dept"},{"id":"rr","name":"Ticari + restoran kira rezervi","on":0,"kind":"pctOther","val":3,"cat":"dept"},{"id":"oa","name":"Enerji, su, internet","on":1,"kind":"fixed","val":14400,"cat":"und"},{"id":"adm","name":"Y\u00f6netim ve muhasebe","on":1,"kind":"fixed","val":8400,"cat":"und"},{"id":"own","name":"Sigorta, emlak vergisi, har\u00e7lar","on":1,"kind":"pctRoom","val":2,"cat":"own"},{"id":"ffe","name":"FF&E / yenileme rezervi","on":1,"kind":"pctRoom","val":4,"cat":"res"},{"id":"pers","name":"Personel","on":1,"kind":"fixed","val":50400,"cat":"und","custom":1},{"id":"pz","name":"Pazarlama ve rezervasyon sistemi","on":1,"kind":"pctRoom","val":3,"cat":"dept","custom":1}],"ramp":{"on":0,"n":2,"rows":[{"occ":45,"adr":250,"rm":100,"em":100},{"occ":55,"adr":275,"rm":100,"em":100}]},"stab":{"occ":65,"adr":50}};
+const bar=document.getElementById("vbar");if(!bar)return;
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const st=document.createElement("style");
+st.textContent="#tspot{position:fixed;z-index:9990;border-radius:10px;box-shadow:0 0 0 9999px rgba(8,14,22,.58);border:2px solid var(--pickbar,#f0b429);pointer-events:none;transition:all .25s ease}#tshield{position:fixed;inset:0;z-index:9989}#tcard{position:fixed;z-index:9995;width:min(380px,calc(100vw - 24px));background:var(--panel,#fff);color:var(--ink,#18232f);border:1px solid var(--line,#ccc);border-radius:12px;padding:14px;box-shadow:0 10px 36px rgba(0,0,0,.4);font-size:13.5px;line-height:1.5}#tcard h4{margin:0 0 4px;font-size:15px}#tcard .tn{font-size:11px;color:var(--muted,#667);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}#tcard p{margin:4px 0 8px}#tcard .tb{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}#tcard .tdemo{border-top:1px dashed var(--line,#ccc);margin-top:10px;padding-top:8px}#tcard .tm{font-size:12px;color:var(--muted,#667);margin-top:6px}@media(max-width:640px){#tcard{left:12px!important;right:12px;top:auto!important;bottom:12px;width:auto}}";
+document.head.appendChild(st);
+const hb=document.createElement("button");hb.type="button";hb.className="btn";hb.dataset.tour="start";hb.textContent="❓ Yardım";hb.setAttribute("aria-label","Bu ekran için yardım turunu başlat");
+const vb=bar.querySelector(".vb");vb.insertBefore(hb,vb.firstChild);
+
+/* ---- içerik ---- */
+const H=t=>({h:t});
+const MENU={sel:"#menu"};
+const TOURS={
+pl:{t:"P&L girişi",s:[
+ {...MENU,title:"Menü: kalem listesi",text:"Soldaki liste P&L tablosunun sırasıdır: gelirler, giderler, GOP, NOI ve net işletme nakdi. Bir kaleme tıklayınca sağda o kalemin giriş paneli açılır. Ara toplamlar formülle hesaplanır, doğrudan girilmez."},
+ {sel:"#editor",title:"Kalem giriş paneli",text:"Üstten yıl seçersin (2027, 2028, 2029). Giriş yöntemi üç türlü: <b>Sürücü</b> (ünite × doluluk × ADR), <b>Yıllık tutar</b> ya da <b>Aylık tutar</b>. 'Bu ayarı diğer yıllara koru' aynı yöntemi diğer yıllara taşır."},
+ {sel:"#plcard",title:"Otomatik P&L",text:"Girdilerin sonucu burada kendiliğinden oluşur. <b>Aylık</b> ve <b>Yıllık (3 yıl)</b> görünümü arasında geç. Satıra tıklayınca o kalemin paneli açılır."},
+ {sel:"#rescard",title:"Rezidans gider tablosu",text:"Komisyon, operasyon, HK ve bakım giderleri. Tutarlar yukarıdaki kalem girişlerinden gelir; birim başı ve müsait oda başı değerler ayrıca hesaplanır."},
+ {sel:"#chkcard",title:"Rapor kontrolü",text:"Hesaplanan net işletme nakdini rapordaki değerle karşılaştırır. Girdileri değiştirdikçe fark burada görünür."}]},
+reno:{t:"Renovasyon",s:[
+ {...MENU,title:"Menü",text:"Renovasyon gideri menüsü paketleri ve kalemleri listeler. Soldan bir kalem seçersin ya da tabloda tutarları doğrudan düzenlersin."},
+ {sel:"#gantcard",title:"Uygulama takvimi",text:"18–24 haftalık temkinli hedef. Tedarik, MEP, dış cephe ve iç mekân işleri kontrollü biçimde örtüşür. Başlangıç ve bitiş haftaları düzenlenebilir."},
+ {sel:"#renoeditor",title:"Renovasyon bütçesi",text:"Paket ve kalem tutarlarını burada düzenlersin. Toplam, yatırım tutarına ve geri dönüşe doğrudan yansır."},
+ {sel:"#rvcard",title:"Pay görünümü",text:"Genel pay ve kalem bazında pay: çubuk, kalemin toplam renovasyon bütçesindeki payını gösterir."},
+ {sel:"#renocard",title:"Gider tablosu ve kullanım",text:"Paket dağılımı ve toplam yatırım kullanımı. Rapor toplamı ile fark satırı, girdiyi rapora göre kontrol etmeni sağlar."}]},
+pb:{t:"Geri dönüş süresi",s:[
+ {sel:"#pbmsel",title:"Yöntem seçimi",text:"Basit (NOI toplamı) varsayılan yöntemdir. İskontolu, vergi sonrası, özkaynak (kredili) ve terminal değerli yöntemler paranın zaman değerini, vergiyi, krediyi ya da satış değerini de katar."},
+ {sel:"#pbparams",title:"Parametreler",text:"1–3. yıl P&L modelinden gelir. 4. yıldan sonra gelirler gelir artışıyla, giderler gider artışıyla büyür. Bu iki oranı buradan değiştirirsin."},
+ {sel:"#pbkpi",title:"Göstergeler",text:"Geri dönüş süresi, toplam yatırım ve stabilize net nakit. Ek girdi gerekmez; yıllık net nakit biriktikçe yatırıma ulaştığı yıl bulunur."},
+ {sel:"#pbchart",title:"Kümülatif grafik",text:"Birikimli net nakdin yatırım çizgisini kestiği nokta geri dönüş yılıdır."},
+ {sel:"#pbcmp",title:"Yöntemlerin karşılaştırması",text:"Aynı model beş yöntemle yan yana. Hangisinin hangi varsayımı saydığını görmek için okuyun."}]},
+sa:{t:"Duyarlılık analizi",s:[
+ {sel:"#sct",title:"Senaryolar",text:"Temkinli ve Güçlü senaryonun doluluk, ADR ve kira girdileri düzenlenebilir. Baz satırı P&L girişlerinden canlı gelir."},
+ {h:"Tek kalemli duyarlılık",title:"Tek kalemli duyarlılık",text:"Her satırda yalnızca o kalem değişir, diğerleri baz kalır. Çubuk, kalem azalırsa ve artarsa geri dönüş süresinin aralığını gösterir; hangi kalemin en riskli olduğunu buradan okursun."}]},
+op:{t:"Açılış ve stabilizasyon",s:[
+ {sel:"#opchart",title:"Açılış eğrisi",text:"İlk iki yıl stabilize yılın yüzde kaçı? Doluluk ve ADR, residence geliri sürücü yöntemiyle girildiyse görünür."},
+ {sel:"#opt",title:"Yıl bazında kalemler",text:"Stabilize yıl 3. yıldır; ilk iki yıl onun yüzdesi olarak karşılaştırılır."}]},
+fd:{t:"Finansal dil",s:[
+ {sel:"#fdt",title:"Göstergeler",text:"GOP işletme performansını, NOI mülk sahibi sonucunu, net nakit yatırımcıya kalanı gösterir. Üçü aynı şey değildir."},
+ {sel:"#fdchart",title:"Grafik",text:"3. yıl stabilize brüt gelirden malik nakdine köprü: işletme giderleri, malik gideri ve rezerv düşülünce net nakde inilir."},
+ {sel:"#fdb",title:"3. yıl köprü tablosu",text:"Brüt gelirden net nakde hangi kalemin ne kadar götürdüğünü sırayla gösterir. Geri dönüş GOP üzerinden değil, malik seviyesindeki net nakitten hesaplanır."}]},
+gr:{t:"Gelir modeli",s:[
+ {sel:"#grtabs",title:"Yıl seçimi",text:"Stabilize yıl dahil üç yıl arasında geç."},
+ {sel:"#grchart",title:"Gelir dağılımı",text:"Brüt gelirin kalemlere dağılımı. Yan gelirler (transfer, concierge, deneyim komisyonu) baz modele dahil değil, yukarı yönlü fırsat olarak ayrı tutulur."},
+ {sel:"#grt",title:"Gelir kalemleri",text:"Her kalemin tutarı ve payı. Tutarlar P&L girişlerinden gelir."}]},
+ty:{t:"Toplam yatırım",s:[
+ {sel:"#tychart",title:"Yatırımın bileşimi",text:"Satın alma, renovasyon ve açılış sermayesi. Mal sahibinin fiyatı başlangıç kabul edilmiştir."},
+ {sel:"#tyt",title:"Kullanım tablosu",text:"Tutarlar Renovasyon ve yatırım girdilerinden gelir; değiştirince geri dönüş de değişir."}]},
+bt:{t:"Bütçe",s:[
+ {sel:"#bttabs",title:"Yıl seçimi",text:"Tüm yıllar ya da tek bir yıl: Ek B (2027), C (2028), D (2029)."},
+ {sel:"#btcards",title:"Aylık bütçe kartları",text:"Her yıl ayrı bir kart. Tutarlar P&L girişlerinden canlı hesaplanır, yıllık toplamlar rapordaki fizibilite P&L ile mutabıktır. Bu bütçe yönetim dağılımıdır, denetlenmiş finansal tablo değildir."}]},
+kp:{t:"Göstergeler",s:[
+ {sel:"#kpcards",title:"Gösterge kartları",text:"Raporda geçen tüm göstergeler girişlerinden canlı hesaplanır: stabilize hedef, finansal dil, marjlar, birim göstergeleri (RevPAR, GOPPAR), yatırım, DCF, geri dönüş. Küçük satır rapordaki baz değeri ve farkı gösterir."}]},
+om:{t:"Yatırımın omurgası",s:[
+ {sel:"#omtiles",title:"Özet kutuları",text:"Yatırımın ana rakamları tek bakışta."},
+ {sel:"#omvars",title:"Değişkenler",text:"Buradaki değişkenleri değiştirdikçe tablo ve model canlı güncellenir."},
+ {sel:"#omtbl",title:"Stabilize hedef tablosu",text:"Rapordaki hedef göstergelerinin karşılığı. Okuma notu: baz sonuç ilk iki yılın açılışını, malik giderlerini ve yenileme rezervini içerir."}]},
+db:{t:"Dashboard",s:[
+ {sel:"#dbkpi",title:"Ana göstergeler",text:"Tüm değerler modelden canlı gelir."},
+ {sel:"#dbgrid",title:"Grafikler",text:"Yıllık gelir, GOP, net nakit; aylık brüt gelir; kümülatif net nakit ve geri dönüş; gelir kırılımı; yatırım dağılımı; oda başına göstergeler."}]},
+ex:{t:"Yönetici özeti",s:[
+ {sel:"#exp",title:"Otomatik özet",text:"Modeldeki mevcut girdilerden üretilir: yatırım, stabilize performans, geri dönüş, DCF, hedefe ulaşmak için neler gerektiği ve riskler. Yatırım tavsiyesi değildir."},
+ {sel:"#exbtns",title:"Yazdır ve metin",text:"Yazdır / PDF ile çıktı al ya da özeti metin olarak kopyala."}]},
+cf:{t:"Nakit akışı",s:[
+ {sel:"#cfseg",title:"Ufuk",text:"12, 15, 20 ya da 30 yıllık görünüm seç."},
+ {sel:"#cft",title:"Nakit akış tablosu",text:"1–3. yıllar P&L girişlerinden, sonrası gelir ve gider artışı varsayımıyla hesaplanır. Parantez çıkıştır. Finansman, vergi ve terminal değer dahil değildir."},
+ {sel:"#cfchart",title:"Kümülatif grafik",text:"Birikimli nakdin sıfırı geçtiği yıl geri dönüştür."}]},
+pj:{t:"Proje",s:[
+ {sel:"#pjp",title:"Kaydet, aç, çoğalt",text:"Proje; P&L girişlerini, yatırım ve renovasyon tutarlarını, senaryoları, DCF parametrelerini ve şablonları içerir. 'Bu tarayıcıya kaydet' yerel kayıt, 'Dosya olarak indir' .json verir. Bulut kaydı için sağ alttaki ☁ ya da üstteki Kaydet menüsünü kullan."},
+ {sel:"#pjtxt",title:"Dosyadan aç",text:"İndirdiğin .json dosyasını seç ya da içeriği yapıştırıp 'Metinden aç'a bas. Uygulanırsa mevcut tüm veriler değişir; önce kaydet."}]},
+wz:{t:"Sihirbaz",s:[
+ {sel:"#wzp",title:"Sihirbaz kartları",text:"Ne yapmak istediğini seç; sihirbaz adım adım yönlendirir: yeni rapor, geri dönüş hedefi, finansman ve DCF, dosyadan veri yükleme, gayrimenkul değeri bulma.",
+  demos:[{label:"Örnek: Değer bulma sihirbazını başlat",run:()=>{const old=JSON.stringify(window.VT);WZS={id:"val",i:0};renderWZ();return()=>{WZS=null;renderWZ();window.VT=JSON.parse(old)}},msg:"Sihirbaz başladı. Soldaki 'Örnek vaka' seçeneği Değer hesapla girdilerini örnekle doldurdu."},
+         {label:"Örnek: Geri dönüş hedefi sihirbazını aç",run:()=>{WZS={id:"target",i:0};renderWZ();return()=>{WZS=null;renderWZ()}},msg:"Hedef sihirbazı açıldı; veri değişmedi."}]}]},
+tp:{t:"Payback şablonu",s:[
+ {sel:"#tpp",title:"Şablon nedir?",text:"Ana modelden bağımsız, kalem seçmeli payback şablonu. Kalemleri işaretle, tutarlarını gir; yenilerini ekleyebilirsin. 'Ana modelin değerlerini al' mevcut modeli şablona kopyalar.",
+  demos:[{label:"Örnek: Suat Pay Otel'i yükle",run:()=>{const old=JSON.stringify(TP);TP=JSON.parse(JSON.stringify(CASE_TP));renderTP();return()=>{TP=JSON.parse(old);renderTP()}},msg:"Suat Pay Otel (20 oda, doluluk %65, ADR 50 €) şablona yüklendi."}]},
+ {h:"1 · Başlangıç yatırımı",title:"1 · Başlangıç yatırımı",text:"Yatırıma dahil edeceğin kalemleri işaretle: satın alma bedeli, renovasyon paketleri, işletme sermayesi. Toplam başlangıç yatırımı altta görünür."},
+ {h:"2 · Gelir kalemleri",title:"2 · Gelir kalemleri",text:"Oda geliri ADR ve doluluktan hesaplanır (4. bölüm). Diğer kalemler yıllık tutar ya da oda gelirinin yüzdesi olabilir."},
+ {h:"3 · Gider kalemleri",title:"3 · Gider kalemleri",text:"Her gideri kategorisiyle gir: departman, dağıtılmamış, malik sabit, rezerv. GOP, NOI ve net bu kategorilerden hesaplanır."},
+ {h:"4 · ADR, doluluk ve ramp-up",title:"4 · ADR, doluluk ve açılış",text:"Stabilize ADR ve doluluğu gir; istersen açılış dönemini ve aylık mevsimselliği ekle."},
+ {sel:"#tpres",title:"5 · Sonuçlar",text:"Kümülatif geri dönüş, RevPAR, yıllık ve aylık bütçe burada. Geri dönüş yılı, birikimli net nakdin toplam yatırıma ulaştığı yıldır."}]},
+vt:{t:"Değer hesapla",s:[
+ {sel:"#vtout",title:"Çıktı ve dosya",text:"Yazdır / PDF, rapor (.html), sonuç CSV ve girdi CSV buradan. Altındaki 'Dosyadan yükle (CSV)' ile girdileri dosyadan alırsın."},
+ {sel:"[data-vta=\"case\"]",title:"Nasıl başlayalım?",text:"Örnek vakayı yükle, boş şablonla başla ya da Payback şablonundaki değerleri al.",
+  demos:[{label:"Örnek vakayı yükle (Suat Pay Otel)",run:()=>{const old=JSON.stringify(window.VT);document.querySelector('[data-vta="case"]').click();return()=>{window.VT=JSON.parse(old);renderVT()}},msg:"Suat Pay Otel yüklendi: 20 oda, doluluk %65, ADR 50 €, dükkân kirası."}]},
+ {h:"1 · Mülk kartı",title:"1 · Mülk kartı ve 2 · Oda geliri",text:"Ad, oda sayısı, para birimi, TL kuru; doluluk ve ADR. Mevsimsellik ağırlıkları yalnızca oranları belirler, yıllık ortalama doluluk korunur.",
+  demos:[{label:"Örnek rakamları yaz",run:()=>{const old=JSON.stringify(window.VT);Object.assign(window.VT,{name:"Suat Pay Otel",loc:"Bodrum, Kumbahçe",units:20,beds:40,cur:"€",fx:55.3,occ:65,adr:50});renderVT();return()=>{window.VT=JSON.parse(old);renderVT()}},msg:"Mülk ve oda geliri örnek rakamlarla dolduruldu."}]},
+ {h:"3 · Diğer gelirler",title:"3 · Diğer gelirler",text:"Dükkân kirası gibi kalemler. TL ya da ana para birimi, ay ya da yıl seçebilirsin; TL kalemleri kurla çevrilir."},
+ {h:"4 · Giderler",title:"4 · Giderler",text:"Kalemleri işaretle ya da kapat, yeni kalem ekle. Departman giderleri GOP'tan önce, dağıtılmamış giderler GOP'a kadar, malik sabit ve rezerv NOI'ye kadar düşülür."},
+ {h:"5 · Değerleme varsayımları",title:"5 · Getiri oranı",text:"Değer = NOI ÷ getiri oranı (cap rate). Düşük, baz ve yüksek senaryo için NOI sapması ve getiri oranı gir. Hedef geri dönüş yılları azami fiyatı hesaplar.",
+  demos:[{label:"Örnek getiri oranlarını yaz",run:()=>{const old=JSON.stringify(window.VT);window.VT.cap=[10,8.5,7.5];window.VT.dev=[-19,0,18];window.VT.targets=[8,10,12,15];renderVT();return()=>{window.VT=JSON.parse(old);renderVT()}},msg:"Getiri oranları %10 / %8,5 / %7,5 olarak yazıldı."}]},
+ {h:"7 · Değer senaryoları",title:"Sonuç: değer senaryoları",text:"Düşük, baz ve yüksek değer ile oda başına değer. Altında duyarlılık tablosu, hedef geri dönüşe göre azami fiyat ve (teklif girersen) teklif analizi var. Zorunlu alan eksikse bu bölüm görünmez."}]}
+};
+const OZG="Hesapla düğmesi giriş ve kullanım hakkı (hesap başına 20) ister.";
+const OZ={goal:["Hedef arama","Bir kaldıraç (ADR, doluluk, kira, satın alma bedeli) seç; hedef geri dönüşe ulaşmak için o kaldıracın tek başına alması gereken değeri bulur. "+OZG],
+ walk:["Azami ödenebilir fiyat","Diğer girdiler sabitken, seçilen geri dönüş süresine ulaşmak için ödenebilecek en yüksek satın alma bedelini baz, temkinli ve güçlü senaryo için ayrı hesaplar."],
+ multi:["Çoklu kaldıraç","Kullanmak istediğin kaldıraçları işaretle, her biri için izin verdiğin en büyük değişimi gir. Sistem en verimli kaldıraçtan başlayıp sınırına kadar kullanır, hedefe ulaşınca durur. Sonuç uygunsa 'Modele uygula'. "+OZG],
+ heat:["Isı haritası","İki parametre birlikte değişirken geri dönüş süresi. Yeşil hücreler hedefi tutturur, kalın çerçeve bugünkü baz durumdur."],
+ cost:["Gider kaldıraçları","Her satırda yalnızca o gider kalemi azaltılır; hangi kalemi kısmak süreyi en çok kısaltır görürsün."],
+ mc:["Monte Carlo","Doluluk, ADR, kira, satın alma bedeli ve büyüme çarpanları normal dağılımdan çekilir; geri dönüş süresinin olasılık dağılımını verir. Değerler standart sapmadır. "+OZG],
+ scen:["Senaryolar","Mevcut modeli buraya kaydedip karşılaştır. Kayıtlar bu oturumda saklanır, sayfa yenilenince silinir."],
+ reno:["Renovasyon–gelir bağı","Renovasyon dağılımını gelir etkisiyle optimize eder. Esneklikler senin varsayımındır, gerçek veriyle doğrula. "+OZG]};
+Object.keys(OZ).forEach(k=>TOURS["oz:"+k]={t:"Optimizasyon · "+OZ[k][0],s:[
+ {sel:"#ozbase",title:"Hedef süre",text:"Hedef süre bütün optimizasyon panellerinde ortaktır. Baz geri dönüş mevcut modelden gelir. Tüm hesaplar tarayıcıda çalışır."},
+ {sel:"#ozp",title:OZ[k][0],text:OZ[k][1]},
+ {sel:"#ozres",title:"Sonuç",text:"Hesaplanınca sonuç burada görünür."}]});
+const DC={par:["Varsayımlar ve veri girişi","İskonto oranı, terminal değer, cap oranı, kredi, vergi. Bu parametreler raporda yoktur; elle gir ya da dosyadan yükle. 'Hangi analiz için neler gerekli?' kutusu her analiz için zorunlu alanları gösterir."],
+ cf:["DCF nakit akışı","Borçsuz ve borçlu yapı yıl yıl. Yıl 0 yatırım anıdır; işletme nakdi modelden gelir, vergi, terminal değer ve kredi satırları DCF varsayımlarıdır. Parantez çıkıştır."],
+ res:["Sonuçlar (NPV · IRR)","NPV, IRR ve getiri göstergeleri. Borçsuz analiz için süre, iskonto oranı ve (terminal değer açıksa) çıkış varsayımı yeter."],
+ fin:["Finansman ve DSCR","Kredi oranı, faiz ve vade; borç servisi karşılama oranı (DSCR). Kredi kullanmıyorsan analiz dışında kalır. Şartı karşılayan en yüksek kredi oranı da hesaplanır."],
+ sens:["Duyarlılık","NPV ve IRR hangi varsayıma ne kadar duyarlı. Yeşil pozitif, kırmızı negatif NPV. Terminal değere dayanır."],
+ tv:["Terminal değer","Çıkış değerinin dört yöntemle karşılaştırması: cap oranı, Gordon büyüme, çarpan, değer artışı. Seçili yöntemi Varsayımlar sayfasından değiştirirsin."]};
+Object.keys(DC).forEach(k=>TOURS["dc:"+k]={t:"DCF · "+DC[k][0],s:[
+ {sel:"#dcp",title:DC[k][0],text:DC[k][1]},
+ ...(k==="par"?[{sel:"#dcfile",title:"Dosyadan yükle",text:"CSV, metin ya da JSON ile parametreleri toplu yükle. 'Şablonu metin kutusuna koy' önce mevcut değerleri verir."}]:[]) ]});
+
+/* ---- motor ---- */
+let cur=null;
+const vis=e=>e&&e.getClientRects().length>0;
+function resolve(s){if(!s)return null;if(s.h){const hs=[...document.querySelectorAll(".main h2,.main h3")].filter(h=>vis(h)&&h.textContent.replace(/\s+/g," ").includes(s.h));const h=hs[0];return h?(h.closest(".dc-g,.card,section")||h.parentElement):null}
+ if(s.sel==="#menu")return document.getElementById("menu");const e=document.querySelector(s.sel);return vis(e)?e:null}
+function key(){return VIEWSEC==="oz"?"oz:"+OZP:VIEWSEC==="dc"?"dc:"+DCP:VIEWSEC}
+function build(){const d=document.createElement("div");d.id="tour";d.innerHTML='<div id="tshield"></div><div id="tspot"></div><div id="tcard" role="dialog" aria-live="polite" aria-label="Yardım turu"></div>';document.body.appendChild(d);return d}
+function place(){if(!cur)return;const s=cur.steps[cur.i],t=resolve(s),sp=document.getElementById("tspot"),c=document.getElementById("tcard");if(!sp||!c)return;
+ if(t){const r=t.getBoundingClientRect(),p=6;sp.style.cssText=`left:${r.left-p}px;top:${r.top-p}px;width:${r.width+2*p}px;height:${r.height+2*p}px;display:block`;
+  const ch=c.offsetHeight,cw=c.offsetWidth,vw=innerWidth,vh=innerHeight;let top=r.bottom+14,left=Math.min(Math.max(12,r.left),vw-cw-12);
+  if(top+ch>vh-12){top=r.top-ch-14;if(top<12){top=Math.max(12,vh-ch-12);left=r.left+r.width/2>vw/2?12:Math.max(12,vw-cw-12)}}
+  c.style.top=top+"px";c.style.left=left+"px"}
+ else{sp.style.display="none";c.style.top=Math.max(12,(innerHeight-c.offsetHeight)/2)+"px";c.style.left=Math.max(12,(innerWidth-c.offsetWidth)/2)+"px"}}
+function show(){const s=cur.steps[cur.i],c=document.getElementById("tcard"),n=cur.steps.length;
+ const dm=(s.demos||[]).map((d,j)=>`<button type="button" class="btn" data-tr="demo:${j}">${esc(d.label)}</button>`).join(" ");
+ c.innerHTML=`<div class="tn">${esc(cur.title)} · adım ${cur.i+1}/${n}</div><h4>${esc(s.title)}</h4><p>${s.text}</p>${dm?`<div class="tdemo">${dm}<div class="tm" id="tmsg">Örnek veriler girdilerinin üzerine yazar; 'Geri al' ile dönebilirsin.</div></div>`:""}<div class="tb">${cur.i>0?'<button type="button" class="btn" data-tr="prev">Geri</button>':""}${cur.i<n-1?'<button type="button" class="btn" data-tr="next">İleri</button>':'<button type="button" class="btn" data-tr="close">Bitir</button>'}<button type="button" class="btn" data-tr="close">Kapat</button>${cur.undo.length?'<button type="button" class="btn" data-tr="undo">Geri al</button>':""}</div>`;
+ const t=resolve(s);if(t){t.scrollIntoView({block:"center",behavior:"smooth"})}
+ place();setTimeout(place,320);const b=c.querySelector('[data-tr="next"],[data-tr="close"]');if(b)b.focus({preventScroll:true})}
+function start(){const k=key(),T=TOURS[k];if(!T){alert("Bu ekran için yardım henüz yok.");return}
+ if(cur)stop(true);cur={k,title:T.t,steps:T.s,i:0,undo:[],root:build()};show()}
+function stop(force){if(!cur)return;
+ if(!force&&cur.undo.length&&!cur.asked){cur.asked=true;const c=document.getElementById("tcard");c.innerHTML='<h4>Örnek veriler yüklü</h4><p>Bu turda örnek verilerle girdilerin değişti. Ne yapalım?</p><div class="tb"><button type="button" class="btn" data-tr="undoall">Geri al (eski girdilerime dön)</button><button type="button" class="btn" data-tr="keep">Örnek verileri koru</button></div>';place();return}
+ cur.root.remove();cur=null}
+function undoOne(){const u=cur.undo.pop();if(u){try{u()}catch(e){}}}
+document.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-tour],[data-tr]");if(!t)return;e.preventDefault();e.stopImmediatePropagation();
+ if(t.dataset.tour==="start"){start();return}if(!cur)return;const a=t.dataset.tr;
+ if(a==="next"){cur.i=Math.min(cur.steps.length-1,cur.i+1);show()}
+ else if(a==="prev"){cur.i=Math.max(0,cur.i-1);show()}
+ else if(a==="close"){stop(false)}
+ else if(a==="keep"){cur.undo=[];stop(true)}
+ else if(a==="undoall"){while(cur.undo.length)undoOne();stop(true)}
+ else if(a==="undo"){undoOne();show();const m=document.getElementById("tmsg");if(m)m.textContent="Geri alındı."}
+ else if(a&&a.startsWith("demo:")){const d=cur.steps[cur.i].demos[+a.slice(5)];try{cur.undo.push(d.run());show();const m=document.getElementById("tmsg");if(m)m.textContent=d.msg||"Uygulandı."}catch(er){const m=document.getElementById("tmsg");if(m)m.textContent="Uygulanamadı: "+er.message}setTimeout(place,350)}
+},true);
+document.addEventListener("keydown",e=>{if(!cur)return;if(e.key==="Escape"){stop(false)}else if(e.key==="ArrowRight"&&cur.i<cur.steps.length-1){cur.i++;show()}else if(e.key==="ArrowLeft"&&cur.i>0){cur.i--;show()}});
+addEventListener("resize",()=>place());addEventListener("scroll",()=>place(),true);
+window.gmTour={start,keys:()=>Object.keys(TOURS)};
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 #gmc-b{position:fixed;right:14px;bottom:14px;z-index:9999;background:#1f3a5f;color:#fff;border:0;border-radius:20px;padding:9px 14px;font:600 13px system-ui;cursor:pointer;box-shadow:0 2px 8px #0004}
