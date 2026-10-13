@@ -2908,7 +2908,7 @@ refresh();
 <style>
 #gmc-b{position:fixed;right:14px;bottom:14px;z-index:9999;background:#1f3a5f;color:#fff;border:0;border-radius:20px;padding:9px 14px;font:600 13px system-ui;cursor:pointer;box-shadow:0 2px 8px #0004}
 #gmc-p{position:fixed;right:14px;bottom:56px;z-index:9999;width:min(340px,calc(100vw - 28px));max-height:70vh;overflow:auto;background:#fff;color:#222;border:1px solid #bbb;border-radius:10px;padding:12px;font:13px system-ui;box-shadow:0 4px 16px #0004;display:none}
-#gmc-p input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0}#gmc-p button{margin:3px 3px 3px 0;padding:5px 9px;cursor:pointer}
+#gmc-p input{width:100%;box-sizing:border-box;padding:6px;margin:4px 0}#gmc-p input[type=checkbox]{width:auto;margin:4px 6px 4px 0}#gmc-p .tb button{border:1px solid #bbb;background:transparent;color:inherit;border-radius:6px}#gmc-p .tb button[aria-pressed=true]{background:#1f3a5f;color:#fff}#gmc-p button{margin:3px 3px 3px 0;padding:5px 9px;cursor:pointer}
 #gmc-p .r{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #ddd;padding:4px 0}
 @media(prefers-color-scheme:dark){#gmc-p{background:#1b1f27;color:#eee;border-color:#444}}
 </style>
@@ -2916,7 +2916,22 @@ refresh();
 (function(){
 const URL_="https://nipsqpbwvfifxmoopqbi.supabase.co",KEY="sb_publishable_S7gdfhPyNGHy6lMsBKV7uQ_esv8-DLw";
 let sb=null,user=null,q=null,msg="";
-try{sb=window.supabase.createClient(URL_,KEY,{auth:{persistSession:true,detectSessionInUrl:true}})}catch(e){}
+const RK="gm_remember";
+const rem=()=>{try{return localStorage.getItem(RK)!=="0"}catch(e){return true}};
+const setRem=v=>{try{localStorage.setItem(RK,v?"1":"0")}catch(e){}};
+const store={getItem:k=>{try{const a=localStorage.getItem(k);return a!==null?a:sessionStorage.getItem(k)}catch(e){return null}},
+ setItem:(k,v)=>{try{if(rem()){localStorage.setItem(k,v);sessionStorage.removeItem(k)}else{sessionStorage.setItem(k,v);localStorage.removeItem(k)}}catch(e){}},
+ removeItem:k=>{try{localStorage.removeItem(k);sessionStorage.removeItem(k)}catch(e){}}};
+let mode="pw",rec=false,emv="";
+const trErr=e=>{const m=String(e&&e.message||e||"");
+ if(/Invalid login credentials/i.test(m))return"E-posta ya da şifre hatalı. Daha önce bağlantıyla girdiysen 'Şifremi unuttum' ile şifre belirle.";
+ if(/not confirmed/i.test(m))return"E-posta henüz onaylanmadı; gelen onay bağlantısına tıkla.";
+ if(/already registered/i.test(m))return"Bu e-posta kayıtlı; giriş yap ya da 'Şifremi unuttum' ile şifre belirle.";
+ if(/Password should|weak|at least/i.test(m))return"Şifre yeterince güçlü değil (en az 8 karakter, çok kolay olmayan bir şifre seç).";
+ if(/rate limit|too many|security purposes/i.test(m))return"Çok sık denendi, bir dakika bekleyip tekrar dene.";
+ if(/same password|different from the old/i.test(m))return"Yeni şifre eskisiyle aynı olamaz.";
+ return"Hata: "+m};
+try{sb=window.supabase.createClient(URL_,KEY,{auth:{persistSession:true,detectSessionInUrl:true,autoRefreshToken:true,storage:store}})}catch(e){}
 const b=document.createElement("button");b.id="gmc-b";b.textContent="☁ Hesap";document.body.appendChild(b);
 const p=document.createElement("div");p.id="gmc-p";document.body.appendChild(p);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -2926,10 +2941,26 @@ function label(){b.textContent=user?("☁ "+(q?(q.quota-q.used)+" hak":"hesap"))
 async function list(){const r=await sb.from("gm_projects").select("id,name,updated_at").order("updated_at",{ascending:false}).limit(50);return r.data||[]}
 async function draw(){
  if(!sb){p.innerHTML="Bulut bağlantısı kurulamadı.";return}
- if(!user){p.innerHTML=`<b>Giriş (beta)</b><br>E-posta adresine giriş bağlantısı gönderilir.<input id="gmc-e" type="email" placeholder="e-posta"><button id="gmc-l">Bağlantı gönder</button><div>${esc(msg)}</div><small>Beta: kullanım hakkı hesap başına 20 analizdir (optimizasyon, Monte Carlo vb.). Raporların hesabına kaydedilir.</small>`;
-  p.querySelector("#gmc-l").onclick=async()=>{const e=p.querySelector("#gmc-e").value.trim();if(!e)return;const r=await sb.auth.signInWithOtp({email:e,options:{emailRedirectTo:location.origin+location.pathname}});msg=r.error?("Hata: "+r.error.message):"Bağlantı gönderildi, e-postanı kontrol et.";draw()};return}
+ if(user&&rec){p.innerHTML=`<b>Yeni şifre belirle</b><input id="gmc-np" type="password" placeholder="yeni şifre (en az 8 karakter)" autocomplete="new-password"><button id="gmc-npb">Kaydet</button><div>${esc(msg)}</div>`;
+  p.querySelector("#gmc-npb").onclick=async()=>{const v=p.querySelector("#gmc-np").value;if(v.length<8){msg="Şifre en az 8 karakter olmalı.";return draw()}const r=await sb.auth.updateUser({password:v});if(r.error)msg=trErr(r.error);else{rec=false;msg="Şifre kaydedildi."}draw()};return}
+ if(!user){const T=(m,n)=>`<button type="button" data-m="${m}" aria-pressed="${mode===m}">${n}</button>`;
+  p.innerHTML=`<b>Giriş (beta)</b><div class="tb">${T("pw","Şifre")}${T("signup","Kayıt ol")}${T("link","E-posta bağlantısı")}</div><input id="gmc-e" type="email" placeholder="e-posta" autocomplete="email" value="${esc(emv)}">${mode!=="link"?`<input id="gmc-pw" type="password" placeholder="şifre (en az 8 karakter)" autocomplete="${mode==="signup"?"new-password":"current-password"}">`:""}<label style="display:block"><input type="checkbox" id="gmc-r" ${rem()?"checked":""}>Beni hatırla</label><button id="gmc-go">${mode==="pw"?"Giriş yap":mode==="signup"?"Kayıt ol":"Bağlantı gönder"}</button>${mode==="pw"?'<button id="gmc-fg" type="button">Şifremi unuttum</button>':""}<div>${esc(msg)}</div><small>${mode==="link"?"E-postana tek kullanımlık giriş bağlantısı gelir; bağlantıyı aynı tarayıcıda aç.":mode==="signup"?"İlk kayıtta bir kez e-posta onayı istenir; sonra yalnızca şifrenle girersin.":"Hesabın bağlantıyla açıldıysa önce 'Şifremi unuttum' ile şifre belirle."}</small><br><small>Beta: kullanım hakkı hesap başına 20 analizdir (optimizasyon, Monte Carlo vb.). Raporların hesabına kaydedilir.</small>`;
+  const em=()=>p.querySelector("#gmc-e").value.trim(),pw=()=>{const x=p.querySelector("#gmc-pw");return x?x.value:""},back=location.origin+location.pathname;
+  p.querySelectorAll("[data-m]").forEach(x=>x.onclick=()=>{emv=em();mode=x.dataset.m;msg="";draw()});
+  const go=async()=>{const e=em();emv=e;if(!e){msg="E-posta gerekli.";return draw()}setRem(p.querySelector("#gmc-r").checked);msg="";
+   if(mode==="link"){const r=await sb.auth.signInWithOtp({email:e,options:{emailRedirectTo:back}});msg=r.error?trErr(r.error):"Bağlantı gönderildi, e-postanı kontrol et (aynı tarayıcıda aç).";return draw()}
+   const w=pw();if(w.length<8){msg="Şifre en az 8 karakter olmalı.";return draw()}
+   if(mode==="pw"){const r=await sb.auth.signInWithPassword({email:e,password:w});if(r.error){msg=trErr(r.error);draw()}return}
+   const r=await sb.auth.signUp({email:e,password:w,options:{emailRedirectTo:back}});
+   if(r.error){msg=trErr(r.error);return draw()}
+   if(r.data&&r.data.user&&r.data.user.identities&&r.data.user.identities.length===0){msg=trErr("already registered");return draw()}
+   if(r.data&&r.data.session)return;msg="Onay bağlantısı e-postana gönderildi. Onayladıktan sonra şifrenle giriş yap.";mode="pw";draw()};
+  p.querySelector("#gmc-go").onclick=go;
+  p.querySelectorAll("#gmc-e,#gmc-pw").forEach(x=>x.addEventListener("keydown",ev=>{if(ev.key==="Enter")go()}));
+  const fg=p.querySelector("#gmc-fg");if(fg)fg.onclick=async()=>{const e=em();emv=e;if(!e){msg="Önce e-posta adresini yaz.";return draw()}const r=await sb.auth.resetPasswordForEmail(e,{redirectTo:back});msg=r.error?trErr(r.error):"Şifre belirleme bağlantısı e-postana gönderildi.";draw()};
+  return}
  const L=await list();const RP=(await sb.from("gm_reports").select("id,title,project_name,created_at").order("created_at",{ascending:false}).limit(30)).data||[];
- p.innerHTML=`<b>${esc(user.email)}</b> <button id="gmc-o">Çıkış</button><div>Kalan analiz hakkı: <b>${q?q.quota-q.used:"?"}</b> / ${q?q.quota:"?"}</div><button id="gmc-s">Buluta kaydet: ${esc(PJ.name)}</button><div>${esc(msg)}</div><b>Projelerim</b>${L.map(x=>`<div class="r"><span>${esc(x.name)}<br><small>${new Date(x.updated_at).toLocaleString("tr-TR")}</small></span><span><button data-o="${x.id}">Aç</button><button data-d="${x.id}">Sil</button></span></div>`).join("")||"<div><small>Henüz kayıt yok.</small></div>"}<hr><b>Kayıtlı raporlar</b>${RP.map(x=>`<div class="r"><span>${esc(x.title)}<br><small>${esc(x.project_name)} · ${new Date(x.created_at).toLocaleString("tr-TR")}</small></span><span><button data-ro="${x.id}">Aç</button><button data-rd="${x.id}">Sil</button></span></div>`).join("")||"<div><small>Henüz rapor yok.</small></div>"}<hr><textarea id="gmc-f" style="width:100%" rows="2" placeholder="Geri bildirim"></textarea><button id="gmc-fs">Gönder</button>`;
+ p.innerHTML=`<b>${esc(user.email)}</b> <button id="gmc-o">Çıkış</button><div>Kalan analiz hakkı: <b>${q?q.quota-q.used:"?"}</b> / ${q?q.quota:"?"}</div><button id="gmc-s">Buluta kaydet: ${esc(PJ.name)}</button><div>${esc(msg)}</div><b>Projelerim</b>${L.map(x=>`<div class="r"><span>${esc(x.name)}<br><small>${new Date(x.updated_at).toLocaleString("tr-TR")}</small></span><span><button data-o="${x.id}">Aç</button><button data-d="${x.id}">Sil</button></span></div>`).join("")||"<div><small>Henüz kayıt yok.</small></div>"}<hr><details><summary>Şifre belirle / değiştir</summary><input id="gmc-np" type="password" placeholder="yeni şifre (en az 8 karakter)" autocomplete="new-password"><button id="gmc-npb">Kaydet</button></details><hr><b>Kayıtlı raporlar</b>${RP.map(x=>`<div class="r"><span>${esc(x.title)}<br><small>${esc(x.project_name)} · ${new Date(x.created_at).toLocaleString("tr-TR")}</small></span><span><button data-ro="${x.id}">Aç</button><button data-rd="${x.id}">Sil</button></span></div>`).join("")||"<div><small>Henüz rapor yok.</small></div>"}<hr><textarea id="gmc-f" style="width:100%" rows="2" placeholder="Geri bildirim"></textarea><button id="gmc-fs">Gönder</button>`;
  p.querySelector("#gmc-o").onclick=async()=>{await sb.auth.signOut()};
  p.querySelector("#gmc-s").onclick=async()=>{const s=projSnap();const ex=L.find(x=>x.name===PJ.name);
   const row={name:PJ.name,data:s,schema_version:s.schema,model_version:String(s.model)};
@@ -2940,9 +2971,10 @@ async function draw(){
  p.querySelectorAll("[data-d]").forEach(x=>x.onclick=async()=>{if(!confirm("Silinsin mi?"))return;await sb.from("gm_projects").delete().eq("id",x.dataset.d);draw()});
  p.querySelectorAll("[data-ro]").forEach(x=>x.onclick=async()=>{const r=await sb.from("gm_reports").select("html").eq("id",x.dataset.ro).single();if(r.error){msg="Hata: "+r.error.message;return draw()}const u=URL.createObjectURL(new Blob([r.data.html],{type:"text/html"}));const w=window.open(u,"_blank");if(!w){msg="Açılır pencere engellendi.";draw()}setTimeout(()=>URL.revokeObjectURL(u),60000)});
  p.querySelectorAll("[data-rd]").forEach(x=>x.onclick=async()=>{if(!confirm("Rapor silinsin mi?"))return;await sb.from("gm_reports").delete().eq("id",x.dataset.rd);draw()});
+ p.querySelector("#gmc-npb").onclick=async()=>{const v=p.querySelector("#gmc-np").value;if(v.length<8){msg="Şifre en az 8 karakter olmalı.";return draw()}const r=await sb.auth.updateUser({password:v});msg=r.error?trErr(r.error):"Şifre kaydedildi; artık şifrenle girebilirsin.";draw()};
  p.querySelector("#gmc-fs").onclick=async()=>{const m=p.querySelector("#gmc-f").value.trim();if(!m)return;const r=await sb.from("gm_feedback").insert({message:m});msg=r.error?"Hata":"Teşekkürler.";draw()};
 }
-if(sb){sb.auth.onAuthStateChange((_e,s)=>{user=s&&s.user||null;q=null;label();if(user)quota().then(()=>{if(p.style.display==="block")draw()});else if(p.style.display==="block")draw()});
+if(sb){sb.auth.onAuthStateChange((_e,s)=>{if(_e==="PASSWORD_RECOVERY"){rec=true;p.style.display="block"}user=s&&s.user||null;q=null;label();if(user)quota().then(()=>{if(p.style.display==="block")draw()});else if(p.style.display==="block")draw()});
  sb.auth.getSession().then(r=>{user=r.data.session&&r.data.session.user||null;label();quota()})}
 window.gmCloud={ready:()=>!!(sb&&user),
  open:m=>{if(m)msg=m;p.style.display="block";draw()},
