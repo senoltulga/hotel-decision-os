@@ -2876,9 +2876,81 @@ renderMenu();
 </script>
 
 <script>
+/* ===== Şablon: Personel bütçesi (Payroll) v2.2 — kadro → aylık maliyet → yıllık USD → Payback'e bağla ===== */
+(function(){
+const MON=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+const DEPTS=["Yönetim","Muhasebe","Ön büro","Housekeeping","Çamaşırhane","Mutfak","Servis","Teknik servis","Güvenlik","Animasyon / Spa"];
+const RT=d=>d==="Ön büro"?[32.5,8]:[52.5,18.9];
+const R=(dept,pos,n,net)=>({on:1,dept,pos,n,net,ssk:RT(dept)[0],muh:RT(dept)[1],from:1,to:12});
+const PR0=()=>({v:1,name:"Personel bütçesi",fx:48.8,raise:{m:7,pct:0},
+ rows:[R("Yönetim","İşletme müdürü",1,85000),R("Muhasebe","Muhasebe müdürü",1,70000),R("Ön büro","F.O. şefi",1,70000),R("Ön büro","Resepsiyonist",1,55000),R("Housekeeping","House keeper",1,75000),R("Housekeeping","Maid",2,45000),R("Teknik servis","Teknik müdür",1,75000)],
+ extra:[{on:1,name:"Üniforma giderleri",kind:"fixed",val:1600},{on:1,name:"Personel ulaşım",kind:"fixed",val:800},{on:1,name:"Personel sağlık",kind:"fixed",val:440},{on:1,name:"Personel iaşe",kind:"fixed",val:0}]});
+let PR=PR0();window.PRs=()=>PR;
+const NEWR={dept:"Housekeeping",pos:"",n:1,net:50000};
+const f0=v=>nf.format(Math.round(v)),usd=v=>"$"+nf.format(Math.round(v));
+function prCalc(){const P=PR,rows=P.rows.filter(r=>r.on!==0),mon=[];
+ for(let m=0;m<12;m++){const k=(P.raise&&+P.raise.pct&&m+1>=(+P.raise.m||13))?1+(+P.raise.pct)/100:1,d={};let heads=0,net=0,ssk=0,muh=0;
+  rows.forEach(r=>{if(!(m+1>=(+r.from||1)&&m+1<=(+r.to||12)))return;const n=+r.n||0,nt=(+r.net||0)*k*n,s=nt*(+r.ssk||0)/100,u=nt*(+r.muh||0)/100;d[r.dept]=(d[r.dept]||0)+nt+s+u;heads+=n;net+=nt;ssk+=s;muh+=u});
+  const ex=sum(P.extra.filter(x=>x.on!==0).map(x=>x.kind==="head"?(+x.val||0)*heads:(+x.val||0)));
+  mon.push({d,heads,net,ssk,muh,ex,tot:net+ssk+muh+ex})}
+ const fx=+P.fx>0?+P.fx:1,year=sum(mon.map(x=>x.tot)),dep={};mon.forEach(x=>Object.keys(x.d).forEach(k=>dep[k]=(dep[k]||0)+x.d[k]));
+ const hm=sum(mon.map(x=>x.heads))/12,net=sum(mon.map(x=>x.net)),sk=sum(mon.map(x=>x.ssk)),mu=sum(mon.map(x=>x.muh)),ex=sum(mon.map(x=>x.ex));
+ return{mon,year,yearUSD:year/fx,dep,hm,net,sk,mu,ex,fx,load:net?(sk+mu)/net:0}}
+function prIn(){const P=PR,N=NEWR;
+ const nu=(p,v,w,st)=>`<input class="tin" style="width:${w||80}px" type="number" step="${st||1}" data-pri="${p}" value="${v}">`;
+ const dsel=(p,v)=>`<select data-prs="${p}">${DEPTS.map(d=>`<option ${d===v?"selected":""}>${d}</option>`).join("")}</select>`;
+ return `<div class="plhead"><h2 style="font-size:16px">Şablon · Personel bütçesi (Payroll)</h2><span class="code">kadro → aylık maliyet → yıllık TL ve USD → Payback şablonuna</span></div>
+ <p class="note">Pozisyon başına kişi sayısı, net maaş, SSK ve muhtasar oranı ile çalışılan ayları girin; aylık ve yıllık personel maliyeti departman ve toplam olarak hesaplanır. Sonucu Payback şablonuna personel gideri olarak aktarabilirsiniz.</p>
+ <div class="oz-row"><label>Bütçe adı<input class="tin" style="width:220px" type="text" data-pri="name" value="${esc(P.name)}"></label><label>Kur (TL / USD)${nu("fx",P.fx,90,0.1)}</label><label>Zam ayı (1–12)${nu("raise.m",P.raise.m,70)}</label><label>Zam oranı %${nu("raise.pct",P.raise.pct,70,0.5)}</label><button type="button" class="btn" data-pra="sheet">Dosyadaki değerleri yükle</button><button type="button" class="btn" data-pra="blank">Boş başla</button></div>
+ <div class="dc-g"><h3>1 · Kadro</h3><div class="wrap"><table class="ozt"><thead><tr><th></th><th>Departman</th><th>Pozisyon</th><th>Kişi</th><th>Net maaş (TL/ay)</th><th>SSK % (netin)</th><th>Muhtasar % (netin)</th><th>İlk ay</th><th>Son ay</th><th></th></tr></thead><tbody>${P.rows.map((r,i)=>`<tr><td><input type="checkbox" data-prc="rows.${i}.on" ${r.on!==0?"checked":""}></td><td>${dsel(`rows.${i}.dept`,r.dept)}</td><td><input class="tin" style="width:150px" type="text" data-pri="rows.${i}.pos" value="${esc(r.pos)}"></td><td>${nu(`rows.${i}.n`,r.n,60)}</td><td>${nu(`rows.${i}.net`,r.net,100,1000)}</td><td>${nu(`rows.${i}.ssk`,r.ssk,70,0.5)}</td><td>${nu(`rows.${i}.muh`,r.muh,70,0.5)}</td><td>${nu(`rows.${i}.from`,r.from,55)}</td><td>${nu(`rows.${i}.to`,r.to,55)}</td><td><button type="button" class="btn" data-pra="del:rows:${i}">Sil</button></td></tr>`).join("")}</tbody></table></div>
+ <div class="oz-row"><label>Departman<select data-prn="dept">${DEPTS.map(d=>`<option ${d===N.dept?"selected":""}>${d}</option>`).join("")}</select></label><label>Pozisyon<input class="tin" style="width:170px" type="text" data-prn="pos" value="${esc(N.pos)}" placeholder="örn. Bellboy"></label><label>Kişi<input class="tin" style="width:60px" type="number" data-prn="n" value="${N.n}"></label><label>Net maaş (TL)<input class="tin" style="width:110px" type="number" step="1000" data-prn="net" value="${N.net}"></label><button type="button" class="btn" data-pra="add">Pozisyon ekle</button></div><p class="note">SSK ve muhtasar, net maaşın yüzdesi olarak işveren maliyetine eklenir (dosyadaki yönteme göre; yönetim, muhasebe, housekeeping ve teknikte %52,5 / %18,9, ön büroda %32,5 / %8). Sezonluk personel için ilk ve son ayı daraltın.</p></div>
+ <div class="dc-g"><h3>2 · Diğer personel giderleri (aylık)</h3><div class="wrap"><table class="ozt"><thead><tr><th></th><th>Kalem</th><th>Hesap</th><th>Tutar (TL/ay)</th></tr></thead><tbody>${P.extra.map((x,i)=>`<tr><td><input type="checkbox" data-prc="extra.${i}.on" ${x.on!==0?"checked":""}></td><td><input class="tin" style="width:200px" type="text" data-pri="extra.${i}.name" value="${esc(x.name)}"></td><td><select data-prs="extra.${i}.kind"><option value="fixed" ${x.kind!=="head"?"selected":""}>Aylık toplam</option><option value="head" ${x.kind==="head"?"selected":""}>Kişi başı</option></select></td><td>${nu(`extra.${i}.val`,x.val,100,100)}</td></tr>`).join("")}</tbody></table></div><div class="oz-row"><button type="button" class="btn" data-pra="addx">Kalem ekle</button></div></div>
+ <div id="prres"></div>`}
+function prRes(){const el=document.getElementById("prres");if(!el)return;const C=prCalc(),K=(a,b,c)=>`<div><div class="kl">${a}</div><div class="kv">${b}</div><div class="kr">${c||""}</div></div>`;
+ const deps=DEPTS.filter(d=>C.dep[d]).concat(Object.keys(C.dep).filter(d=>!DEPTS.includes(d)));
+ let h=`<h3 style="margin:16px 0 6px">3 · Sonuçlar</h3><div class="kg">${K("Yıllık personel gideri (TL)",f0(C.year),"12 ay")}${K("Yıllık personel gideri (USD)",usd(C.yearUSD),"kur "+nf1.format(C.fx))}${K("Ortalama kadro",nf1.format(C.hm)+" kişi","")}${K("Kişi başı aylık maliyet",C.hm?f0(C.year/12/C.hm)+" TL":"–",C.hm?usd(C.year/12/C.hm/C.fx):"")}${K("İşveren yükü",PP(C.load),"SSK + muhtasar ÷ net maaş")}${K("Ortalama aylık maliyet",f0(C.year/12)+" TL","")}</div>`;
+ h+=`<h3 style="margin:16px 0 6px">Departman payı</h3>`+hbar(deps.map((d,i)=>({l:d,v:C.dep[d],c:DC[i%5]})),{fmt:v=>nf.format(Math.round(v/1000))+" bin TL",aria:"Departman bazında yıllık personel gideri",ml:140});
+ h+=`<h3 style="margin:16px 0 6px">Departman tablosu (yıllık)</h3><div class="wrap"><table class="ozt"><thead><tr><th>Departman</th><th>Yıllık (TL)</th><th>Yıllık (USD)</th><th>Pay</th></tr></thead><tbody>${deps.map(d=>`<tr><td>${esc(d)}</td><td>${f0(C.dep[d])}</td><td>${f0(C.dep[d]/C.fx)}</td><td>${PP(C.year?C.dep[d]/C.year:0)}</td></tr>`).join("")}<tr><td>Net maaş</td><td>${f0(C.net)}</td><td>${f0(C.net/C.fx)}</td><td>${PP(C.year?C.net/C.year:0)}</td></tr><tr><td>SSK primi</td><td>${f0(C.sk)}</td><td>${f0(C.sk/C.fx)}</td><td>${PP(C.year?C.sk/C.year:0)}</td></tr><tr><td>Muhtasar</td><td>${f0(C.mu)}</td><td>${f0(C.mu/C.fx)}</td><td>${PP(C.year?C.mu/C.year:0)}</td></tr><tr><td>Diğer personel giderleri</td><td>${f0(C.ex)}</td><td>${f0(C.ex/C.fx)}</td><td>${PP(C.year?C.ex/C.year:0)}</td></tr><tr style="font-weight:600"><td>TOPLAM</td><td>${f0(C.year)}</td><td>${f0(C.year/C.fx)}</td><td>100%</td></tr></tbody></table></div>`;
+ const row=(n,g,b)=>`<tr style="${b?"font-weight:600":""}"><td>${esc(n)}</td>${C.mon.map(x=>`<td>${f0(g(x))}</td>`).join("")}<td>${f0(sum(C.mon.map(g)))}</td></tr>`;
+ h+=`<h3 style="margin:16px 0 6px">Aylık personel bütçesi (TL)</h3><div class="wrap"><table class="ozt"><thead><tr><th>Kalem</th>${MON.map(m=>`<th>${m}</th>`).join("")}<th>Yıl</th></tr></thead><tbody><tr><td>Kadro (kişi)</td>${C.mon.map(x=>`<td>${x.heads}</td>`).join("")}<td>${nf1.format(C.hm)} ort.</td></tr>${deps.map(d=>row("  "+d,x=>x.d[d]||0)).join("")}${row("Diğer personel giderleri",x=>x.ex)}${row("TOPLAM (TL)",x=>x.tot,1)}${row("TOPLAM (USD)",x=>x.tot/C.fx,1)}</tbody></table></div>`;
+ h+=`<div class="oz-row" style="margin-top:12px"><button type="button" class="btn" data-pra="topb">Payback şablonuna personel gideri olarak uygula</button><span class="code" id="prmsg"></span></div><p class="note">Aktarım, Payback şablonunda "Personel (payroll modülü)" adlı yıllık sabit gider kalemi (USD, dağıtılmamış gider) ekler veya günceller. Şablonda ayrıca personel içeren başka kalemler (ör. merkezî destek, genel yönetim) varsa çift saymamak için onları kapatın. Ayrıntı: bu modül kuru, zammı ve sezonluk çalışmayı hesaba katar.</p>`;
+ el.innerHTML=h}
+function renderPR(){const p=document.getElementById("prp");if(!p)return;p.innerHTML=prIn();prRes()}
+window.renderPR=renderPR;
+/* kabuk */
+const host=document.getElementById("tpwrap");
+if(host&&!document.getElementById("prwrap")){const w=document.createElement("div");w.id="prwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="prp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
+if(!TPL_LIST.some(x=>x[0]==="pr"))TPL_LIST.push(["pr","Personel bütçesi (Payroll)"]);
+const sv=window.showView;window.showView=function(){const r=sv.apply(this,arguments);const w=document.getElementById("prwrap");if(w)w.hidden=VIEWSEC!=="pr";return r};
+const rm=window.renderMenu;window.renderMenu=function(){const r=rm.apply(this,arguments);try{document.querySelectorAll('#menu [data-tpp]').forEach(b=>{if(b.dataset.tpp==="pr")b.setAttribute("aria-current",String(VIEWSEC==="pr"))})}catch(e){}return r};
+const set=(path,v)=>{const p=path.split(".");let o=PR;for(let i=0;i<p.length-1;i++)o=o[p[i]];o[p[p.length-1]]=v};
+document.addEventListener("click",e=>{
+ const t=e.target.closest&&e.target.closest("[data-tpp],[data-pra]");if(!t)return;
+ if(t.dataset.tpp==="pr"){e.preventDefault();e.stopImmediatePropagation();VIEWSEC="pr";OPEN.add("tp");showView();renderPR();renderMenu();return}
+ if(t.dataset.pra===undefined)return;e.preventDefault();e.stopImmediatePropagation();const a=t.dataset.pra;
+ if(a==="sheet")PR=PR0();
+ else if(a==="blank")PR={...PR0(),name:"Personel bütçesi",rows:[],extra:[]};
+ else if(a==="add"){if(!String(NEWR.pos).trim())return;PR.rows.push(R(NEWR.dept,NEWR.pos.trim(),+NEWR.n||1,+NEWR.net||0));NEWR.pos=""}
+ else if(a==="addx")PR.extra.push({on:1,name:"Yeni kalem",kind:"fixed",val:0});
+ else if(a.startsWith("del:")){const[,sc,ix]=a.split(":");PR[sc].splice(+ix,1)}
+ else if(a==="topb"){const u=prCalc().yearUSD;let it=TP.exp.find(x=>x.id==="pers_pr");if(!it){it={id:"pers_pr",name:"Personel (payroll modülü)",on:1,kind:"fixed",val:0,cat:"und",custom:1};TP.exp.push(it)}it.val=Math.round(u);it.on=1;const m=document.getElementById("prmsg");if(m)m.textContent="Aktarıldı: "+usd(u)+" / yıl. Payback şablonunda gider olarak görünür.";return}
+ renderPR()},true);
+document.addEventListener("input",e=>{const el=e.target;if(!(el instanceof HTMLInputElement))return;
+ if(el.dataset.pri!==undefined){const k=el.dataset.pri;set(k,el.type==="number"?(+el.value||0):el.value);prRes();return}
+ if(el.dataset.prn!==undefined){NEWR[el.dataset.prn]=el.type==="number"?(+el.value||0):el.value}},true);
+document.addEventListener("change",e=>{const el=e.target;if(!el.dataset)return;
+ if(el.dataset.prc!==undefined){set(el.dataset.prc,el.checked?1:0);prRes();return}
+ if(el.dataset.prs!==undefined){const k=el.dataset.prs;let v=el.value;set(k,v);if(/\.dept$/.test(k)){const[a,i]=k.split(".");const r=PR[a][+i];const d=RT(v);r.ssk=d[0];r.muh=d[1];renderPR();return}renderPR();return}
+ if(el.dataset.prn!==undefined&&el.tagName==="SELECT"){NEWR[el.dataset.prn]=el.value}},true);
+const ps=window.projSnap;window.projSnap=function(){const s=ps.apply(this,arguments);s.data.pr=JSON.parse(JSON.stringify(PR));return s};
+const pa=window.projApply;window.projApply=function(o){const er=pa.apply(this,arguments);if(!er&&o&&o.data&&o.data.pr&&Array.isArray(o.data.pr.rows)){PR={...PR0(),...o.data.pr}}return er};
+})();
+
+</script>
+<script>
 /* ===== Her ekran için üst çubuk: Yazdır / PDF · Kaydet (masaüstü, veritabanı) ===== */
 (function(){
-const VMAP={pl:["editor","plcard","rescard","chkcard"],reno:["renoeditor","renocard","gantcard","rvcard"],pb:["pbcard"],sa:["sacard"],op:["opcard"],fd:["fdcard"],gr:["grcard"],ty:["tycard"],bt:["btwrap"],kp:["kpwrap"],om:["omwrap"],db:["dbwrap"],oz:["ozwrap"],dc:["dcwrap"],pj:["pjwrap"],wz:["wzwrap"],ex:["exwrap"],tp:["tpwrap"],cf:["cfwrap"],vt:["vtwrap"]};
+const VMAP={pl:["editor","plcard","rescard","chkcard"],reno:["renoeditor","renocard","gantcard","rvcard"],pb:["pbcard"],sa:["sacard"],op:["opcard"],fd:["fdcard"],gr:["grcard"],ty:["tycard"],bt:["btwrap"],kp:["kpwrap"],om:["omwrap"],db:["dbwrap"],oz:["ozwrap"],dc:["dcwrap"],pj:["pjwrap"],wz:["wzwrap"],ex:["exwrap"],tp:["tpwrap"],cf:["cfwrap"],vt:["vtwrap"],pr:["prwrap"]};
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const main=document.querySelector(".main");if(!main)return;
 const st=document.createElement("style");
@@ -2890,7 +2962,7 @@ main.insertBefore(bar,main.firstChild);
 const pr=document.createElement("div");pr.id="vprint";document.body.appendChild(pr);
 const msg=t=>{document.getElementById("vmsg").textContent=t||""};
 function title(){const a=[...document.querySelectorAll('#menu [aria-current="true"]')].pop();let t="";if(a){const n=a.querySelector(".nm")||a.querySelector("span");t=n?n.textContent.trim():a.textContent.trim()}
- if(VIEWSEC==="pl")t="P&L girişi";if(VIEWSEC==="reno")t="Renovasyon";if(VIEWSEC==="tp")t="Şablon · "+(t||"Payback analizi");if(VIEWSEC==="vt")t="Şablon · Değer hesapla";return t||"Rapor"}
+ if(VIEWSEC==="pl")t="P&L girişi";if(VIEWSEC==="reno")t="Renovasyon";if(VIEWSEC==="tp")t="Şablon · "+(t||"Payback analizi");if(VIEWSEC==="vt")t="Şablon · Değer hesapla";if(VIEWSEC==="pr")t="Şablon · Personel bütçesi";return t||"Rapor"}
 function refresh(){const t=document.getElementById("vtitle");if(t)t.textContent=title()}
 /* ekran görüntüsü: form alanlarını metne çevir, düğmeleri çıkar */
 function snap(){
@@ -3039,6 +3111,15 @@ tp:{t:"Payback şablonu",s:[
   demos:[{label:"Güçlü senaryoda ADR çarpanını 100 yap",run:()=>{const old=JSON.stringify(TP);TP.sens[2].mul=100;renderTP();return()=>{TP=JSON.parse(old);renderTP()}},msg:"Güçlü senaryo yalnız doluluk artışıyla hesaplandı."}]},
  {fn:()=>{const h=[...document.querySelectorAll("#tpres h3")].find(x=>x.textContent.includes("Alternatif kullanım"));return h&&h.nextElementSibling},title:"Alternatif işletme modelleri",text:"Uzun dönem kiralama bu şablonda hesaplanır: kira × tahsilat %90 × (1 − %15 gider − %4 rezerv) + dükkân net kirası = 650.376 $. Kiraları değiştirip dene. Doğrudan otel (900 bin $ ek yatırım, 190.829 $ net) rapordan alınmış elle girilen bir alternatiftir; 'kısa döneme göre fark' sütunu onun ek gider yükünü (yaklaşık 548 bin $/yıl) gösterir.",
   demos:[{label:"Uzun dönem 2+1 kirasını 3.000 $ yap",run:()=>{const old=JSON.stringify(TP);TP.lt.rows[1].rent=3000;renderTP();return()=>{TP=JSON.parse(old);renderTP()}},msg:"2+1 aylık kirası 3.000 $ yapıldı; uzun dönem net nakdi arttı."}]}]},
+pr:{t:"Personel bütçesi",s:[
+ {sel:"#prp",title:"Bu şablon ne yapar?",text:"Kadro, maaş ve işveren yüklerinden aylık ve yıllık personel maliyetini hesaplar; sonucu Payback şablonuna personel gideri olarak aktarabilirsin. Varsayılan değerler Excel'deki 12 AY PAYROLL sayfasından alınmıştır; sayfadaki toplama hataları düzeltilmiştir (muhasebe SSK/muhtasar eksikti, TOTAL sütunu 9 ay topluyordu).",
+  demos:[{label:"Dosyadaki kadroyu yükle",run:()=>{const old=JSON.stringify(PRs());window.__prOld=old;document.querySelector('[data-pra="sheet"]').click();return()=>{const o=JSON.parse(old);const c=PRs();c.name=o.name;c.fx=o.fx;c.raise=o.raise;c.rows=o.rows;c.extra=o.extra;renderPR()}},msg:"8 kişilik kadro yüklendi: aylık 855.495 TL, yıllık 10,27 milyon TL."}]},
+ {h:"1 · Kadro",title:"1 · Kadro",text:"Her pozisyon için kişi sayısı, aylık net maaş, SSK ve muhtasar oranı (netin %'si) ve çalıştığı aylar. Sezonluk personel için ilk/son ayı daralt. Departman değiştirince oranlar o departmanın varsayılanına döner; ön büro %32,5 / %8, diğerleri %52,5 / %18,9.",
+  demos:[{label:"Örnek: 1 güvenlik görevlisi ekle",run:()=>{const c=PRs(),n=c.rows.length;c.rows.push({on:1,dept:"Güvenlik",pos:"Güvenlik görevlisi",n:1,net:40000,ssk:52.5,muh:18.9,from:1,to:12});renderPR();return()=>{const k=PRs();k.rows.splice(n);renderPR()}},msg:"Güvenlik görevlisi (40.000 TL net) eklendi; kadro 9 kişi oldu."}]},
+ {h:"2 · Diğer personel giderleri",title:"2 · Diğer personel giderleri",text:"Üniforma, ulaşım, sağlık, iaşe gibi kalemler. 'Aylık toplam' tutarı olduğu gibi, 'Kişi başı' ise o ayki kadro ile çarpar."},
+ {sel:"#prres",title:"3 · Sonuçlar",text:"Yıllık gider TL ve USD, kişi başı maliyet, işveren yükü, departman payı ve aylık tablo. Aylık ve yıllık toplamlar aynı kalemlerden hesaplanır, bu yüzden Excel'deki gibi üç farklı toplam çıkmaz.",
+  demos:[{label:"7. aydan itibaren %20 zam dene",run:()=>{const c=PRs(),old=JSON.stringify(c.raise);c.raise={m:7,pct:20};renderPR();return()=>{PRs().raise=JSON.parse(old);renderPR()}},msg:"7. aydan itibaren net maaşlara %20 zam uygulandı; yıllık gider arttı."}]},
+ {sel:'[data-pra="topb"]',title:"Payback'e aktar",text:"Yıllık gideri USD'ye çevirip Payback şablonuna 'Personel (payroll modülü)' kalemi olarak ekler ya da günceller. Payback'te personel içeren başka bir kalem varsa çift saymamak için onu kapat."}]},
 vt:{t:"Değer hesapla",s:[
  {sel:"#vtout",title:"Çıktı ve dosya",text:"Yazdır / PDF, rapor (.html), sonuç CSV ve girdi CSV buradan. Altındaki 'Dosyadan yükle (CSV)' ile girdileri dosyadan alırsın."},
  {sel:"[data-vta=\"case\"]",title:"Nasıl başlayalım?",text:"Örnek vakayı yükle, boş şablonla başla ya da Payback şablonundaki değerleri al.",
