@@ -2586,97 +2586,184 @@ OZ.scen.push({name:"Başlangıç (rapor)",snap:snapNow()});
 showView();
 </script>
 <script>
-/* ===== Değerleme modülü (v2.1) · gelir kapitalizasyonu + hedef geri dönüşten azami fiyat ===== */
+/* ===== Şablon: Değer hesapla (v2.1) — mülk kartı → gelir → gider → getiri oranı → değer ===== */
 (function(){
-const VL0=()=>({cur:"USD",dev:[-19,0,18],cap:[10,8.5,7.5],targets:[8,10,12,15],offer:0,comp:0});
-window.VL=VL0();
+const MON=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+const CATL={dept:"Departman / değişken",und:"Dağıtılmamış",own:"Mülk sahibi sabit",res:"Rezerv (FF&E)"};
+const KINDL={pctRoom:"Oda gelirinin %'si",pctGross:"Brüt gelirin %'si",fixed:"Sabit tutar"};
+const VT0=()=>({name:"Suat Pay Otel",loc:"Bodrum, Kumbahçe",type:"Otel · merkez, yaz-kış açık",units:20,beds:40,cur:"€",fx:55.3,
+ occ:65,adr:50,season:[40,42,50,62,72,82,92,95,84,68,48,45],g:0,f:0,hz:25,
+ ramp:{on:0,n:2,rows:[{occ:45,adr:45,rm:100,em:100},{occ:55,adr:48,rm:100,em:100}]},
+ rev:[{id:"shop",name:"Dükkân kirası (2 adet)",on:1,type:"fixed",val:100000,per:"month",ccy:"TL"}],
+ exp:[{id:"kom",name:"Kanal ve ödeme komisyonu",on:1,kind:"pctRoom",val:12,cat:"dept"},
+  {id:"hk",name:"Housekeeping, çamaşır, sarf, kahvaltı",on:1,kind:"pctRoom",val:14,cat:"dept"},
+  {id:"pers",name:"Personel",on:1,kind:"fixed",val:4200,per:"month",ccy:"cur",cat:"und"},
+  {id:"en",name:"Enerji, su, internet",on:1,kind:"fixed",val:1200,per:"month",ccy:"cur",cat:"und"},
+  {id:"pz",name:"Pazarlama ve rezervasyon sistemi",on:1,kind:"pctRoom",val:3,cat:"und"},
+  {id:"bk",name:"Bakım ve onarım",on:1,kind:"pctRoom",val:2.5,cat:"und"},
+  {id:"yon",name:"Yönetim ve muhasebe",on:1,kind:"fixed",val:700,per:"month",ccy:"cur",cat:"und"},
+  {id:"sg",name:"Sigorta, emlak vergisi, harçlar",on:1,kind:"pctRoom",val:2,cat:"own"},
+  {id:"ffe",name:"FF&E / yenileme rezervi",on:1,kind:"pctRoom",val:4,cat:"res"}],
+ dev:[-19,0,18],cap:[10,8.5,7.5],targets:[8,10,12,15],offer:0,comp:0});
+const VT_BLANK=()=>({...VT0(),name:"Yeni gayrimenkul",loc:"",type:"",units:10,beds:0,occ:60,adr:100,season:Array(12).fill(1),rev:[],exp:[
+ {id:"kom",name:"Kanal ve ödeme komisyonu",on:1,kind:"pctRoom",val:12,cat:"dept"},{id:"hk",name:"Housekeeping, sarf",on:1,kind:"pctRoom",val:10,cat:"dept"},
+ {id:"pers",name:"Personel",on:1,kind:"fixed",val:0,per:"month",ccy:"cur",cat:"und"},{id:"en",name:"Enerji, su, internet",on:1,kind:"fixed",val:0,per:"month",ccy:"cur",cat:"und"},
+ {id:"ffe",name:"FF&E / yenileme rezervi",on:1,kind:"pctRoom",val:4,cat:"res"}]});
+window.VT=VT0();
+let VTN={rev:{name:"",val:0,per:"month",ccy:"cur"},exp:{name:"",kind:"fixed",cat:"und",val:0,per:"month",ccy:"cur"}};
 const f0=n=>new Intl.NumberFormat("tr-TR",{maximumFractionDigits:0}).format(Math.round(n));
 const f1=n=>new Intl.NumberFormat("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1}).format(n);
 const f2=n=>new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const cu=()=>esc(VL.cur||"");
-const M=n=>f0(n)+" "+cu();
-function vlCalc(){
-  const R=tpCalc(),idx=TP.ramp.on?Math.min(R.nR,R.H-1):0,yr=R.yr[idx];
-  const noi=yr.net,units=TP.units||0,gross=yr.gross;
-  const out={R,idx,yr,noi,units,gross,gop:yr.gop,warn:[]};
-  if(!(noi>0))out.warn.push("Stabilize yıl net nakit (NOI) sıfır ya da negatif; kapitalizasyonla değer hesaplanamaz. Şablondaki gelir ve giderleri kontrol edin.");
-  out.scen=[0,1,2].map(i=>{const n=noi*(1+(+VL.dev[i]||0)/100),c=+VL.cap[i]||0,v=n>0&&c>0?n/(c/100):null;return{n,c,v,per:v&&units?v/units:null,grm:v&&gross?v/gross:null}});
-  const bc=+VL.cap[1]||8.5,caps=[bc-2,bc-1,bc,bc+1,bc+2].filter(x=>x>0),devs=[-20,-10,0,10,20];
-  out.caps=caps;out.devs=devs;out.grid=caps.map(c=>devs.map(d=>{const n=noi*(1+d/100);return n>0?n/(c/100):null}));
-  out.tgt=(VL.targets||[]).map(y=>{y=Math.round(+y);return{y,p:y>=1&&y<=R.H?R.cum[y-1]:null}});
-  const offer=+VL.offer||0;out.offer=offer;
-  if(offer>0&&noi>0){let p=null;for(let i=0;i<R.H;i++)if(R.cum[i]>=offer){const pr=i?R.cum[i-1]:0;p=R.yr[i].net>0?i+(offer-pr)/R.yr[i].net:i+1;break}
-    out.of={cap:noi/offer*100,pb:p,diff:out.scen[1].v?offer/out.scen[1].v*100-100:null,per:units?offer/units:null}}
-  const comp=+VL.comp||0;out.comp=comp;
-  if(comp>0&&out.scen[1].v)out.cmp={gap:comp/out.scen[1].v*100-100};
-  if(out.scen[1].c&&(out.scen[1].c<6||out.scen[1].c>13))out.warn.push("Baz getiri oranı %6–13 aralığının dışında; piyasa verisiyle doğrulayın.");
-  return out;
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const M=n=>f0(n)+" "+esc(VT.cur||"");
+const withTP=(o,fn)=>{const old=TP;TP=o;try{return fn()}finally{TP=old}};
+function vtToTP(){
+ const V=VT,fx=+V.fx>0?+V.fx:1,conv=x=>{let v=+x.val||0;if(x.ccy==="TL")v/=fx;if(x.per==="month")v*=12;return v};
+ const rev=[{id:"res",name:"Oda geliri",on:1,type:"room"}].concat(V.rev.filter(x=>x.on).map(x=>({id:x.id,name:x.name,on:1,type:x.type==="pct"?"pct":"fixed",val:x.type==="pct"?(+x.val||0):conv(x)})));
+ const exp=V.exp.filter(x=>x.on).map(x=>({id:x.id,name:x.name,on:1,kind:x.kind,cat:x.cat,val:x.kind==="fixed"?conv(x):(+x.val||0)}));
+ const sea=V.season.map(s=>Math.max(0,+s||0));if(!sea.some(s=>s>0))sea.fill(1);
+ return{v:2,name:V.name,units:+V.units||0,hz:Math.max(5,Math.min(40,Math.round(+V.hz)||25)),g:+V.g||0,f:+V.f||0,season:sea,
+  inv:[{id:"buy",name:"Fiyat",on:1,amt:+V.offer||0}],rev,exp,ramp:JSON.parse(JSON.stringify(V.ramp)),stab:{occ:+V.occ||0,adr:+V.adr||0}};
 }
-const inp=(path,v,st,w)=>`<input class="tin" style="width:${w||90}px" type="number" step="${st||0.5}" data-vl="${path}" value="${v}">`;
-function renderVL(){
-  const el=document.getElementById("vlp");if(!el)return;
-  let c;try{c=vlCalc()}catch(e){el.innerHTML='<p class="note">Değerleme hesaplanamadı: '+esc(e.message)+". Şablon verisini kontrol edin.</p>";return}
-  const nm=["Düşük","Baz","Yüksek"],yrLabel=TP.ramp.on?`${c.idx+1}. yıl (ilk stabilize yıl)`:"1. yıl";
-  const bars=(()=>{const mx=Math.max(1,...c.scen.map(s=>s.v||0));return c.scen.map((s,i)=>`<div style="display:grid;grid-template-columns:70px 1fr 160px;gap:10px;align-items:center;margin:6px 0"><span>${nm[i]}</span><div style="background:var(--line,#d9e0e6);border-radius:6px;height:20px"><div style="width:${s.v?Math.round(s.v/mx*100):0}%;height:100%;background:var(--accent,#1c6e6a);border-radius:6px"></div></div><b>${s.v?M(s.v):"—"}</b></div>`).join("")})();
-  el.innerHTML=`<div class="plhead"><h2 style="font-size:16px">Değerleme · ${esc(TP.name)}</h2><span class="code">NOI → getiri oranı → değer · hedef geri dönüş → azami fiyat</span></div>
-  <p class="note">Değer, işletme gelirinden (gelir kapitalizasyonu) bulunur: <b>Değer = NOI ÷ getiri oranı (cap rate)</b>. NOI burada <b>şablonun net nakdidir</b> (FF&amp;E rezervi düşülmüş, kredi ve gelir vergisi öncesi). Gelir ve gider değerleri <b>Şablonlar → Payback analizi</b> ekranındaki girdilerden gelir. Getiri oranları ve senaryo sapmaları varsayımdır, piyasa verisiyle doğrulanmadı.</p>
-  <div class="dc-g"><h3>1 · Girdiler</h3>
-   <div class="oz-row"><label>Para birimi gösterimi<input class="tin" style="width:90px" type="text" data-vl="cur" value="${esc(VL.cur)}"></label>
-   <label>Düşük · NOI sapması %${inp("dev.0",VL.dev[0],1)}</label><label>Baz · NOI sapması %${inp("dev.1",VL.dev[1],1)}</label><label>Yüksek · NOI sapması %${inp("dev.2",VL.dev[2],1)}</label></div>
-   <div class="oz-row"><label>Düşük · getiri oranı %${inp("cap.0",VL.cap[0])}</label><label>Baz · getiri oranı %${inp("cap.1",VL.cap[1])}</label><label>Yüksek · getiri oranı %${inp("cap.2",VL.cap[2])}</label></div>
-   <div class="oz-row"><label>Hedef geri dönüş yılları (virgülle)<input class="tin" style="width:160px" type="text" data-vl="targets" value="${esc((VL.targets||[]).join(", "))}"></label>
-   <label>Teklif / ödenecek fiyat (opsiyonel)${inp("offer",VL.offer||0,1000,130)}</label><label>Emsal / beklenen fiyat (opsiyonel)${inp("comp",VL.comp||0,1000,130)}</label></div>
-   <p class="note">Senaryo: Düşük ve yüksek senaryoda NOI, baz NOI'ye göre yüzde olarak sapar; getiri oranı da buna göre yükselir ya da düşer.</p></div>
-  <div class="dc-g"><h3>2 · Stabilize yıl göstergeleri (${yrLabel})</h3>
-   <div class="wrap"><table class="ozt"><tbody>
-    <tr><td>Brüt gelir</td><td style="text-align:right">${M(c.gross)}</td></tr>
-    <tr><td>GOP</td><td style="text-align:right">${M(c.gop)}</td></tr>
-    <tr><td><b>NOI (net nakit)</b></td><td style="text-align:right"><b>${M(c.noi)}</b></td></tr>
-    <tr><td>Ünite sayısı</td><td style="text-align:right">${f0(c.units)}</td></tr></tbody></table></div></div>
-  ${c.warn.map(w=>`<p class="note" style="color:var(--bad,#b3261e)"><b>Uyarı:</b> ${esc(w)}</p>`).join("")}
-  <div class="dc-g"><h3>3 · Değer senaryoları</h3>
-   <div class="wrap"><table class="ozt"><thead><tr><th></th>${nm.map(n=>`<th style="text-align:right">${n}</th>`).join("")}</tr></thead><tbody>
-    <tr><td>NOI</td>${c.scen.map(s=>`<td style="text-align:right">${M(s.n)}</td>`).join("")}</tr>
-    <tr><td>Getiri oranı</td>${c.scen.map(s=>`<td style="text-align:right">%${f1(s.c)}</td>`).join("")}</tr>
-    <tr><td><b>Tahmini değer</b></td>${c.scen.map(s=>`<td style="text-align:right"><b>${s.v?M(s.v):"—"}</b></td>`).join("")}</tr>
-    <tr><td>Ünite başına değer</td>${c.scen.map(s=>`<td style="text-align:right">${s.per?M(s.per):"—"}</td>`).join("")}</tr>
-    <tr><td>Değer ÷ brüt gelir</td>${c.scen.map(s=>`<td style="text-align:right">${s.grm?f1(s.grm)+"×":"—"}</td>`).join("")}</tr></tbody></table></div>
-   <div style="margin-top:10px">${bars}</div></div>
-  <div class="dc-g"><h3>4 · Getiri oranı ve NOI duyarlılığı (değer)</h3>
-   <div class="wrap"><table class="ozt"><thead><tr><th>Getiri oranı ↓ · NOI sapması →</th>${c.devs.map(d=>`<th style="text-align:right">${d>0?"+":""}${d}%</th>`).join("")}</tr></thead><tbody>
-   ${c.caps.map((cp,i)=>`<tr><td>%${f1(cp)}</td>${c.grid[i].map(v=>`<td style="text-align:right">${v?f0(v):"—"}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>
-  <div class="dc-g"><h3>5 · Hedef geri dönüş süresine göre azami fiyat</h3>
-   <p class="note">Şablonun birikimli net nakdine göre: o yılda yatırımı geri kazanmak için ödenebilecek en yüksek fiyat.</p>
-   <div class="wrap"><table class="ozt"><thead><tr><th>Hedef süre</th><th style="text-align:right">Azami fiyat</th><th style="text-align:right">Ünite başı</th></tr></thead><tbody>
-   ${c.tgt.map(t=>`<tr><td>${t.y} yıl</td><td style="text-align:right">${t.p?M(t.p):"—"}</td><td style="text-align:right">${t.p&&c.units?M(t.p/c.units):"—"}</td></tr>`).join("")}</tbody></table></div></div>
-  ${c.of?`<div class="dc-g"><h3>6 · Teklif analizi</h3><div class="wrap"><table class="ozt"><tbody>
-   <tr><td>Teklif / fiyat</td><td style="text-align:right">${M(c.offer)}</td></tr>
-   <tr><td>Getiri (NOI ÷ fiyat)</td><td style="text-align:right">%${f2(c.of.cap)}</td></tr>
-   <tr><td>Basit geri dönüş</td><td style="text-align:right">${c.of.pb?f1(c.of.pb)+" yıl":"ufukta dönmüyor"}</td></tr>
-   <tr><td>Ünite başına</td><td style="text-align:right">${c.of.per?M(c.of.per):"—"}</td></tr>
-   <tr><td>Baz değere göre</td><td style="text-align:right">${c.of.diff==null?"—":(c.of.diff>0?"+":"")+f1(c.of.diff)+"%"}</td></tr></tbody></table></div></div>`:""}
-  ${c.cmp?`<p class="note"><b>Emsal karşılaştırması:</b> Girdiğiniz emsal/beklenen fiyat, baz gelir değerinden %${f1(Math.abs(c.cmp.gap))} ${c.cmp.gap>=0?"yüksek":"düşük"}. Fiyat gelir değerinin üzerindeyse alıcı gelir dışında bir değere (arsa, konum, imar, gelecek beklentisi) para ödüyor demektir.</p>`:""}
-  <p class="note">Bu bir <b>gelir değeri</b> tahminidir; yatırım tavsiyesi değildir. Arsa-bina emsal satışları, ruhsat ve imar durumu, fiziksel durum ve kira sözleşmeleri ayrıca değerlendirilmelidir. Sonuç, şablondaki gelir ve gider varsayımlarına ve getiri oranına duyarlıdır.</p>`;
-}
-window.renderVL=renderVL;
-/* sayfa kabuğu */
+function vtMissing(){const m=[],V=VT;if(!(V.units>0))m.push("Oda / ünite sayısı");if(!(V.occ>0&&V.occ<=100))m.push("Doluluk");if(!(V.adr>0))m.push("ADR");
+ if(V.rev.some(x=>x.on&&x.ccy==="TL")||V.exp.some(x=>x.on&&x.ccy==="TL"))if(!(V.fx>0))m.push("TL kuru");
+ if(!V.exp.some(x=>x.on&&(+x.val>0)))m.push("En az bir gider kalemi");return m}
+function vtCalc(){
+ const tpo=vtToTP(),R=withTP(tpo,()=>tpCalc()),idx=tpo.ramp.on?Math.min(R.nR,R.H-1):0,yr=R.yr[idx],noi=yr.net,units=tpo.units,gross=yr.gross;
+ const c={R,idx,yr,months:R.yrM[idx],noi,units,gross,warn:[],tpo};
+ if(!(noi>0))c.warn.push("Stabilize yıl net nakit (NOI) sıfır ya da negatif; kapitalizasyonla değer hesaplanamaz. Gelir ve giderleri kontrol edin.");
+ c.scen=[0,1,2].map(i=>{const n=noi*(1+(+VT.dev[i]||0)/100),cp=+VT.cap[i]||0,v=n>0&&cp>0?n/(cp/100):null;return{n,c:cp,v,per:v&&units?v/units:null,grm:v&&gross?v/gross:null}});
+ const bc=+VT.cap[1]||8.5,devs=[-20,-10,0,10,20];c.devs=devs;c.caps=[bc-2,bc-1,bc,bc+1,bc+2].filter(x=>x>0);
+ c.grid=c.caps.map(cp=>devs.map(d=>{const n=noi*(1+d/100);return n>0?n/(cp/100):null}));
+ c.tgt=(VT.targets||[]).map(y=>{y=Math.round(+y);return{y,p:y>=1&&y<=R.H?R.cum[y-1]:null}});
+ const offer=+VT.offer||0;c.offer=offer;
+ if(offer>0&&noi>0){let p=null;for(let i=0;i<R.H;i++)if(R.cum[i]>=offer){const pr=i?R.cum[i-1]:0;p=R.yr[i].net>0?i+(offer-pr)/R.yr[i].net:i+1;break}
+  c.of={cap:noi/offer*100,pb:p,diff:c.scen[1].v?offer/c.scen[1].v*100-100:null,per:units?offer/units:null}}
+ const comp=+VT.comp||0;c.comp=comp;if(comp>0&&c.scen[1].v)c.cmp={gap:comp/c.scen[1].v*100-100};
+ if(c.scen[1].c&&(c.scen[1].c<6||c.scen[1].c>13))c.warn.push("Baz getiri oranı %6–13 aralığının dışında; piyasa verisiyle doğrulayın.");
+ const gm=c.gross?yr.gop/c.gross*100:0;c.gm=gm;
+ if(c.gross&&yr.room&&(yr.gop/yr.room*100>60))c.warn.push("GOP / oda geliri %60'ı aşıyor; giderler eksik olabilir (küçük otellerde genelde daha düşüktür).");
+ return c}
+const num=(p,v,st,w)=>`<input class="tin" style="width:${w||90}px" type="number" step="${st||1}" data-vt="${p}" value="${v}">`;
+const txt=(p,v,w)=>`<input class="tin" style="width:${w||200}px" type="text" data-vt="${p}" value="${esc(v)}">`;
+const chk=(p,on)=>`<input type="checkbox" data-vtck="${p}" ${on?"checked":""}>`;
+const zb='<span class="dcb z">zorunlu</span>',ob='<span class="dcb o">opsiyonel</span>';
+function itemRows(sec,list){return list.map((x,i)=>{const isE=sec==="exp",fixed=!isE||x.kind==="fixed";
+ const ctl=isE&&x.kind!=="fixed"?num(`exp.${i}.val`,x.val,0.5,80)+" "+(x.kind==="pctRoom"?"% oda geliri":"% brüt gelir"):
+  num(`${sec}.${i}.val`,x.val,100,110)+` <select data-vtsel="${sec}.${i}.ccy"><option value="cur" ${x.ccy!=="TL"?"selected":""}>${esc(VT.cur)}</option><option value="TL" ${x.ccy==="TL"?"selected":""}>TL</option></select> <select data-vtsel="${sec}.${i}.per"><option value="month" ${x.per!=="year"?"selected":""}>/ ay</option><option value="year" ${x.per==="year"?"selected":""}>/ yıl</option></select>`;
+ return `<tr><td><label style="display:flex;gap:8px;align-items:center">${chk(sec+"."+i+".on",x.on)}<span>${esc(x.name)}</span></label></td><td>${ctl}</td>${isE?`<td><span class="code">${CATL[x.cat]}</span></td>`:""}<td><button type="button" class="btn" data-vta="del:${sec}:${i}">Sil</button></td></tr>`}).join("")}
+function renderVTin(){
+ const V=VT,rr=V.ramp.rows;
+ while(rr.length<V.ramp.n)rr.push({...rr[rr.length-1]});rr.length=Math.max(rr.length,V.ramp.n);
+ document.getElementById("vtin").innerHTML=`
+ <div class="oz-row"><button type="button" class="btn" data-vta="case">Örnek vakayı yükle (Suat Pay Otel)</button><button type="button" class="btn" data-vta="blank">Boş şablonla başla</button><button type="button" class="btn" data-vta="frompay">Payback şablonunun değerlerini al</button></div>
+ <div class="dc-g"><h3>1 · Mülk kartı</h3>
+  <div class="oz-row"><label>Ad ${zb}${txt("name",V.name,220)}</label><label>Konum ${ob}${txt("loc",V.loc,200)}</label><label>Tür / not ${ob}${txt("type",V.type,240)}</label></div>
+  <div class="oz-row"><label>Oda / ünite sayısı ${zb}${num("units",V.units,1,90)}</label><label>Yatak sayısı ${ob}${num("beds",V.beds,1,90)}</label><label>Para birimi gösterimi${txt("cur",V.cur,70)}</label><label>TL kuru (1 ${esc(V.cur)} = ? TL) ${ob}${num("fx",V.fx,0.1,90)}</label></div>
+  <p class="note">Tutarları tek para birimiyle girin (ekranda gösterilen birim). TL girdiğiniz kalemler yukarıdaki kurla dönüştürülür. Yatak sayısı hesaba girmez; ADR oda başınadır.</p></div>
+ <div class="dc-g"><h3>2 · Oda geliri</h3>
+  <div class="oz-row"><label>Yıllık ortalama doluluk % ${zb}${num("occ",V.occ,0.5,90)}</label><label>ADR (${esc(V.cur)}, oda başı) ${zb}${num("adr",V.adr,1,90)}</label><label>Gelir büyümesi %/yıl ${ob}${num("g",V.g,0.5,80)}</label><label>Gider artışı %/yıl ${ob}${num("f",V.f,0.5,80)}</label></div>
+  <p class="note">Mevsimsellik ağırlıkları (aylık). Sadece oranları önemli; model yıllık ortalamayı yukarıdaki dolulukta tutacak şekilde ölçekler. Kapalı ay için 0 yazın.</p>
+  <div class="oz-row">${MON.map((m,i)=>`<label>${m}${num("season."+i,V.season[i],1,64)}</label>`).join("")}</div>
+  <label style="display:flex;gap:8px;align-items:center;margin-top:8px">${chk("ramp.on",V.ramp.on)} Açılış dönemi (ramp-up) uygula ${ob}</label>
+  ${V.ramp.on?`<div class="oz-row" style="margin-top:6px"><label>Süre (yıl, 1–5)${num("ramp.n",V.ramp.n,1,70)}</label></div><div class="wrap"><table class="ozt"><thead><tr><th>Yıl</th><th>Doluluk %</th><th>ADR</th></tr></thead><tbody>${rr.slice(0,V.ramp.n).map((r,i)=>`<tr><td>${i+1}. yıl</td><td>${num(`ramp.rows.${i}.occ`,r.occ,1,80)}</td><td>${num(`ramp.rows.${i}.adr`,r.adr,1,80)}</td></tr>`).join("")}</tbody></table></div>`:""}</div>
+ <div class="dc-g"><h3>3 · Diğer gelirler ${ob}</h3>
+  ${V.rev.length?`<div class="wrap"><table class="ozt"><thead><tr><th>Kalem</th><th>Tutar</th><th></th></tr></thead><tbody>${itemRows("rev",V.rev)}</tbody></table></div>`:'<p class="note">Kayıtlı ek gelir yok.</p>'}
+  <div class="oz-row"><label>Yeni gelir kalemi${`<input class="tin" style="width:200px" type="text" data-vtn="rev.name" value="${esc(VTN.rev.name)}" placeholder="örn. Dükkân kirası, otopark">`}</label><label>Tutar<input class="tin" style="width:110px" type="number" data-vtn="rev.val" value="${VTN.rev.val}"></label>
+  <label>Para<select data-vtn="rev.ccy"><option value="cur" ${VTN.rev.ccy==="cur"?"selected":""}>${esc(V.cur)}</option><option value="TL" ${VTN.rev.ccy==="TL"?"selected":""}>TL</option></select></label><label>Dönem<select data-vtn="rev.per"><option value="month" ${VTN.rev.per==="month"?"selected":""}>/ ay</option><option value="year" ${VTN.rev.per==="year"?"selected":""}>/ yıl</option></select></label><button type="button" class="btn" data-vta="add:rev">Ekle</button></div></div>
+ <div class="dc-g"><h3>4 · Giderler ${zb}</h3>
+  <p class="note">Kalemleri işaretleyin ya da kapatın. Departman giderleri GOP'tan önce, dağıtılmamış giderler GOP'a kadar, mülk sahibi sabit ve rezerv kalemleri NOI'ye kadar düşülür.</p>
+  <div class="wrap"><table class="ozt"><thead><tr><th>Kalem</th><th>Değer</th><th>Kategori</th><th></th></tr></thead><tbody>${itemRows("exp",V.exp)}</tbody></table></div>
+  <div class="oz-row"><label>Yeni gider kalemi<input class="tin" style="width:200px" type="text" data-vtn="exp.name" value="${esc(VTN.exp.name)}" placeholder="örn. Muhasebe"></label>
+  <label>Hesap<select data-vtn="exp.kind">${Object.keys(KINDL).map(k=>`<option value="${k}" ${VTN.exp.kind===k?"selected":""}>${KINDL[k]}</option>`).join("")}</select></label>
+  <label>Kategori<select data-vtn="exp.cat">${Object.keys(CATL).map(k=>`<option value="${k}" ${VTN.exp.cat===k?"selected":""}>${CATL[k]}</option>`).join("")}</select></label>
+  <label>Değer<input class="tin" style="width:100px" type="number" step="0.5" data-vtn="exp.val" value="${VTN.exp.val}"></label>
+  <label>Para<select data-vtn="exp.ccy"><option value="cur" ${VTN.exp.ccy==="cur"?"selected":""}>${esc(V.cur)}</option><option value="TL" ${VTN.exp.ccy==="TL"?"selected":""}>TL</option></select></label><label>Dönem<select data-vtn="exp.per"><option value="month" ${VTN.exp.per==="month"?"selected":""}>/ ay</option><option value="year" ${VTN.exp.per==="year"?"selected":""}>/ yıl</option></select></label><button type="button" class="btn" data-vta="add:exp">Ekle</button></div></div>
+ <div class="dc-g"><h3>5 · Değerleme varsayımları</h3>
+  <div class="oz-row"><label>Düşük · NOI sapması %${num("dev.0",V.dev[0],1,80)}</label><label>Baz · NOI sapması %${num("dev.1",V.dev[1],1,80)}</label><label>Yüksek · NOI sapması %${num("dev.2",V.dev[2],1,80)}</label></div>
+  <div class="oz-row"><label>Düşük · getiri oranı %${num("cap.0",V.cap[0],0.25,80)}</label><label>Baz · getiri oranı %${num("cap.1",V.cap[1],0.25,80)}</label><label>Yüksek · getiri oranı %${num("cap.2",V.cap[2],0.25,80)}</label></div>
+  <div class="oz-row"><label>Hedef geri dönüş yılları (virgülle)<input class="tin" style="width:150px" type="text" data-vt="targets" value="${esc(V.targets.join(", "))}"></label><label>Teklif / ödenecek fiyat ${ob}${num("offer",V.offer||0,1000,130)}</label><label>Emsal / beklenen fiyat ${ob}${num("comp",V.comp||0,1000,130)}</label></div>
+  <p class="note">Getiri oranları ve senaryo sapmaları <b>varsayımdır</b>, piyasa verisiyle doğrulanmadı. Düşük senaryoda NOI düşer, getiri oranı yükselir; yüksek senaryoda tersi.</p></div>`}
+function vtText(c){const s=c.scen;return `${VT.name} · ${VT.loc}\n${VT.units} oda · doluluk %${VT.occ} · ADR ${VT.adr} ${VT.cur}\nBrüt gelir ${M(c.gross)} · GOP ${M(c.yr.gop)} · NOI ${M(c.noi)}\nDeğer (düşük / baz / yüksek): ${s.map(x=>x.v?M(x.v):"—").join(" / ")}\nGetiri oranı: ${s.map(x=>"%"+f1(x.c)).join(" / ")}\nUyarı: Gelir değeri tahminidir; varsayımlara bağlıdır, yatırım tavsiyesi değildir.`}
+function renderVTres(){
+ const el=document.getElementById("vtres");if(!el)return;
+ const miss=vtMissing();
+ if(miss.length){el.innerHTML=`<div class="dc-g"><h3>Sonuç</h3><p class="note" style="color:var(--bad,#b3261e)"><b>Eksik zorunlu alan:</b> ${miss.map(esc).join(", ")}. Tamamlandığında sonuç burada görünür.</p></div>`;return}
+ let c;try{c=vtCalc()}catch(e){el.innerHTML='<p class="note">Hesaplanamadı: '+esc(e.message)+"</p>";return}
+ const nm=["Düşük","Baz","Yüksek"],yl=VT.ramp.on?`${c.idx+1}. yıl (ilk stabilize yıl)`:"1. yıl";
+ const mx=Math.max(1,...c.scen.map(s=>s.v||0));
+ const bars=c.scen.map((s,i)=>`<div style="display:grid;grid-template-columns:70px 1fr 170px;gap:10px;align-items:center;margin:6px 0"><span>${nm[i]}</span><div style="background:var(--line,#d9e0e6);border-radius:6px;height:20px"><div style="width:${s.v?Math.round(s.v/mx*100):0}%;height:100%;background:var(--accent,#1c6e6a);border-radius:6px"></div></div><b>${s.v?M(s.v):"—"}</b></div>`).join("");
+ const T=(k)=>c.months.reduce((a,m)=>a+m[k],0);
+ const rows=c.months.map((m,i)=>`<tr><td>${MON[i]}</td><td style="text-align:right">%${f1(m.occ*100)}</td><td style="text-align:right">${f0(m.room)}</td><td style="text-align:right">${f0(m.other)}</td><td style="text-align:right">${f0(m.gross)}</td><td style="text-align:right">${f0(m.dept+m.und)}</td><td style="text-align:right">${f0(m.gop)}</td><td style="text-align:right">${f0(m.own+m.res)}</td><td style="text-align:right"><b>${f0(m.net)}</b></td></tr>`).join("");
+ el.innerHTML=`
+ ${c.warn.map(w=>`<p class="note" style="color:var(--bad,#b3261e)"><b>Uyarı:</b> ${esc(w)}</p>`).join("")}
+ <div class="dc-g"><h3>6 · Aylık işletme tablosu (${yl}, ${esc(VT.cur)})</h3>
+  <div class="wrap"><table class="ozt"><thead><tr><th>Ay</th><th style="text-align:right">Doluluk</th><th style="text-align:right">Oda geliri</th><th style="text-align:right">Diğer</th><th style="text-align:right">Toplam gelir</th><th style="text-align:right">İşletme gideri</th><th style="text-align:right">GOP</th><th style="text-align:right">Sabit + FF&amp;E</th><th style="text-align:right">NOI</th></tr></thead><tbody>${rows}
+  <tr><td><b>Yıl</b></td><td style="text-align:right"><b>%${f1(c.yr.occ*100)}</b></td><td style="text-align:right"><b>${f0(T("room"))}</b></td><td style="text-align:right"><b>${f0(T("other"))}</b></td><td style="text-align:right"><b>${f0(T("gross"))}</b></td><td style="text-align:right"><b>${f0(T("dept")+T("und"))}</b></td><td style="text-align:right"><b>${f0(T("gop"))}</b></td><td style="text-align:right"><b>${f0(T("own")+T("res"))}</b></td><td style="text-align:right"><b>${f0(T("net"))}</b></td></tr></tbody></table></div>
+  <p class="note">RevPAR ${f2(c.yr.revpar)} · TRevPAR ${f2(c.yr.trevpar!==undefined?c.yr.trevpar:(c.units?c.gross/(c.units*365):0))} · GOP marjı %${f1(c.gm)} (toplam gelire göre)</p></div>
+ <div class="dc-g"><h3>7 · Değer senaryoları</h3><p class="note">Değer = NOI ÷ getiri oranı. NOI, FF&amp;E rezervi düşülmüş net nakittir (kredi ve gelir vergisi öncesi).</p>
+  <div class="wrap"><table class="ozt"><thead><tr><th></th>${nm.map(n=>`<th style="text-align:right">${n}</th>`).join("")}</tr></thead><tbody>
+  <tr><td>NOI</td>${c.scen.map(s=>`<td style="text-align:right">${M(s.n)}</td>`).join("")}</tr>
+  <tr><td>Getiri oranı</td>${c.scen.map(s=>`<td style="text-align:right">%${f1(s.c)}</td>`).join("")}</tr>
+  <tr><td><b>Tahmini değer</b></td>${c.scen.map(s=>`<td style="text-align:right"><b>${s.v?M(s.v):"—"}</b></td>`).join("")}</tr>
+  <tr><td>Oda başına değer</td>${c.scen.map(s=>`<td style="text-align:right">${s.per?M(s.per):"—"}</td>`).join("")}</tr>
+  <tr><td>Değer ÷ brüt gelir</td>${c.scen.map(s=>`<td style="text-align:right">${s.grm?f1(s.grm)+"×":"—"}</td>`).join("")}</tr></tbody></table></div><div style="margin-top:10px">${bars}</div></div>
+ <div class="dc-g"><h3>8 · Duyarlılık: getiri oranı × NOI sapması (değer)</h3><div class="wrap"><table class="ozt"><thead><tr><th>Getiri oranı ↓ · NOI →</th>${c.devs.map(d=>`<th style="text-align:right">${d>0?"+":""}${d}%</th>`).join("")}</tr></thead><tbody>
+  ${c.caps.map((cp,i)=>`<tr><td>%${f1(cp)}</td>${c.grid[i].map(v=>`<td style="text-align:right">${v?f0(v):"—"}</td>`).join("")}</tr>`).join("")}</tbody></table></div></div>
+ <div class="dc-g"><h3>9 · Hedef geri dönüşe göre azami fiyat</h3><p class="note">Birikimli net nakde göre: o yılda yatırımı geri kazanmak için ödenebilecek en yüksek fiyat.</p>
+  <div class="wrap"><table class="ozt"><thead><tr><th>Hedef süre</th><th style="text-align:right">Azami fiyat</th><th style="text-align:right">Oda başı</th></tr></thead><tbody>${c.tgt.map(t=>`<tr><td>${t.y} yıl</td><td style="text-align:right">${t.p?M(t.p):"—"}</td><td style="text-align:right">${t.p&&c.units?M(t.p/c.units):"—"}</td></tr>`).join("")}</tbody></table></div></div>
+ ${c.of?`<div class="dc-g"><h3>10 · Teklif analizi</h3><div class="wrap"><table class="ozt"><tbody>
+  <tr><td>Teklif / fiyat</td><td style="text-align:right">${M(c.offer)}</td></tr><tr><td>Getiri (NOI ÷ fiyat)</td><td style="text-align:right">%${f2(c.of.cap)}</td></tr>
+  <tr><td>Basit geri dönüş</td><td style="text-align:right">${c.of.pb?f1(c.of.pb)+" yıl":"ufukta dönmüyor"}</td></tr><tr><td>Oda başına</td><td style="text-align:right">${c.of.per?M(c.of.per):"—"}</td></tr>
+  <tr><td>Baz değere göre</td><td style="text-align:right">${c.of.diff==null?"—":(c.of.diff>0?"+":"")+f1(c.of.diff)+"%"}</td></tr></tbody></table></div></div>`:""}
+ ${c.cmp?`<p class="note"><b>Emsal karşılaştırması:</b> Girdiğiniz emsal/beklenen fiyat baz gelir değerinden %${f1(Math.abs(c.cmp.gap))} ${c.cmp.gap>=0?"yüksek":"düşük"}. Fiyat gelir değerinin üzerindeyse alıcı gelir dışında bir değere (arsa, konum, imar, gelecek beklentisi) para ödüyor demektir.</p>`:""}
+ <div class="oz-row"><button type="button" class="btn" data-vta="text">Özet metni oluştur</button></div><textarea id="vttxt" rows="6" style="display:none;width:100%;margin-top:8px" readonly></textarea>
+ <p class="note">Bu bir <b>gelir değeri</b> tahminidir; yatırım tavsiyesi değildir. Arsa-bina emsal satışları, ruhsat ve imar durumu, fiziksel durum ve kira sözleşmeleri ayrıca değerlendirilmelidir.</p>`}
+function renderVT(){
+ const el=document.getElementById("vtp");if(!el)return;
+ el.innerHTML=`<div class="plhead"><h2 style="font-size:16px">Şablon · Değer hesapla</h2><span class="code">mülk kartı → gelir → gider → getiri oranı → değer</span></div>
+ <p class="note">Bir gayrimenkulün <b>gelir değerini</b> bulmak için adım adım şablon: oda geliri ve diğer gelirler, giderler ve rezervlerle NOI hesaplanır, getiri oranıyla (cap rate) değere çevrilir. Ana modelden bağımsızdır; dilerseniz Payback şablonundaki değerleri alabilirsiniz.</p>
+ <div id="vtin"></div><div id="vtres"></div>`;
+ renderVTin();renderVTres()}
+window.renderVT=renderVT;
+/* kabuk */
 const host=document.getElementById("tpwrap");
-if(host&&!document.getElementById("vlwrap")){const w=document.createElement("div");w.id="vlwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="vlp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
-/* showView / go / renderMenu sarmalayıcıları */
-const sv=window.showView;window.showView=function(){const r=sv.apply(this,arguments);const w=document.getElementById("vlwrap");if(w)w.hidden=VIEWSEC!=="vl";return r};
-const gg=window.go;window.go=function(sec){const r=gg.apply(this,arguments);if(sec==="vl")renderVL();return r};
-const rm=window.renderMenu;window.renderMenu=function(){const r=rm.apply(this,arguments);try{const m=document.getElementById("menu"),d=m&&m.querySelector('[data-go="db"]');if(d&&!m.querySelector('[data-go="vl"]'))d.insertAdjacentHTML("beforebegin",`<button type="button" class="mi mt" data-go="vl" aria-current="${VIEWSEC==="vl"}"><span>Değerleme</span><span class="vl">NOI ÷ getiri oranı</span></button>`)}catch(e){}return r};
-/* girdi dinleyici */
-document.addEventListener("change",e=>{const el=e.target;if(!el||el.dataset.vl===undefined)return;const k=el.dataset.vl;
-  if(k==="cur")VL.cur=el.value.slice(0,8);
-  else if(k==="targets")VL.targets=el.value.split(/[,;\s]+/).map(Number).filter(x=>x>=1&&x<=40).slice(0,6);
-  else if(k==="offer"||k==="comp")VL[k]=Math.max(0,+el.value||0);
-  else{const[a,i]=k.split(".");VL[a][+i]=+el.value||0}
-  renderVL()},true);
+if(host&&!document.getElementById("vtwrap")){const w=document.createElement("div");w.id="vtwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="vtp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
+if(!TPL_LIST.some(x=>x[0]==="val"))TPL_LIST.push(["val","Değer hesapla"]);
+const sv=window.showView;window.showView=function(){const r=sv.apply(this,arguments);const w=document.getElementById("vtwrap");if(w)w.hidden=VIEWSEC!=="vt";return r};
+const rm=window.renderMenu;window.renderMenu=function(){const r=rm.apply(this,arguments);try{document.querySelectorAll('#menu [data-tpp]').forEach(b=>{b.setAttribute("aria-current",String((VIEWSEC==="tp"&&b.dataset.tpp==="pay")||(VIEWSEC==="vt"&&b.dataset.tpp==="val")))})}catch(e){}return r};
+/* tıklamalar */
+document.addEventListener("click",e=>{
+ const t=e.target.closest&&e.target.closest("[data-tpp],[data-vta]");if(!t)return;
+ if(t.dataset.tpp==="val"){e.preventDefault();e.stopImmediatePropagation();VIEWSEC="vt";OPEN.add("tp");showView();renderVT();renderMenu();return}
+ if(t.dataset.vta===undefined)return;e.preventDefault();e.stopImmediatePropagation();
+ const a=t.dataset.vta;
+ if(a==="case"){VT=VT0();VTN.rev={name:"",val:0,per:"month",ccy:"cur"};renderVT();return}
+ if(a==="blank"){VT=VT_BLANK();renderVT();return}
+ if(a==="frompay"){const T=TP,V=VT0();Object.assign(V,{name:T.name,loc:"",type:"Payback şablonundan",units:T.units,beds:0,cur:"USD",fx:0,occ:T.stab.occ,adr:T.stab.adr,season:T.season.slice(),g:T.g,f:T.f,hz:T.hz,ramp:JSON.parse(JSON.stringify(T.ramp)),dev:VT.dev,cap:VT.cap,targets:VT.targets,offer:0,comp:0});
+  V.rev=T.rev.filter(x=>x.on&&x.type!=="room").map(x=>({id:x.id,name:x.name,on:1,type:x.type==="fixed"?"fixed":"pct",val:x.val,per:"year",ccy:"cur"}));
+  V.exp=T.exp.filter(x=>x.on).map(x=>({id:x.id,name:x.name,on:1,kind:x.kind==="pctOther"?"pctGross":x.kind,val:x.val,per:"year",ccy:"cur",cat:x.cat}));VT=V;renderVT();return}
+ if(a==="text"){const c=vtCalc(),x=document.getElementById("vttxt");x.value=vtText(c);x.style.display="block";return}
+ const[k,sec,i]=a.split(":");
+ if(k==="del"){VT[sec].splice(+i,1);renderVT();return}
+ if(k==="add"){const n=VTN[sec];if(!String(n.name).trim())return;const id="c"+Date.now();
+  if(sec==="rev")VT.rev.push({id,name:n.name,on:1,type:"fixed",val:+n.val||0,per:n.per,ccy:n.ccy});
+  else VT.exp.push({id,name:n.name,on:1,kind:n.kind,val:+n.val||0,per:n.per,ccy:n.ccy,cat:n.cat});
+  VTN[sec]={...VTN[sec],name:"",val:0};renderVT()}
+},true);
+document.addEventListener("change",e=>{const el=e.target;if(!el||!el.dataset)return;
+ const setp=(path,fn)=>{const ks=path.split(".");let o=VT;for(let i=0;i<ks.length-1;i++)o=o[ks[i]];fn(o,ks[ks.length-1])};
+ if(el.dataset.vtn!==undefined){const[a,b]=el.dataset.vtn.split(".");VTN[a][b]=el.type==="number"?(+el.value||0):el.value;if(b==="kind")renderVTin();return}
+ if(el.dataset.vtck!==undefined){e.stopImmediatePropagation();setp(el.dataset.vtck,(o,k)=>{o[k]=el.checked?1:0});if(el.dataset.vtck==="ramp.on")renderVTin();renderVTres();return}
+ if(el.dataset.vtsel!==undefined){e.stopImmediatePropagation();setp(el.dataset.vtsel,(o,k)=>{o[k]=el.value});renderVTres();return}
+ if(el.dataset.vt===undefined)return;e.stopImmediatePropagation();const p=el.dataset.vt;
+ if(p==="targets")VT.targets=el.value.split(/[,;\s]+/).map(Number).filter(x=>x>=1&&x<=40).slice(0,6);
+ else setp(p,(o,k)=>{o[k]=el.type==="number"?(+el.value||0):el.value});
+ if(p==="cur"||p==="ramp.n"){renderVTin()}
+ renderVTres()},true);
 /* proje kaydı */
-const ps=window.projSnap;window.projSnap=function(){const s=ps.apply(this,arguments);s.data.vl=JSON.parse(JSON.stringify(VL));return s};
-const pa=window.projApply;window.projApply=function(o){const er=pa.apply(this,arguments);if(!er&&o&&o.data&&o.data.vl){VL={...VL0(),...o.data.vl};window.VL=VL}else if(!er){window.VL=VL0()}return er};
+const ps=window.projSnap;window.projSnap=function(){const s=ps.apply(this,arguments);s.data.vt=JSON.parse(JSON.stringify(VT));return s};
+const pa=window.projApply;window.projApply=function(o){const er=pa.apply(this,arguments);if(!er&&o&&o.data&&o.data.vt){VT={...VT0(),...o.data.vt}}return er};
 renderMenu();
 })();
 </script>
