@@ -2820,6 +2820,7 @@ function vtResultCsv(){const c=vtCalc(),V=VT,o=[],L=(...a)=>o.push(a.join(";"));
  L();L("Duyarlılık: getiri oranı \\ NOI sapması %",...c.devs);c.caps.forEach((cp,i)=>L(vtn(cp),...c.grid[i].map(v=>v?Math.round(v):"")));
  L();L("Hedef yıl","Azami fiyat");c.tgt.forEach(t=>L(t.y,t.p!=null?Math.round(t.p):""));
  return "﻿"+o.join("\n")}
+window.vtPrintHook=vtPrint;
 let VTI={text:"",prev:null};
 function vtImpPrev(){const m=document.getElementById("vtimpmsg");if(!m)return;VTI.text=document.getElementById("vtimptxt").value;if(!VTI.text.trim()){VTI.prev=null;m.innerHTML="";return}
  const r=vtFromCsv(VTI.text);VTI.prev=r;m.innerHTML=`<div class="oz-res">Önizleme: <b>${esc(r.V.name)}</b> · ${r.V.units} oda · doluluk %${f1(r.V.occ)} · ADR ${f2(r.V.adr)} · ${r.nr} gelir, ${r.ne} gider kalemi. Uygulanırsa Değer hesapla girdileri bununla değişir.</div>${r.bad.length?`<div class="oz-res oz-bad">${r.bad.slice(0,8).map(esc).join(" · ")}${r.bad.length>8?" …":""}</div>`:""}${!r.seen||!(r.V.exp.length)?"":""}<div class="oz-row"><button type="button" class="btn" data-vtx="apply">Uygula</button></div>`}
@@ -2840,6 +2841,69 @@ renderMenu();
 })();
 </script>
 
+<script>
+/* ===== Her ekran için üst çubuk: Yazdır / PDF · Kaydet (masaüstü, veritabanı) ===== */
+(function(){
+const VMAP={pl:["editor","plcard","rescard","chkcard"],reno:["renoeditor","renocard","gantcard","rvcard"],pb:["pbcard"],sa:["sacard"],op:["opcard"],fd:["fdcard"],gr:["grcard"],ty:["tycard"],bt:["btwrap"],kp:["kpwrap"],om:["omwrap"],db:["dbwrap"],oz:["ozwrap"],dc:["dcwrap"],pj:["pjwrap"],wz:["wzwrap"],ex:["exwrap"],tp:["tpwrap"],cf:["cfwrap"],vt:["vtwrap"]};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const main=document.querySelector(".main");if(!main)return;
+const st=document.createElement("style");
+st.textContent="#vbar{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:12px}#vbar .vt{font-weight:600}#vbar .vb{display:flex;gap:8px;flex-wrap:wrap;align-items:center;position:relative}#vsv{position:absolute;right:0;top:calc(100% + 6px);min-width:280px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:0 6px 20px rgba(0,0,0,.2);display:none;z-index:40}#vsv.on{display:block}#vsv button{display:block;width:100%;text-align:left;margin:2px 0}#vsv .g{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:8px 4px 2px}#vmsg{font-size:12px;color:var(--muted);flex-basis:100%}#vprint{display:none}@media print{body.vprinting>*:not(#vprint){display:none!important}body.vprinting #vprint{display:block!important;position:static}body.vprinting #vprint,body.vprinting #vprint *{visibility:visible!important}body.vprinting{background:#fff!important;color:#111!important;padding:0!important}#vprint .vph{margin-bottom:10px}#vprint .vph h1{font-size:18px}#vprint .vph p{margin:2px 0;color:#444}#vprint .card{break-inside:avoid;box-shadow:none}}";
+document.head.appendChild(st);
+const bar=document.createElement("div");bar.id="vbar";
+bar.innerHTML='<span class="vt" id="vtitle"></span><span class="vb"><button type="button" class="btn" data-vb="print">Yazdır / PDF</button><button type="button" class="btn" data-vb="menu" aria-haspopup="true" aria-expanded="false">Kaydet ▾</button><div id="vsv" role="menu"><div class="g">Masaüstüne / bilgisayara</div><button type="button" class="btn" data-vb="html">Rapor (.html)</button><button type="button" class="btn" data-vb="csv">Tablolar (.csv, Excel)</button><button type="button" class="btn" data-vb="json">Proje dosyası (.json)</button><div class="g">Veritabanına (bulut hesabı)</div><button type="button" class="btn" data-vb="cloud">Proje + bu ekranın raporu</button></div></span><span id="vmsg" role="status"></span>';
+main.insertBefore(bar,main.firstChild);
+const pr=document.createElement("div");pr.id="vprint";document.body.appendChild(pr);
+const msg=t=>{document.getElementById("vmsg").textContent=t||""};
+function title(){const a=[...document.querySelectorAll('#menu [aria-current="true"]')].pop();let t="";if(a){const n=a.querySelector(".nm")||a.querySelector("span");t=n?n.textContent.trim():a.textContent.trim()}
+ if(VIEWSEC==="pl")t="P&L girişi";if(VIEWSEC==="reno")t="Renovasyon";if(VIEWSEC==="tp")t="Şablon · "+(t||"Payback analizi");if(VIEWSEC==="vt")t="Şablon · Değer hesapla";return t||"Rapor"}
+function refresh(){const t=document.getElementById("vtitle");if(t)t.textContent=title()}
+/* ekran görüntüsü: form alanlarını metne çevir, düğmeleri çıkar */
+function snap(){
+ const ids=VMAP[VIEWSEC]||[],box=document.createElement("div");
+ ids.forEach(id=>{const el=document.getElementById(id);if(!el||el.hidden)return;const c=el.cloneNode(true);
+  const o=el.querySelectorAll("input,select,textarea"),n=c.querySelectorAll("input,select,textarea");
+  n.forEach((x,i)=>{const src=o[i],tag=x.tagName;let r=document.createElement("span");
+   if(tag==="INPUT"){const t=(src.type||"").toLowerCase();if(t==="file"||t==="button"||t==="submit"||t==="hidden"||t==="range"){x.remove();return}
+    r.textContent=t==="checkbox"||t==="radio"?(src.checked?"☑":"☐"):src.value}
+   else if(tag==="SELECT"){r.textContent=src.options[src.selectedIndex]?src.options[src.selectedIndex].text:""}
+   else{r=document.createElement("div");r.style.whiteSpace="pre-wrap";r.textContent=src.value;if(!src.value.trim()){x.remove();return}}
+   x.replaceWith(r)});
+  c.querySelectorAll("button,[hidden],script,.xp,[data-xp]").forEach(x=>x.remove());
+  c.querySelectorAll("[id]").forEach(x=>x.removeAttribute("id"));
+  c.hidden=false;box.appendChild(c)});
+ return box}
+function header(){return `<div class="vph"><h1>${esc(title())}</h1><p>${esc(PJ&&PJ.name||"")} · ${new Date().toLocaleString("tr-TR")} · Gelir Motoru</p></div>`}
+const slug=()=>((PJ&&PJ.name||"rapor")+"-"+title()).toLowerCase().replace(/[^a-z0-9ğüşıöç]+/gi,"-").replace(/^-|-$/g,"")||"rapor";
+function css(){return [...document.querySelectorAll("style")].filter(s=>!/#gmc-/.test(s.textContent.slice(0,40))).map(s=>s.textContent).join("\n")}
+function reportHtml(){const b=snap();return `<!doctype html><html lang="tr" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title())} · ${esc(PJ.name)}</title><style>${css()}\n#vbar,#vprint,.menu{display:none!important}body{padding:16px;max-width:1100px;margin:0 auto}.app{display:block}.main{display:block}</style></head><body><div class="main">${header()}${b.innerHTML}</div></body></html>`}
+function csv(){const b=snap(),o=[];b.querySelectorAll("table").forEach(t=>{let h=t.closest(".card,.dc-g,section,div");let cap="";let p=t.previousElementSibling;while(p&&!/^H[1-6]$/.test(p.tagName)&&!p.querySelector?.("h2,h3"))p=p.previousElementSibling;if(p)cap=(/^H[1-6]$/.test(p.tagName)?p:p.querySelector("h2,h3")).textContent.trim();
+  if(cap)o.push(cap.replace(/[;\n]/g," "));t.querySelectorAll("tr").forEach(r=>o.push([...r.children].map(c=>'"'+c.textContent.replace(/\s+/g," ").trim().replace(/"/g,'""')+'"').join(";")));o.push("")});
+ return o.length?"﻿"+o.join("\n"):""}
+async function save(name,mime,data){
+ try{if(window.showSaveFilePicker&&window.isSecureContext&&window.top===window.self){const ext=name.slice(name.lastIndexOf("."));const h=await showSaveFilePicker({suggestedName:name,startIn:"desktop",types:[{description:name,accept:{[mime]:[ext]}}]});const w=await h.createWritable();await w.write(new Blob([data],{type:mime}));await w.close();return "Kaydedildi: "+h.name}}
+ catch(e){if(e&&e.name==="AbortError")return "İptal edildi."}
+ try{const u=URL.createObjectURL(new Blob([data],{type:mime})),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);return "İndirildi: "+name+" (tarayıcının indirme klasörü)"}catch(e){return "Kaydedilemedi: "+e.message}}
+function doPrint(){if(VIEWSEC==="vt"&&typeof window.vtPrintHook==="function"){window.vtPrintHook();return}
+ const b=snap();if(!b.children.length){msg("Bu ekranda yazdırılacak içerik yok.");return}
+ pr.innerHTML=header()+`<div class="main">${b.innerHTML}</div>`;const root=document.documentElement,old=root.getAttribute("data-theme");root.setAttribute("data-theme","light");document.body.classList.add("vprinting");
+ const done=()=>{document.body.classList.remove("vprinting");if(old===null)root.removeAttribute("data-theme");else root.setAttribute("data-theme",old);window.removeEventListener("afterprint",done)};window.addEventListener("afterprint",done);setTimeout(done,60000);try{window.print()}catch(e){done()}}
+document.addEventListener("click",async e=>{const t=e.target.closest&&e.target.closest("[data-vb]");const sv=document.getElementById("vsv");
+ if(!t){if(sv&&!e.target.closest("#vsv"))sv.classList.remove("on");return}
+ e.preventDefault();e.stopImmediatePropagation();const a=t.dataset.vb;
+ if(a==="menu"){const on=!sv.classList.contains("on");sv.classList.toggle("on",on);t.setAttribute("aria-expanded",String(on));return}
+ sv.classList.remove("on");
+ if(a==="print"){doPrint();return}
+ if(a==="html"){msg(await save(slug()+".html","text/html",reportHtml()))}
+ else if(a==="csv"){const c=csv();msg(c?await save(slug()+".csv","text/csv",c):"Bu ekranda tablo yok.")}
+ else if(a==="json"){msg(await save(((PJ&&PJ.name)||"proje").replace(/[^\w\-çğıöşüÇĞİÖŞÜ ]/g,"")+".json","application/json",JSON.stringify(projSnap(),null,1)))}
+ else if(a==="cloud"){if(!window.gmCloud){msg("Bulut modülü yüklenemedi.");return}msg("Kaydediliyor…");const r=await window.gmCloud.save({html:reportHtml(),title:title(),key:VIEWSEC});msg(r.msg)}
+},true);
+const sv0=window.showView;window.showView=function(){const r=sv0.apply(this,arguments);try{refresh();msg("")}catch(e){}return r};
+const rm0=window.renderMenu;window.renderMenu=function(){const r=rm0.apply(this,arguments);try{refresh()}catch(e){}return r};
+refresh();
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
 #gmc-b{position:fixed;right:14px;bottom:14px;z-index:9999;background:#1f3a5f;color:#fff;border:0;border-radius:20px;padding:9px 14px;font:600 13px system-ui;cursor:pointer;box-shadow:0 2px 8px #0004}
@@ -2864,8 +2928,8 @@ async function draw(){
  if(!sb){p.innerHTML="Bulut bağlantısı kurulamadı.";return}
  if(!user){p.innerHTML=`<b>Giriş (beta)</b><br>E-posta adresine giriş bağlantısı gönderilir.<input id="gmc-e" type="email" placeholder="e-posta"><button id="gmc-l">Bağlantı gönder</button><div>${esc(msg)}</div><small>Beta: kullanım hakkı hesap başına 20 analizdir (optimizasyon, Monte Carlo vb.). Raporların hesabına kaydedilir.</small>`;
   p.querySelector("#gmc-l").onclick=async()=>{const e=p.querySelector("#gmc-e").value.trim();if(!e)return;const r=await sb.auth.signInWithOtp({email:e,options:{emailRedirectTo:location.origin+location.pathname}});msg=r.error?("Hata: "+r.error.message):"Bağlantı gönderildi, e-postanı kontrol et.";draw()};return}
- const L=await list();
- p.innerHTML=`<b>${esc(user.email)}</b> <button id="gmc-o">Çıkış</button><div>Kalan analiz hakkı: <b>${q?q.quota-q.used:"?"}</b> / ${q?q.quota:"?"}</div><button id="gmc-s">Buluta kaydet: ${esc(PJ.name)}</button><div>${esc(msg)}</div><b>Raporlarım</b>${L.map(x=>`<div class="r"><span>${esc(x.name)}<br><small>${new Date(x.updated_at).toLocaleString("tr-TR")}</small></span><span><button data-o="${x.id}">Aç</button><button data-d="${x.id}">Sil</button></span></div>`).join("")||"<div><small>Henüz kayıt yok.</small></div>"}<hr><textarea id="gmc-f" style="width:100%" rows="2" placeholder="Geri bildirim"></textarea><button id="gmc-fs">Gönder</button>`;
+ const L=await list();const RP=(await sb.from("gm_reports").select("id,title,project_name,created_at").order("created_at",{ascending:false}).limit(30)).data||[];
+ p.innerHTML=`<b>${esc(user.email)}</b> <button id="gmc-o">Çıkış</button><div>Kalan analiz hakkı: <b>${q?q.quota-q.used:"?"}</b> / ${q?q.quota:"?"}</div><button id="gmc-s">Buluta kaydet: ${esc(PJ.name)}</button><div>${esc(msg)}</div><b>Projelerim</b>${L.map(x=>`<div class="r"><span>${esc(x.name)}<br><small>${new Date(x.updated_at).toLocaleString("tr-TR")}</small></span><span><button data-o="${x.id}">Aç</button><button data-d="${x.id}">Sil</button></span></div>`).join("")||"<div><small>Henüz kayıt yok.</small></div>"}<hr><b>Kayıtlı raporlar</b>${RP.map(x=>`<div class="r"><span>${esc(x.title)}<br><small>${esc(x.project_name)} · ${new Date(x.created_at).toLocaleString("tr-TR")}</small></span><span><button data-ro="${x.id}">Aç</button><button data-rd="${x.id}">Sil</button></span></div>`).join("")||"<div><small>Henüz rapor yok.</small></div>"}<hr><textarea id="gmc-f" style="width:100%" rows="2" placeholder="Geri bildirim"></textarea><button id="gmc-fs">Gönder</button>`;
  p.querySelector("#gmc-o").onclick=async()=>{await sb.auth.signOut()};
  p.querySelector("#gmc-s").onclick=async()=>{const s=projSnap();const ex=L.find(x=>x.name===PJ.name);
   const row={name:PJ.name,data:s,schema_version:s.schema,model_version:String(s.model)};
@@ -2874,10 +2938,20 @@ async function draw(){
  p.querySelectorAll("[data-o]").forEach(x=>x.onclick=async()=>{const r=await sb.from("gm_projects").select("data").eq("id",x.dataset.o).single();
   if(r.error){msg="Hata: "+r.error.message;return draw()}const er=projApply(r.data.data);if(!er){try{renderPJ()}catch(e){}}msg=er||"Açıldı.";draw()});
  p.querySelectorAll("[data-d]").forEach(x=>x.onclick=async()=>{if(!confirm("Silinsin mi?"))return;await sb.from("gm_projects").delete().eq("id",x.dataset.d);draw()});
+ p.querySelectorAll("[data-ro]").forEach(x=>x.onclick=async()=>{const r=await sb.from("gm_reports").select("html").eq("id",x.dataset.ro).single();if(r.error){msg="Hata: "+r.error.message;return draw()}const u=URL.createObjectURL(new Blob([r.data.html],{type:"text/html"}));const w=window.open(u,"_blank");if(!w){msg="Açılır pencere engellendi.";draw()}setTimeout(()=>URL.revokeObjectURL(u),60000)});
+ p.querySelectorAll("[data-rd]").forEach(x=>x.onclick=async()=>{if(!confirm("Rapor silinsin mi?"))return;await sb.from("gm_reports").delete().eq("id",x.dataset.rd);draw()});
  p.querySelector("#gmc-fs").onclick=async()=>{const m=p.querySelector("#gmc-f").value.trim();if(!m)return;const r=await sb.from("gm_feedback").insert({message:m});msg=r.error?"Hata":"Teşekkürler.";draw()};
 }
 if(sb){sb.auth.onAuthStateChange((_e,s)=>{user=s&&s.user||null;q=null;label();if(user)quota().then(()=>{if(p.style.display==="block")draw()});else if(p.style.display==="block")draw()});
  sb.auth.getSession().then(r=>{user=r.data.session&&r.data.session.user||null;label();quota()})}
+window.gmCloud={ready:()=>!!(sb&&user),
+ open:m=>{if(m)msg=m;p.style.display="block";draw()},
+ save:async rep=>{if(!sb||!user){msg="Veritabanına kaydetmek için giriş gerekli.";p.style.display="block";draw();return{ok:false,msg}}
+  try{const s=projSnap(),L=await list(),ex=L.find(x=>x.name===PJ.name),row={name:PJ.name,data:s,schema_version:s.schema,model_version:String(s.model)};
+   const r=ex?await sb.from("gm_projects").update(row).eq("id",ex.id):await sb.from("gm_projects").insert(row);if(r.error)return{ok:false,msg:"Proje kaydı hatası: "+r.error.message};
+   if(rep&&rep.html){if(rep.html.length>2000000)return{ok:false,msg:"Proje kaydedildi; rapor çok büyük olduğu için kaydedilemedi."};
+    const r2=await sb.from("gm_reports").insert({project_name:PJ.name,view_key:rep.key||"",title:rep.title||"Rapor",html:rep.html});if(r2.error)return{ok:false,msg:"Proje kaydedildi; rapor hatası: "+r2.error.message}}
+   if(p.style.display==="block")draw();return{ok:true,msg:"Veritabanına kaydedildi: proje"+(rep&&rep.html?" ve rapor":"")+"."}}catch(e){return{ok:false,msg:"Kayıt başarısız: "+e.message}}}};
 /* kota geçidi: ağır analizler sunucuda sayılır */
 const HEAVY=new Set(["solve","multi","mc","reno"]);let pass=new WeakSet();
 document.addEventListener("click",async ev=>{
