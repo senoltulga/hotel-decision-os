@@ -2917,7 +2917,7 @@ function prRes(){const el=document.getElementById("prres");if(!el)return;const C
  el.innerHTML=h}
 function prToTP(){const u=prCalc().yearUSD;let it=TP.exp.find(x=>x.id==="pers_pr");if(!it){it={id:"pers_pr",name:"Personel (payroll modülü)",on:1,kind:"fixed",val:0,cat:"und",custom:1};TP.exp.push(it)}it.val=Math.round(u);it.on=1;return u}
 function renderPR(){const p=document.getElementById("prp");if(!p)return;p.innerHTML=prIn();prRes()}
-window.renderPR=renderPR;
+window.renderPR=renderPR;window.prYearUSD=()=>prCalc().yearUSD;
 /* kabuk */
 const host=document.getElementById("tpwrap");
 if(host&&!document.getElementById("prwrap")){const w=document.createElement("div");w.id="prwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="prp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
@@ -2972,9 +2972,122 @@ try{renderMenu()}catch(e){}
 
 </script>
 <script>
+/* ===== Şablon: P&L oluşturma v2.3 — doluluk × ADR → gelir → departman → GOP → NOI → net nakit → geri dönüş ve değer ===== */
+(function(){
+const KINDS={pctGross:"Brüt gelirin %'si",pctRoom:"Oda gelirinin %'si",perNight:"Dolu oda gecesi başı",fixed:"Yıllık sabit"};
+const RMODE={pctRoom:"Oda gelirinin %'si",fixed:"Yıllık sabit tutar"};
+const X=(name,kind,val)=>({on:1,name,kind,val});
+const PB0=()=>({v:1,name:"P&L oluşturma",keys:30,occ:65,adr:220,roomD:25,
+ rev:[{on:1,name:"Yiyecek-içecek",mode:"pctRoom",val:18,dc:70},{on:1,name:"Spa ve diğer",mode:"pctRoom",val:4,dc:55},{on:1,name:"Dükkân / kira geliri",mode:"fixed",val:60000,dc:5}],
+ und:[X("İdare ve genel yönetim","fixed",90000),X("Satış ve pazarlama","pctGross",4),X("Enerji ve su","pctGross",5),X("Bakım ve onarım","pctGross",3),X("Personel (idari ve genel)","fixed",0)],
+ own:[X("Yönetim ücreti","pctGross",3),X("Sigorta ve emlak vergisi","fixed",25000)],
+ res:[X("FF&E / yenileme rezervi","pctGross",4)],
+ inv:{buy:8100000,reno:0,wc:150000},cap:7.5});
+const PB00=()=>({...PB0(),name:"Yeni P&L",keys:10,occ:60,adr:150,roomD:25,rev:[],und:[],own:[],res:[],inv:{buy:0,reno:0,wc:0}});
+let PB=PB0();window.PBs=()=>PB;
+const usd=v=>"$"+nf.format(Math.round(v)),f0=v=>nf.format(Math.round(v));
+const GN={und:"Dağıtılmamış giderler",own:"Sahip giderleri (GOP altı)",res:"Rezerv"};
+function exAmt(x,gross,room,rn){const v=+x.val||0;return x.kind==="fixed"?v:x.kind==="pctGross"?gross*v/100:x.kind==="pctRoom"?room*v/100:v*rn}
+function pbCalc(o){o=o||{};const P=PB,occ=o.occ!=null?o.occ:+P.occ||0,adr=o.adr!=null?o.adr:+P.adr||0,keys=+P.keys||0,kn=keys*365,rn=kn*occ/100,room=rn*adr;
+ const rv=P.rev.filter(r=>r.on!==0).map(r=>({n:r.name,v:r.mode==="fixed"?+r.val||0:room*(+r.val||0)/100,dc:+r.dc||0}));
+ const other=sum(rv.map(r=>r.v)),gross=room+other,dRoom=room*(+P.roomD||0)/100,dOth=sum(rv.map(r=>r.v*r.dc/100)),dept=dRoom+dOth,dp=gross-dept;
+ const G=g=>P[g].filter(x=>x.on!==0).map(x=>({n:x.name,v:exAmt(x,gross,room,rn)})),u=G("und"),w=G("own"),s=G("res"),und=sum(u.map(x=>x.v)),own=sum(w.map(x=>x.v)),res=sum(s.map(x=>x.v));
+ const gop=dp-und,noi=gop-own,net=noi-res,inv=(+P.inv.buy||0)+(+P.inv.reno||0)+(+P.inv.wc||0),cap=+P.cap||0;
+ return{occ,adr,keys,kn,rn,room,rv,other,gross,dRoom,dOth,dept,dp,u,w,s,und,own,res,gop,noi,net,inv,pay:net>0?inv/net:null,capR:inv?noi/inv:0,val:cap>0?noi/(cap/100):0,
+  revpar:kn?room/kn:0,trevpar:kn?gross/kn:0,goppar:kn?gop/kn:0,mg:gross?gop/gross:0,mn:gross?noi/gross:0}}
+function breakEven(){const f=o=>pbCalc({occ:o}).net;if(f(100)<0)return null;if(f(0)>=0)return 0;let a=0,b=100;for(let i=0;i<40;i++){const m=(a+b)/2;if(f(m)>=0)b=m;else a=m}return b}
+const pct=(a,b)=>b?(a/b*100):0,p1=v=>nf1.format(v)+"%";
+function pbToTP(){const P=PB,c=pbCalc(),T=tpDefault();
+ T.name=P.name;T.units=Math.max(1,Math.round(+P.keys)||1);T.g=0;T.f=0;T.ramp={...T.ramp,on:0};T.stab={occ:+P.occ||0,adr:+P.adr||0};T.kdv={incl:0,room:10,other:20};
+ T.inv=[{id:"buy",name:"Satın alma bedeli",on:1,amt:+P.inv.buy||0},{id:"reno:A",name:"Renovasyon A · iç mekân + FF&E",on:1,amt:+P.inv.reno||0},{id:"reno:B",name:"Renovasyon B · MEP + güvenlik",on:1,amt:0},{id:"reno:C",name:"Renovasyon C · dış cephe + havuz",on:1,amt:0},{id:"reno:D",name:"Renovasyon D · diğer",on:1,amt:0},{id:"wc",name:"İşletme sermayesi",on:1,amt:+P.inv.wc||0}];
+ T.rev=[{id:"res",name:"Oda geliri (ADR × doluluk)",on:1,type:"room"}];T.exp=[];
+ P.rev.forEach((r,i)=>{if(r.on===0)return;const id="plb_v"+i;T.rev.push(r.mode==="fixed"?{id,name:r.name,on:1,type:"fixed",val:+r.val||0}:{id,name:r.name,on:1,type:"pct",val:+r.val||0});
+  const d=+r.dc||0;if(d>0)T.exp.push({id:"plb_dc"+i,name:r.name+" · departman gideri",on:1,kind:r.mode==="fixed"?"fixed":"pctRoom",val:(+r.val||0)*d/100,cat:"dept"})});
+ if(+P.roomD>0)T.exp.push({id:"plb_rd",name:"Oda departman gideri",on:1,kind:"pctRoom",val:+P.roomD,cat:"dept"});
+ const mp={und:"und",own:"own",res:"res"};
+ ["und","own","res"].forEach(g=>P[g].forEach((x,i)=>{if(x.on===0)return;T.exp.push({id:"plb_"+g+i,name:x.name,on:1,kind:x.kind,val:+x.val||0,cat:mp[g]})}));
+ TP=T;return c}
+/* arayüz */
+const nu=(p,v,w,st)=>`<input class="tin" style="width:${w||90}px" type="number" step="${st||1}" data-pbi="${p}" value="${v}">`;
+function grpTbl(g){const kopt=k=>Object.keys(KINDS).map(q=>`<option value="${q}" ${q===k?"selected":""}>${KINDS[q]}</option>`).join("");
+ return `<div class="dc-g"><h3>${GN[g]}</h3><div class="wrap"><table class="ozt"><thead><tr><th></th><th>Kalem</th><th>Hesap</th><th>Değer</th><th></th></tr></thead><tbody>${PB[g].map((x,i)=>`<tr><td><input type="checkbox" data-pbc="${g}.${i}.on" ${x.on!==0?"checked":""}></td><td><input class="tin" style="width:210px" type="text" data-pbi="${g}.${i}.name" value="${esc(x.name)}"></td><td><select data-pbs="${g}.${i}.kind">${kopt(x.kind)}</select></td><td>${nu(`${g}.${i}.val`,x.val,100,x.kind==="fixed"?1000:0.5)}</td><td><button type="button" class="btn" data-pba="del:${g}:${i}">Sil</button></td></tr>`).join("")||'<tr><td colspan="5">Kalem yok</td></tr>'}</tbody></table></div><div class="oz-row"><button type="button" class="btn" data-pba="add:${g}">Kalem ekle</button></div></div>`}
+function pbIn(){const P=PB;
+ return `<div class="plhead"><h2 style="font-size:16px">Şablon · P&L oluşturma</h2><span class="code">doluluk × ADR → gelir → departman → GOP → NOI → net nakit → geri dönüş ve değer</span></div>
+ <p class="note">Bir otel için yıllık kâr-zarar tablosunu sıfırdan kur: oda sayısı, doluluk ve ADR'den oda gelirini, ek gelir ve gider kalemlerinden GOP, NOI ve net nakdi hesaplar. Tutarlar USD ve yıllıktır. Sonucu Payback şablonuna aktarıp çok yıllı analize taşıyabilirsin.</p>
+ <div class="oz-row"><label>P&L adı<input class="tin" style="width:220px" type="text" data-pbi="name" value="${esc(P.name)}"></label><button type="button" class="btn" data-pba="sample">Örnek otelle doldur</button><button type="button" class="btn" data-pba="blank">Boş başla</button></div>
+ <div class="dc-g"><h3>1 · Mülk ve oda geliri</h3><div class="oz-row"><label>Oda sayısı${nu("keys",P.keys,70)}</label><label>Doluluk %${nu("occ",P.occ,70,0.5)}</label><label>ADR (USD)${nu("adr",P.adr,90,1)}</label><label>Oda departman gideri % (oda gelirinin)${nu("roomD",P.roomD,70,0.5)}</label></div></div>
+ <div class="dc-g"><h3>2 · Diğer gelir kalemleri</h3><div class="wrap"><table class="ozt"><thead><tr><th></th><th>Kalem</th><th>Hesap</th><th>Değer</th><th>Departman gideri %</th><th></th></tr></thead><tbody>${P.rev.map((r,i)=>`<tr><td><input type="checkbox" data-pbc="rev.${i}.on" ${r.on!==0?"checked":""}></td><td><input class="tin" style="width:190px" type="text" data-pbi="rev.${i}.name" value="${esc(r.name)}"></td><td><select data-pbs="rev.${i}.mode">${Object.keys(RMODE).map(q=>`<option value="${q}" ${q===r.mode?"selected":""}>${RMODE[q]}</option>`).join("")}</select></td><td>${nu(`rev.${i}.val`,r.val,100,r.mode==="fixed"?1000:0.5)}</td><td>${nu(`rev.${i}.dc`,r.dc,70,1)}</td><td><button type="button" class="btn" data-pba="del:rev:${i}">Sil</button></td></tr>`).join("")||'<tr><td colspan="6">Kalem yok</td></tr>'}</tbody></table></div><div class="oz-row"><button type="button" class="btn" data-pba="add:rev">Gelir kalemi ekle</button></div><p class="note">Departman gideri %, o kalemin gelirine bağlı doğrudan maliyeti (ör. yiyecek-içecekte %70).</p></div>
+ <div class="dc-g"><h3>3 · Giderler</h3></div>${grpTbl("und")}${grpTbl("own")}${grpTbl("res")}
+ <div class="oz-row"><button type="button" class="btn" data-pba="pers">Personel giderini Personel modülünden al</button><span class="code" id="pbmsg2"></span></div>
+ <div class="dc-g"><h3>4 · Yatırım ve değer</h3><div class="oz-row"><label>Satın alma (USD)${nu("inv.buy",P.inv.buy,120,10000)}</label><label>Renovasyon (USD)${nu("inv.reno",P.inv.reno,120,10000)}</label><label>İşletme sermayesi${nu("inv.wc",P.inv.wc,110,10000)}</label><label>Cap oranı %${nu("cap",P.cap,70,0.1)}</label></div></div>
+ <div id="pbres"></div>`}
+function pbRes(){const el=document.getElementById("pbres");if(!el)return;const c=pbCalc(),K=(a,b,d)=>`<div><div class="kl">${a}</div><div class="kv">${b}</div><div class="kr">${d||""}</div></div>`,be=breakEven();
+ let h=`<h3 style="margin:16px 0 6px">5 · Sonuçlar</h3><div class="kg">${K("Brüt gelir",usd(c.gross),"oda "+usd(c.room)+" · diğer "+usd(c.other))}${K("GOP",usd(c.gop),"marj "+p1(c.mg*100))}${K("NOI",usd(c.noi),"marj "+p1(c.mn*100))}${K("Net nakit",usd(c.net),"rezerv sonrası")}${K("Toplam yatırım",usd(c.inv),"")}${K("Basit geri dönüş",c.pay?nf1.format(c.pay)+" yıl":"yok","yatırım ÷ net nakit")}${K("Getiri (NOI ÷ yatırım)",p1(c.capR*100),"")}${K("Değer (NOI ÷ cap)",usd(c.val),"cap "+p1(+PB.cap||0))}</div>`;
+ h+=`<div class="kg" style="margin-top:8px">${K("RevPAR",usd(c.revpar),"oda geliri ÷ mevcut oda gecesi")}${K("TRevPAR",usd(c.trevpar),"brüt gelir ÷ mevcut oda gecesi")}${K("GOPPAR",usd(c.goppar),"GOP ÷ mevcut oda gecesi")}${K("Dolu oda gecesi",f0(c.rn),"mevcut "+f0(c.kn))}${K("Başabaş doluluk",be==null?"%100'de bile zarar":p1(be),"net nakit = 0")}</div>`;
+ const L=(n,v,b,ind)=>`<tr style="${b?"font-weight:600":""}"><td>${ind?"&nbsp;&nbsp;":""}${esc(n)}</td><td>${f0(v)}</td><td>${p1(pct(v,c.gross))}</td><td>${c.keys?f0(v/c.keys):"–"}</td></tr>`;
+ h+=`<h3 style="margin:16px 0 6px">P&L tablosu (yıllık, USD)</h3><div class="wrap"><table class="ozt"><thead><tr><th>Kalem</th><th>Tutar</th><th>Brüt gelire %</th><th>Oda başı</th></tr></thead><tbody>${L("Oda geliri",c.room,0)}${c.rv.map(r=>L(r.n,r.v,0,1)).join("")}${L("BRÜT GELİR",c.gross,1)}${L("Oda departman gideri",-c.dRoom,0,1)}${L("Diğer departman giderleri",-c.dOth,0,1)}${L("DEPARTMAN KÂRI",c.dp,1)}${c.u.map(x=>L(x.n,-x.v,0,1)).join("")}${L("GOP",c.gop,1)}${c.w.map(x=>L(x.n,-x.v,0,1)).join("")}${L("NOI",c.noi,1)}${c.s.map(x=>L(x.n,-x.v,0,1)).join("")}${L("NET NAKİT",c.net,1)}</tbody></table></div>`;
+ h+=`<h3 style="margin:16px 0 6px">Gelirden net nakde</h3>`+hbar([{l:"Brüt gelir",v:c.gross,c:DC[0]},{l:"Departman gideri",v:c.dept,c:DC[4]},{l:"Dağıtılmamış",v:c.und,c:DC[2]},{l:"Sahip giderleri",v:c.own,c:DC[7]},{l:"Rezerv",v:c.res,c:DC[3]},{l:"Net nakit",v:Math.max(c.net,0),c:DC[1]}],{fmt:v=>nf.format(Math.round(v/1000))+" bin $",aria:"Brüt gelirden net nakde yıllık kalemler",ml:130});
+ const dO=[-10,-5,0,5,10],dA=[-10,0,10];
+ h+=`<h3 style="margin:16px 0 6px">Duyarlılık: net nakit (USD) ve geri dönüş</h3><div class="wrap"><table class="ozt"><thead><tr><th>Doluluk (puan) \\ ADR</th>${dA.map(a=>`<th>${a>0?"+":""}${a}%</th>`).join("")}</tr></thead><tbody>${dO.map(o=>`<tr><td>${o>0?"+":""}${o}</td>${dA.map(a=>{const q=pbCalc({occ:Math.max(0,Math.min(100,c.occ+o)),adr:c.adr*(1+a/100)});return `<td>${f0(q.net)}${q.pay?" · "+nf1.format(q.pay)+" yıl":""}</td>`}).join("")}</tr>`).join("")}</tbody></table></div>`;
+ h+=`<div class="oz-row" style="margin-top:12px"><button type="button" class="btn" data-pba="totp">Payback şablonuna aktar (çok yıllı analiz)</button><button type="button" class="btn" data-pba="csv">CSV indir</button><span class="code" id="pbmsg"></span></div><p class="note">Aktarım, bu P&L'den yeni bir Payback analizi kurar (sezon düz, büyüme sıfır, rampa kapalı); Payback şablonundaki mevcut girdilerin yerini alır. Payback'in stabilize yıl net nakdi buradaki net nakitle aynıdır.</p>`;
+ el.innerHTML=h}
+function csv(){const c=pbCalc(),r=[["Kalem","Tutar USD","Brüt gelire %"]],A=(n,v)=>r.push([n,Math.round(v),nf1.format(pct(v,c.gross))]);
+ A("Oda geliri",c.room);c.rv.forEach(x=>A(x.n,x.v));A("Brüt gelir",c.gross);A("Departman giderleri",-c.dept);A("Departman kârı",c.dp);c.u.forEach(x=>A(x.n,-x.v));A("GOP",c.gop);c.w.forEach(x=>A(x.n,-x.v));A("NOI",c.noi);c.s.forEach(x=>A(x.n,-x.v));A("Net nakit",c.net);
+ const s=r.map(x=>x.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(";")).join("\n");const b=new Blob(["﻿"+s],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=(PB.name||"pl")+".csv";document.body.appendChild(a);a.click();a.remove()}
+function renderPB(){const p=document.getElementById("pbp");if(!p)return;p.innerHTML=pbIn();pbRes()}
+window.renderPB=renderPB;window.PBc=pbCalc;
+/* kabuk */
+const host=document.getElementById("tpwrap");
+if(host&&!document.getElementById("plbwrap")){const w=document.createElement("div");w.id="plbwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="pbp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
+if(!TPL_LIST.some(x=>x[0]==="plb"))TPL_LIST.push(["plb","P&L oluşturma"]);
+const sv=window.showView;window.showView=function(){const r=sv.apply(this,arguments);const w=document.getElementById("plbwrap");if(w)w.hidden=VIEWSEC!=="plb";return r};
+const rm=window.renderMenu;window.renderMenu=function(){const r=rm.apply(this,arguments);try{document.querySelectorAll('#menu [data-tpp]').forEach(b=>{if(b.dataset.tpp==="plb")b.setAttribute("aria-current",String(VIEWSEC==="plb"))})}catch(e){}return r};
+const set=(path,v)=>{const p=path.split(".");let o=PB;for(let i=0;i<p.length-1;i++)o=o[p[i]];o[p[p.length-1]]=v};
+function openPB(){VIEWSEC="plb";OPEN.add("tp");showView();renderPB();renderMenu()}
+function act(a){
+ if(a==="sample")PB=PB0();else if(a==="blank")PB=PB00();
+ else if(a.startsWith("add:")){const g=a.slice(4);if(g==="rev")PB.rev.push({on:1,name:"Yeni gelir",mode:"pctRoom",val:0,dc:0});else PB[g].push(X("Yeni kalem","fixed",0))}
+ else if(a.startsWith("del:")){const[,g,i]=a.split(":");PB[g].splice(+i,1)}
+ else if(a==="pers"){const f=window.prYearUSD;if(!f)return;const v=Math.round(f());let it=PB.und.find(x=>x.name.indexOf("Personel")===0);if(!it){it=X("Personel (idari ve genel)","fixed",0);PB.und.push(it)}it.kind="fixed";it.val=v;it.on=1;renderPB();const m=document.getElementById("pbmsg2");if(m)m.textContent="Personel modülünden alındı: "+usd(v)+" / yıl.";return}
+ else if(a==="totp"){pbToTP();VIEWSEC="tp";OPEN.add("tp");showView();renderTP();renderMenu();return}
+ else if(a==="csv"){csv();return}
+ renderPB()}
+document.addEventListener("click",e=>{
+ const t=e.target.closest&&e.target.closest("[data-tpp],[data-pba]");if(!t)return;
+ if(t.dataset.tpp==="plb"){e.preventDefault();e.stopImmediatePropagation();openPB();return}
+ if(t.dataset.pba===undefined)return;e.preventDefault();e.stopImmediatePropagation();act(t.dataset.pba)},true);
+document.addEventListener("input",e=>{const el=e.target;if(!(el instanceof HTMLInputElement)||el.dataset.pbi===undefined)return;set(el.dataset.pbi,el.type==="number"?(+el.value||0):el.value);pbRes()},true);
+document.addEventListener("change",e=>{const el=e.target;if(!el.dataset)return;
+ if(el.dataset.pbc!==undefined){set(el.dataset.pbc,el.checked?1:0);pbRes();return}
+ if(el.dataset.pbs!==undefined){set(el.dataset.pbs,el.value);renderPB()}},true);
+
+/* ---- sihirbaz ---- */
+const WPB={mode:"sample",init:0};
+const wr=(k,n,v,st)=>`<label>${n}<input class="tin" type="number" step="${st||1}" data-wzbf="${k}" value="${v}"></label>`;
+WIZ.plb={t:"Otel için P&L (kâr-zarar) oluştur",d:"Oda sayısı, doluluk ve ADR'den başlayıp gelir, gider, GOP, NOI ve net nakdi kurar; geri dönüş ve değeri gösterir, sonucu Payback şablonuna aktarabilir.",steps:[
+ {t:"Nasıl başlayalım?",html:()=>{const r=(k,n,h)=>`<label class="dcrad"><input type="radio" name="wzbm" data-wzbm="${k}" ${WPB.mode===k?"checked":""}> <b>${n}</b><span class="code">${h}</span></label>`;return `<div class="dcrads">${r("sample","Örnek otel (30 oda)","Hazır gelir ve gider kalemleriyle başla, değerleri kendine göre değiştir")}${r("blank","Boş başla","Kalemleri kendin eklersin")}</div><p class="note">Seçim, P&L oluşturma şablonundaki mevcut girdilerin üzerine yazar.</p>`},enter:()=>{if(!WPB.init){WPB.init=1;PB=WPB.mode==="blank"?PB00():PB0()}},ok:()=>""},
+ {t:"Mülk ve oda geliri",html:()=>`<p class="note">Oda geliri = oda sayısı × 365 × doluluk × ADR. Oda departman gideri, temizlik, komisyon gibi oda satışına bağlı maliyetlerin oda gelirine oranıdır.</p><div class="oz-row">${wr("keys","Oda sayısı",PB.keys)}${wr("occ","Doluluk %",PB.occ,0.5)}${wr("adr","ADR (USD)",PB.adr)}${wr("roomD","Oda departman gideri %",PB.roomD,0.5)}</div>`,ok:()=>PB.keys>0&&PB.occ>0&&PB.occ<=100&&PB.adr>0?"":"Oda sayısı, ADR ve %1–100 arası doluluk gerekli."},
+ {t:"Diğer gelirler",html:()=>`<p class="note">Yiyecek-içecek, spa, kira gibi kalemler. Oda gelirinin yüzdesi ya da yıllık sabit tutar olabilir; ayrıntı ve yeni kalem için şablonu kullan.</p><div class="wrap"><table class="ozt"><thead><tr><th></th><th>Kalem</th><th>Hesap</th><th>Değer</th><th>Dept. gideri %</th></tr></thead><tbody>${PB.rev.map((r,i)=>`<tr><td><input type="checkbox" data-wzbc="rev.${i}.on" ${r.on!==0?"checked":""}></td><td>${esc(r.name)}</td><td>${RMODE[r.mode]}</td><td><input class="tin" style="width:100px" type="number" data-wzbf="rev.${i}.val" value="${r.val}"></td><td><input class="tin" style="width:70px" type="number" data-wzbf="rev.${i}.dc" value="${r.dc}"></td></tr>`).join("")||'<tr><td colspan="5">Kalem yok; şablondan ekleyebilirsin</td></tr>'}</tbody></table></div>`,ok:()=>""},
+ {t:"Giderler",html:()=>{const g=k=>`<h4 style="margin:10px 0 4px">${GN[k]}</h4><table class="ozt"><tbody>${PB[k].map((x,i)=>`<tr><td><input type="checkbox" data-wzbc="${k}.${i}.on" ${x.on!==0?"checked":""}></td><td>${esc(x.name)}</td><td>${KINDS[x.kind]}</td><td><input class="tin" style="width:100px" type="number" data-wzbf="${k}.${i}.val" value="${x.val}"></td></tr>`).join("")||'<tr><td>Kalem yok</td></tr>'}</tbody></table>`;return `<p class="note">Değerleri düzenle ya da kalemi kapat. Personel gideri için Personel modülünü kullanıp şablondan "Personel modülünden al" diyebilirsin.</p>${g("und")}${g("own")}${g("res")}`},ok:()=>""},
+ {t:"Yatırım ve değer",html:()=>`<p class="note">Geri dönüş ve değer için yatırım tutarlarını ve cap oranını gir. Boş bırakırsan P&L yine hesaplanır, geri dönüş gösterilmez.</p><div class="oz-row">${wr("inv.buy","Satın alma (USD)",PB.inv.buy,10000)}${wr("inv.reno","Renovasyon (USD)",PB.inv.reno,10000)}${wr("inv.wc","İşletme sermayesi",PB.inv.wc,10000)}${wr("cap","Cap oranı %",PB.cap,0.1)}</div>`,ok:()=>""},
+ {t:"Sonuç",html:()=>{const c=pbCalc(),be=breakEven();return `<table class="ozt"><tbody><tr><td>Brüt gelir</td><td><b>${usd(c.gross)}</b></td></tr><tr><td>GOP (marj)</td><td><b>${usd(c.gop)}</b> · ${p1(c.mg*100)}</td></tr><tr><td>NOI (marj)</td><td><b>${usd(c.noi)}</b> · ${p1(c.mn*100)}</td></tr><tr><td>Net nakit</td><td><b>${usd(c.net)}</b></td></tr><tr><td>Toplam yatırım</td><td>${usd(c.inv)}</td></tr><tr><td>Basit geri dönüş</td><td>${c.pay?nf1.format(c.pay)+" yıl":"yok"}</td></tr><tr><td>Değer (NOI ÷ cap)</td><td>${usd(c.val)}</td></tr><tr><td>RevPAR · TRevPAR · GOPPAR</td><td>${usd(c.revpar)} · ${usd(c.trevpar)} · ${usd(c.goppar)}</td></tr><tr><td>Başabaş doluluk</td><td>${be==null?"%100'de bile zarar":p1(be)}</td></tr></tbody></table><div class="oz-row" style="margin-top:8px"><button type="button" class="btn" data-wzba="open">P&L şablonunu aç</button><button type="button" class="btn" data-wzba="totp">Payback şablonuna aktar</button></div>`},ok:()=>""}]};
+document.addEventListener("input",e=>{const el=e.target;if(!(el instanceof HTMLInputElement)||el.dataset.wzbf===undefined)return;e.stopImmediatePropagation();set(el.dataset.wzbf,+el.value||0)},true);
+document.addEventListener("change",e=>{const el=e.target;if(!el||!el.dataset)return;
+ if(el.dataset.wzbm){e.stopImmediatePropagation();WPB.mode=el.dataset.wzbm;PB=WPB.mode==="blank"?PB00():PB0();return}
+ if(el.dataset.wzbc!==undefined){e.stopImmediatePropagation();set(el.dataset.wzbc,el.checked?1:0)}},true);
+document.addEventListener("click",e=>{
+ if(e.target.closest&&e.target.closest('[data-wz="start:plb"]')){WPB.init=0;return}
+ const t=e.target.closest&&e.target.closest("[data-wzba]");if(!t)return;e.preventDefault();e.stopImmediatePropagation();
+ if(t.dataset.wzba==="open")openPB();else if(t.dataset.wzba==="totp"){pbToTP();VIEWSEC="tp";OPEN.add("tp");showView();renderTP();renderMenu()}},true);
+const ps=window.projSnap;window.projSnap=function(){const s=ps.apply(this,arguments);s.data.plb=JSON.parse(JSON.stringify(PB));return s};
+const pa=window.projApply;window.projApply=function(o){const er=pa.apply(this,arguments);if(!er&&o&&o.data&&o.data.plb&&Array.isArray(o.data.plb.rev)){PB={...PB0(),...o.data.plb}}return er};
+try{renderMenu()}catch(e){}
+})();
+</script>
+<script>
 /* ===== Her ekran için üst çubuk: Yazdır / PDF · Kaydet (masaüstü, veritabanı) ===== */
 (function(){
-const VMAP={pl:["editor","plcard","rescard","chkcard"],reno:["renoeditor","renocard","gantcard","rvcard"],pb:["pbcard"],sa:["sacard"],op:["opcard"],fd:["fdcard"],gr:["grcard"],ty:["tycard"],bt:["btwrap"],kp:["kpwrap"],om:["omwrap"],db:["dbwrap"],oz:["ozwrap"],dc:["dcwrap"],pj:["pjwrap"],wz:["wzwrap"],ex:["exwrap"],tp:["tpwrap"],cf:["cfwrap"],vt:["vtwrap"],pr:["prwrap"]};
+const VMAP={pl:["editor","plcard","rescard","chkcard"],reno:["renoeditor","renocard","gantcard","rvcard"],pb:["pbcard"],sa:["sacard"],op:["opcard"],fd:["fdcard"],gr:["grcard"],ty:["tycard"],bt:["btwrap"],kp:["kpwrap"],om:["omwrap"],db:["dbwrap"],oz:["ozwrap"],dc:["dcwrap"],pj:["pjwrap"],wz:["wzwrap"],ex:["exwrap"],tp:["tpwrap"],cf:["cfwrap"],vt:["vtwrap"],pr:["prwrap"],plb:["plbwrap"]};
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const main=document.querySelector(".main");if(!main)return;
 const st=document.createElement("style");
@@ -2986,7 +3099,7 @@ main.insertBefore(bar,main.firstChild);
 const pr=document.createElement("div");pr.id="vprint";document.body.appendChild(pr);
 const msg=t=>{document.getElementById("vmsg").textContent=t||""};
 function title(){const a=[...document.querySelectorAll('#menu [aria-current="true"]')].pop();let t="";if(a){const n=a.querySelector(".nm")||a.querySelector("span");t=n?n.textContent.trim():a.textContent.trim()}
- if(VIEWSEC==="pl")t="P&L girişi";if(VIEWSEC==="reno")t="Renovasyon";if(VIEWSEC==="tp")t="Şablon · "+(t||"Payback analizi");if(VIEWSEC==="vt")t="Şablon · Değer hesapla";if(VIEWSEC==="pr")t="Şablon · Personel bütçesi";return t||"Rapor"}
+ if(VIEWSEC==="pl")t="P&L girişi";if(VIEWSEC==="reno")t="Renovasyon";if(VIEWSEC==="tp")t="Şablon · "+(t||"Payback analizi");if(VIEWSEC==="vt")t="Şablon · Değer hesapla";if(VIEWSEC==="pr")t="Şablon · Personel bütçesi";if(VIEWSEC==="plb")t="Şablon · P&L oluşturma";return t||"Rapor"}
 function refresh(){const t=document.getElementById("vtitle");if(t)t.textContent=title()}
 /* ekran görüntüsü: form alanlarını metne çevir, düğmeleri çıkar */
 function snap(){
