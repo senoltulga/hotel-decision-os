@@ -2750,12 +2750,14 @@ window.renderVT=renderVT;
 /* kabuk */
 const host=document.getElementById("tpwrap");
 if(host&&!document.getElementById("vtwrap")){const w=document.createElement("div");w.id="vtwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="vtp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
-if(!TPL_LIST.some(x=>x[0]==="val"))TPL_LIST.push(["val","Değer hesapla"]);
+if(!TPL_LIST.some(x=>x[0]==="val"))TPL_LIST.push(["val","Değer hesapla"]);if(!TPL_LIST.some(x=>x[0]==="turg"))TPL_LIST.push(["turg","Vaka: Turgutreis 30 anahtar"]);
 const sv=window.showView;window.showView=function(){const r=sv.apply(this,arguments);const w=document.getElementById("vtwrap");if(w)w.hidden=VIEWSEC!=="vt";return r};
-const rm=window.renderMenu;window.renderMenu=function(){const r=rm.apply(this,arguments);try{document.querySelectorAll('#menu [data-tpp]').forEach(b=>{b.setAttribute("aria-current",String((VIEWSEC==="tp"&&b.dataset.tpp==="pay")||(VIEWSEC==="vt"&&b.dataset.tpp==="val")))})}catch(e){}return r};
+const rm=window.renderMenu;window.renderMenu=function(){const r=rm.apply(this,arguments);try{document.querySelectorAll('#menu [data-tpp]').forEach(b=>{b.setAttribute("aria-current",String((VIEWSEC==="tp"&&b.dataset.tpp==="pay"&&TP.name!==CASE_TURG.name)||(VIEWSEC==="tp"&&b.dataset.tpp==="turg"&&TP.name===CASE_TURG.name)||(VIEWSEC==="vt"&&b.dataset.tpp==="val")))})}catch(e){}return r};
 /* tıklamalar */
 document.addEventListener("click",e=>{
  const t=e.target.closest&&e.target.closest("[data-tpp],[data-vta]");if(!t)return;
+ if(t.dataset.tpp==="turg"){e.preventDefault();e.stopImmediatePropagation();TP={...tpDefault(),...JSON.parse(JSON.stringify(CASE_TURG))};VIEWSEC="tp";OPEN.add("tp");showView();renderTP();renderMenu();return}
+ if(t.dataset.tpp==="pay"&&TP.name===CASE_TURG.name){TP=tpDefault();TPY=1;try{(function(){const T=TP,g={A:0,B:0,C:0,D:0};RN.forEach(r=>{if(g[r.g]!==undefined)g[r.g]=gsum(r)});T.inv.forEach(x=>{if(x.id.startsWith("reno:"))x.amt=g[x.id.slice(5)]||0});T.inv[0].amt=INV.buy;T.inv[5].amt=INV.wc})()}catch(_){}}
  if(t.dataset.tpp==="val"){e.preventDefault();e.stopImmediatePropagation();VIEWSEC="vt";OPEN.add("tp");showView();renderVT();renderMenu();return}
  if(t.dataset.vta===undefined)return;e.preventDefault();e.stopImmediatePropagation();
  const a=t.dataset.vta;
