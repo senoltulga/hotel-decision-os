@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yokuşbaşı Payback Akışı</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Düzen: solda girdiler, sağda P&L akışı → geri dönüş grafiği. Palet: Ege denizi tealı + soğuk gri. */
+:root{--bg:#EDF1F3;--surface:#FFFFFF;--fg:#14232B;--muted:#52646E;--line:#D3DCE1;--accent:#0E6F78;--accent-soft:#DCEEF0;--pos:#1D7447;--neg:#B1432C;--bar:#9FC9CE;
+ --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1A20;--surface:#15252D;--fg:#E3ECEF;--muted:#94A8B1;--line:#263B45;--accent:#4FC3CD;--accent-soft:#16363C;--pos:#59C58A;--neg:#F08A72;--bar:#2D6B73;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E1A20;--surface:#15252D;--fg:#E3ECEF;--muted:#94A8B1;--line:#263B45;--accent:#4FC3CD;--accent-soft:#16363C;--pos:#59C58A;--neg:#F08A72;--bar:#2D6B73;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:24px}
+.wrap{max-width:1180px;margin-inline:auto;display:grid;gap:20px}
+header h1{font-size:26px;font-weight:600;margin:0 0 4px;text-wrap:balance}
+header p{margin:0;color:var(--muted);max-width:70ch}
+.layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.panel h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 12px}
+.inputs{display:grid;gap:14px}
+.grp{display:grid;gap:8px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.grp:last-child{border-bottom:0;padding-bottom:0}
+.grp h3{margin:0;font-size:13px;font-weight:600}
+.f{display:grid;grid-template-columns:1fr 112px;align-items:center;gap:8px;font-size:13.5px;color:var(--muted)}
+.f input{width:100%;font:500 13.5px var(--mono);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;text-align:right}
+.f input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.kpi span{display:block;font-size:12px;color:var(--muted)}
+.kpi b{display:block;font:500 20px var(--mono);margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi small{color:var(--muted);font-size:12px}
+.kpi.main{background:var(--accent);border-color:var(--accent)}
+.kpi.main span,.kpi.main small,.kpi.main b{color:#fff}
+:root[data-theme="dark"] .kpi.main span,:root[data-theme="dark"] .kpi.main small,:root[data-theme="dark"] .kpi.main b{color:#06242A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .kpi.main span,:root:not([data-theme="light"]) .kpi.main small,:root:not([data-theme="light"]) .kpi.main b{color:#06242A}}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;text-align:left;font-size:13.5px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;font-family:var(--mono)}
+td.how{color:var(--muted);font-size:12.5px}
+tr.sub td{font-weight:600;background:var(--accent-soft)}
+tr.sub td.lab{color:var(--fg)}
+td.lab.in{padding-left:22px}
+.bar{display:block;height:8px;border-radius:4px;background:var(--bar);min-width:2px}
+tr.sub .bar{background:var(--accent)}
+.neg{color:var(--neg)}
+.note{color:var(--muted);font-size:13px;margin:10px 0 0}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--muted);font:11px var(--mono)}
+.sens td,.sens th{text-align:right}
+.sens td:first-child,.sens th:first-child{text-align:left}
+.sens td.cur{font-weight:600;background:var(--accent-soft)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <h1>Yokuşbaşı Payback Akışı</h1>
+ <p>18 residence birimli karma kullanım mülkü. Gelir, departman gideri, GOP, NOI ve net nakit adım adım hesaplanır; yıllık net nakit yatırımı kapatınca geri dönüş yılı çıkar. Varsayılan değerler Yokuşbaşı örnek dosyasıdır.</p>
+</header>
+<div class="layout">
+ <aside class="panel"><h2>Girdiler (USD)</h2><div class="inputs" id="inputs"></div></aside>
+ <main style="display:grid;gap:20px;min-width:0">
+  <section class="kpis" id="kpis" aria-live="polite"></section>
+  <section class="panel"><h2>P&amp;L akışı · stabilize yıl</h2><div class="tw"><table id="pl"></table></div><p class="note" id="plnote"></p></section>
+  <section class="panel"><h2>Yatırım nasıl geri dönüyor</h2><div id="chart"></div><p class="note" id="chnote"></p></section>
+  <section class="panel"><h2>Doluluk değişirse geri dönüş</h2><div class="tw"><table class="sens" id="sens"></table></div><p class="note">Doluluk, rampa yılları ve stabilize yıl için aynı puan kadar kaydırılır.</p></section>
+ </main>
+</div>
+</div>
+<script>
+const nf=new Intl.NumberFormat('tr-TR',{maximumFractionDigits:0}),nf1=new Intl.NumberFormat('tr-TR',{minimumFractionDigits:1,maximumFractionDigits:1});
+const usd=v=>(v<0?'−':'')+'$'+nf.format(Math.abs(Math.round(v)));
+const P={units:18,occ:65,adr:300,o1:45,a1:250,o2:55,a2:275,com:180000,rest:150000,dist:14,ops:10,hk:5,mnt:5,rr:3,ffe:4,oa:94998,adm:65000,own:70000,g:3,f:4,buy:8100000,reno:2500000,wc:150000};
+const G=[
+ ['Mülk ve oda geliri',[['units','Birim sayısı'],['occ','Doluluk % (stabilize)'],['adr','ADR (stabilize)'],['o1','1. yıl doluluk %'],['a1','1. yıl ADR'],['o2','2. yıl doluluk %'],['a2','2. yıl ADR']]],
+ ['Kira gelirleri (yıllık)',[['com','Ticari kira'],['rest','Restoran + havuz kirası']]],
+ ['Departman giderleri',[['dist','Komisyon % (residence)'],['ops','Operasyon % (residence)'],['hk','HK ve sarf % (residence)'],['mnt','Bakım % (residence)'],['rr','Kira rezervi % (kira)']]],
+ ['Sabit giderler (yıllık)',[['oa','Ortak alan, enerji, güvenlik'],['adm','İdare, muhasebe, sigorta'],['own','Malik sabit gideri'],['ffe','FF&E rezervi % (brüt)']]],
+ ['Büyüme (stabilize sonrası)',[['g','Gelir artışı % / yıl'],['f','Sabit gider artışı % / yıl']]],
+ ['Yatırım',[['buy','Satın alma'],['reno','Renovasyon'],['wc','İşletme sermayesi']]]];
+const box=document.getElementById('inputs');
+G.forEach(([t,fs])=>{const d=document.createElement('div');d.className='grp';d.innerHTML='<h3>'+t+'</h3>'+fs.map(([k,l])=>`<label class="f" for="i-${k}">${l}<input id="i-${k}" type="number" step="any" value="${P[k]}" data-k="${k}"></label>`).join('');box.appendChild(d)});
+box.addEventListener('input',e=>{const k=e.target.dataset.k;if(k){P[k]=parseFloat(e.target.value)||0;draw()}});
+
+function year(y,q,shift){
+ const ramp=[{occ:q.o1,adr:q.a1},{occ:q.o2,adr:q.a2}];let occ,adr,ex=0;
+ if(y<=2){occ=ramp[y-1].occ;adr=ramp[y-1].adr}else{occ=q.occ;adr=q.adr;ex=y-3}
+ occ=Math.max(0,Math.min(100,occ+(shift||0)));
+ const gr=Math.pow(1+q.g/100,ex),fr=Math.pow(1+q.f/100,ex);
+ const room=q.units*365*occ/100*adr*gr,rent=(q.com+q.rest)*gr,gross=room+rent;
+ const d={dist:room*q.dist/100,ops:room*q.ops/100,hk:room*q.hk/100,mnt:room*q.mnt/100,rr:rent*q.rr/100},dep=d.dist+d.ops+d.hk+d.mnt+d.rr;
+ const dp=gross-dep,und=(q.oa+q.adm)*fr,oa=q.oa*fr,adm=q.adm*fr,gop=dp-und,own=q.own*fr,noi=gop-own,res=gross*q.ffe/100,net=noi-res;
+ return{y,occ,adr,room,rent,gross,d,dep,dp,oa,adm,und,gop,own,noi,res,net}}
+function run(q,shift,n){const rows=[],inv=q.buy+q.reno+q.wc;let cum=0,pay=null;
+ for(let y=1;y<=n;y++){const r=year(y,q,shift),prev=cum;cum+=r.net;r.cum=cum;if(pay==null&&cum>=inv&&r.net>0)pay=y-1+(inv-prev)/r.net;rows.push(r)}
+ return{rows,inv,pay}}
+const pct=(a,b)=>b?a/b*100:0;
+function draw(){
+ const R=run(P,0,40),S=R.rows[2],inv=R.inv;
+ const sp=R.inv&&S.net>0?inv/S.net:null;
+ document.getElementById('kpis').innerHTML=[
+  ['Brüt gelir',usd(S.gross),'2029'],['GOP',usd(S.gop),'marj %'+nf1.format(pct(S.gop,S.gross))],['NOI',usd(S.noi),'marj %'+nf1.format(pct(S.noi,S.gross))],['Net nakit',usd(S.net),'rezerv sonrası'],['Toplam yatırım',usd(inv),'satın alma + renovasyon + işletme sermayesi'],
+ ].map(k=>`<div class="kpi"><span>${k[0]}</span><b>${k[1]}</b><small>${k[2]}</small></div>`).join('')+
+ `<div class="kpi main"><span>Geri dönüş (kümülatif)</span><b>${R.pay==null?'40 yıldan uzun':nf1.format(R.pay)+' yıl'}</b><small>${sp?'basit: '+nf1.format(sp)+' yıl (yatırım ÷ stabilize net)':'net nakit ≤ 0'}</small></div>`;
+ const rows=[
+  ['Residence geliri',`${P.units} birim × 365 × %${nf1.format(S.occ)} × $${nf.format(S.adr)}`,S.room,0],
+  ['Ticari kira','sabit',P.com,0,1],['Restoran + havuz kirası','sabit',P.rest,0,1],
+  ['TOPLAM BRÜT GELİR','',S.gross,1],
+  ['Dağıtım ve ödeme komisyonu',`residence gelirinin %${P.dist}`,-S.d.dist,0,1],['Operasyon ve mülk yönetimi',`residence gelirinin %${P.ops}`,-S.d.ops,0,1],['HK açığı, sarf, misafir hizmeti',`residence gelirinin %${P.hk}`,-S.d.hk,0,1],['Rutin bakım ve teknik servis',`residence gelirinin %${P.mnt}`,-S.d.mnt,0,1],['Ticari + restoran kira rezervi',`kira gelirinin %${P.rr}`,-S.d.rr,0,1],
+  ['DEPARTMAN KÂRI','',S.dp,1],
+  ['Ortak alan, enerji, güvenlik','sabit',-S.oa,0,1],['İdare, muhasebe, sigorta','sabit',-S.adm,0,1],
+  ['GOP','brüt gelir − departman − dağıtılmamış',S.gop,1],
+  ['Malik sabit gideri ve ihtiyat','sabit',-S.own,0,1],
+  ['NOI','GOP − malik gideri',S.noi,1],
+  ['FF&E / yenileme rezervi',`brüt gelirin %${P.ffe}`,-S.res,0,1],
+  ['NET İŞLETME NAKDİ','NOI − rezerv',S.net,1]];
+ const mx=S.gross||1;
+ document.getElementById('pl').innerHTML='<thead><tr><th>Kalem</th><th>Hesap</th><th class="n">Tutar</th><th class="n">Brüt gelire %</th><th style="width:140px">Pay</th></tr></thead><tbody>'+rows.map(r=>`<tr class="${r[3]?'sub':''}"><td class="lab ${r[4]?'in':''}">${r[0]}</td><td class="how">${r[1]}</td><td class="n ${r[2]<0?'neg':''}">${usd(r[2])}</td><td class="n">${nf1.format(pct(r[2],S.gross))}%</td><td><span class="bar" style="width:${Math.max(0,Math.min(100,Math.abs(r[2])/mx*100))}%"></span></td></tr>`).join('')+'</tbody>';
+ document.getElementById('plnote').textContent=`Stabilize yıl 3. yıldır. İlk iki yıl rampa dönemidir: net nakit 1. yıl ${usd(R.rows[0].net)}, 2. yıl ${usd(R.rows[1].net)}.`;
+ chart(R);sens();
+}
+function chart(R){
+ const inv=R.inv,N=R.pay==null?40:Math.min(40,Math.max(10,Math.ceil(R.pay)+3)),rows=R.rows.slice(0,N);
+ const W=680,H=260,L=64,Rr=16,T=16,B=32,cw=W-L-Rr,ch=H-T-B;
+ const ymax=Math.max(inv*1.08,rows[rows.length-1].cum*1.02,1);
+ const x=y=>L+y/N*cw,y_=v=>T+ch-v/ymax*ch;
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Kümülatif net nakit ve toplam yatırım, yıllara göre">`;
+ for(let i=0;i<=4;i++){const v=ymax/4*i;s+=`<line x1="${L}" x2="${W-Rr}" y1="${y_(v)}" y2="${y_(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y_(v)+4}" text-anchor="end">${nf1.format(v/1e6)} M</text>`}
+ const step=N>20?5:N>12?2:1;for(let yv=0;yv<=N;yv+=step)s+=`<text x="${x(yv)}" y="${H-10}" text-anchor="middle">${yv}</text>`;
+ s+=`<line x1="${L}" x2="${W-Rr}" y1="${y_(inv)}" y2="${y_(inv)}" stroke="var(--neg)" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-Rr}" y="${y_(inv)-6}" text-anchor="end" style="fill:var(--neg)">yatırım ${nf1.format(inv/1e6)} M</text>`;
+ const pts=[[0,0]].concat(rows.map(r=>[r.y,r.cum]));
+ s+=`<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${pts.map(p=>x(p[0])+','+y_(p[1])).join(' ')}"/>`;
+ if(R.pay!=null&&R.pay<=N){const px=x(R.pay);s+=`<line x1="${px}" x2="${px}" y1="${T}" y2="${T+ch}" stroke="var(--accent)" stroke-dasharray="3 3"/><circle cx="${px}" cy="${y_(inv)}" r="5" fill="var(--accent)"/><text x="${px+8}" y="${T+14}" style="fill:var(--accent)">${nf1.format(R.pay)} yıl</text>`}
+ s+='</svg>';document.getElementById('chart').innerHTML=s;
+ document.getElementById('chnote').textContent='Çizgi, yıllık net nakitlerin birikimidir. Kesikli çizgiyi geçtiği an yatırım geri dönmüş olur. Eğim üçüncü yıldan sonra gelir ve gider artışıyla değişir.';
+}
+function sens(){
+ const sh=[-10,-5,0,5,10],inv=P.buy+P.reno+P.wc;
+ const res=sh.map(d=>{const r=run(P,d,40);return{d,pay:r.pay,net:r.rows[2].net}});
+ document.getElementById('sens').innerHTML='<thead><tr><th></th>'+res.map(r=>`<th>${r.d>0?'+':''}${r.d} puan</th>`).join('')+'</tr></thead><tbody><tr><td>Stabilize net nakit</td>'+res.map(r=>`<td class="${r.d===0?'cur':''}">${usd(r.net)}</td>`).join('')+'</tr><tr><td>Geri dönüş</td>'+res.map(r=>`<td class="${r.d===0?'cur':''}">${r.pay==null?'40+ yıl':nf1.format(r.pay)+' yıl'}</td>`).join('')+'</tr></tbody>';
+}
+draw();
+</script>
+</body>
+</html>
