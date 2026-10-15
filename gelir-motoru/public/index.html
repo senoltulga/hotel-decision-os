@@ -3434,16 +3434,22 @@ DRG.dctv=(key,x,y)=>{const c=dcfCalc(),P=DCF;if(!(c.P.tvm==="cap"))return;const 
 DRG.dcdisc=(key,x,y)=>{const P=DCF;if(P.discMode!=="direct"){P.discMode="direct";rl()}P.disc=clamp(Math.round(x*4)/4,.5,40);rr(true)};
 /* ---------- kabuk ---------- */
 const MODS=[["pay","Payback"],["pl","P&L oluşturma"],["pr","Personel bütçesi"],["dcf","DCF ve değerleme"]];
+const CL0=[["pl","P&L tablosu"],["reno","Renovasyon"],["ty","Toplam yatırım"],["gr","Gelir modeli"],["fd","Finansal dil"],["op","Açılış ve stabilizasyon"],["cf","Nakit akışı"],["pb","Geri dönüş"],["sa","Duyarlılık"],["kp","Göstergeler"],["om","Yatırımın omurgası"],["oz","Optimizasyon"],["db","Dashboard"],["ex","Yönetici özeti"],["wz","Sihirbaz"],["pj","Proje"]];
+const CL=CL0.map(([k,n])=>["c:"+k,n]);const isCL=k=>String(k).startsWith("c:");
 const M={pay:{t:"Payback analizi (Yokuşbaşı akışı)",root:()=>TP,left:payLeft,right:payRight},pl:{t:"P&L oluşturma",root:PBr,left:plLeft,right:plRight},pr:{t:"Personel bütçesi",root:PRr,left:prLeft,right:prRight},dcf:{t:"DCF ve değerleme",root:()=>DCF,left:dcLeft,right:dcRight}};
 function css(){if(!document.querySelector('link[href*="IBM+Plex"]')){const l=document.createElement("link");l.rel="stylesheet";l.href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap";document.head.appendChild(l)}const s=document.createElement("style");s.textContent=`
 #ws{--bg:#EDF1F3;--panel:#FFFFFF;--ink:#14232B;--muted:#52646E;--line:#D3DCE1;--accent:#0E6F78;--accent-ink:#FFFFFF;--sel:#DCEEF0;--input:#EDF1F3;--navy:#2B5C75;--neg:#B1432C;--pos:#1D7447;--bar:#9FC9CE;--amb:#A8741A;--warn:#A8741A;color-scheme:light}
 :root[data-theme="dark"] #ws{--bg:#0E1A20;--panel:#15252D;--ink:#E3ECEF;--muted:#94A8B1;--line:#263B45;--accent:#4FC3CD;--accent-ink:#06242A;--sel:#16363C;--input:#0E1A20;--navy:#7FB4CC;--neg:#F08A72;--pos:#59C58A;--bar:#2D6B73;--amb:#E0B060;--warn:#E0B060;color-scheme:dark}
 body.wson>*:not(#ws):not([id^="gmc-"]){display:none!important}
+body.wsc{--bg:#EDF1F3;--panel:#FFFFFF;--ink:#14232B;--muted:#52646E;--line:#D3DCE1;--accent:#0E6F78;--accent-ink:#FFFFFF;--sel:#DCEEF0;--input:#EDF1F3}
+:root[data-theme="dark"] body.wsc{--bg:#0E1A20;--panel:#15252D;--ink:#E3ECEF;--muted:#94A8B1;--line:#263B45;--accent:#4FC3CD;--accent-ink:#06242A;--sel:#16363C;--input:#0E1A20}
+body.wsc #vbar{top:var(--wsh,64px)}body.wsc:not(.wsc-tree) .menu{display:none!important}body.wsc:not(.wsc-tree) .app{display:block}
+#ws.cl{position:fixed;inset:0 0 auto 0;overflow:visible;height:auto}#ws.cl .ws-body{display:none}
 #ws{position:fixed;inset:0;z-index:60;overflow:auto;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}#ws[hidden]{display:none}
 .ws-top{position:sticky;top:0;z-index:5;background:var(--panel);border-bottom:1px solid var(--line)}
 .ws-top-in{max-width:1180px;margin-inline:auto;padding:12px 16px;display:flex;gap:14px 20px;align-items:center;flex-wrap:wrap}
 .ws-br{display:flex;flex-direction:column;line-height:1.25}.ws-br b{font-size:22px;font-weight:600}.ws-br .code{font:500 12px var(--mono);color:var(--muted)}
-.ws-tabs{display:flex;gap:6px;flex:1;flex-wrap:wrap}.ws-tabs button{white-space:nowrap;font:500 14px var(--sans);border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer}
+.ws-tabs{display:flex;gap:6px;flex:1 1 100%;order:3;flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;align-items:center}.ws-vr{flex:0 0 1px;align-self:stretch;background:var(--line);margin:0 4px}.ws-tabs button.ws-cl{background:var(--panel);border-style:dashed}.ws-tabs button.ws-cl[aria-selected=true]{background:var(--accent);border-style:solid}.ws-ac{margin-left:auto}.ws-tabs button{white-space:nowrap;font:500 14px var(--sans);border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer}
 .ws-tabs button[aria-selected=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .ws-ac{display:flex;gap:6px;flex-wrap:wrap}.ws-ac .btn{font-size:13px;padding:6px 12px;border-radius:8px}
 .ws-body{max-width:1180px;margin-inline:auto;padding:20px 16px 80px;display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;align-items:start}
@@ -3476,14 +3482,17 @@ body.wson>*:not(#ws):not([id^="gmc-"]){display:none!important}
 function build(){css();const d=document.createElement("div");d.id="ws";d.hidden=true;
  d.innerHTML=`<header class="ws-top"><div class="ws-top-in"><div class="ws-br"><b>Yokuşbaşı Gelir Motoru</b><span class="code">çalışma alanı · v${MODEL_VERSION}</span></div><nav class="ws-tabs" role="tablist" id="wstabs"></nav><div class="ws-ac"><button type="button" class="btn" data-wsa="theme" id="wstheme">Karanlık mod</button><button type="button" class="btn" data-wsa="save">Kaydet (.json)</button><button type="button" class="btn" data-wsa="print">Yazdır</button><button type="button" class="btn" data-wsa="classic">Klasik görünüm</button></div></div></header><div class="ws-body"><aside class="ws-l" id="wsl" aria-label="Veri girişi"></aside><main class="ws-r" id="wsr" aria-live="polite"></main></div>`;
  document.body.appendChild(d)}
-function tabs(){$("#wstabs").innerHTML=MODS.map(([k,n])=>`<button type="button" role="tab" data-wst="${k}" aria-selected="${k===WS.cur}">${n}</button>`).join("")}
+function tabs(){$("#wstabs").innerHTML=MODS.map(([k,n])=>`<button type="button" role="tab" data-wst="${k}" aria-selected="${k===WS.cur}">${n}</button>`).join("")+'<span class="ws-vr" aria-hidden="true"></span>'+CL.map(([k,n])=>`<button type="button" role="tab" class="ws-cl" data-wst="${k}" aria-selected="${k===WS.cur}" title="Klasik ekran">${n}</button>`).join("");const a=document.querySelector("#wstabs [aria-selected=true]");if(a&&a.scrollIntoView)try{a.scrollIntoView({block:"nearest",inline:"nearest"})}catch(e){}}
 function rl(){const m=M[WS.cur],l=$("#wsl");if(!l)return;const sc=l.scrollTop;l.innerHTML=`<h2>${E(m.t)}</h2><p class="note" style="margin:2px 0 6px">Değerleri değiştirin; sağdaki göstergeler, grafikler ve tablolar anında güncellenir.</p>`+m.left();l.scrollTop=sc}
 function syncLeft(){const m=M[WS.cur],root=m.root();document.querySelectorAll("#wsl [data-w]").forEach(el=>{if(el===document.activeElement)return;const v=gp(root,el.dataset.w);if(v!=null&&String(el.value)!==String(v))el.value=v})}
 function rr(sync){const r=$("#wsr");if(!r)return;const w=$("#ws"),sc=w.scrollTop;let h;try{h=M[WS.cur].right()}catch(e){h=`<div class="ws-warn">Bu modül hesaplanamadı: ${E(e.message)}</div>`;console.error(e)}r.innerHTML=h;w.scrollTop=sc;if(sync)syncLeft()}
-function show(k){WS.cur=k;WS.yr=0;_pbq=0;tabs();rl();rr();try{localStorage.setItem("gm_wsmod",k)}catch(e){}}
+function pad(){const w=$("#ws");document.body.style.setProperty("--wsh",w.offsetHeight+"px");document.body.style.paddingTop=document.body.classList.contains("wsc")?(w.offsetHeight+16)+"px":""}
+function modeWS(){document.body.classList.remove("wsc","wsc-tree");document.body.classList.add("wson");$("#ws").classList.remove("cl");pad()}
+function modeCL(k0){const k=k0.slice(2);document.body.classList.remove("wson");document.body.classList.add("wsc");document.body.classList.toggle("wsc-tree",k==="pl"||k==="reno");$("#ws").classList.add("cl");$("#ws").hidden=false;try{go(k)}catch(e){console.error(e)}pad();window.scrollTo(0,0)}
+function show(k){WS.cur=k;WS.yr=0;_pbq=0;WS.open=true;$("#ws").hidden=false;tabs();if(isCL(k)){modeCL(k)}else{applyTheme();modeWS();rl();rr()}try{localStorage.setItem("gm_wsmod",k)}catch(e){}}
 function applyTheme(){let t="light";try{t=localStorage.getItem("gm_wstheme")||"light"}catch(e){}document.documentElement.setAttribute("data-theme",t);const b=$("#wstheme");if(b)b.textContent=t==="dark"?"Aydınlık mod":"Karanlık mod"}
-function open(){WS.open=true;applyTheme();$("#ws").hidden=false;document.body.classList.add("wson");tabs();rl();rr();try{localStorage.setItem("gm_ws","1")}catch(e){}}
-function close(){WS.open=false;$("#ws").hidden=true;document.body.classList.remove("wson");try{localStorage.setItem("gm_ws","0")}catch(e){}}
+function open(){applyTheme();show(WS.cur);try{localStorage.setItem("gm_ws","1")}catch(e){}}
+function close(){WS.open=false;$("#ws").hidden=true;$("#ws").classList.remove("cl");document.body.classList.remove("wson","wsc","wsc-tree");document.body.style.paddingTop="";try{localStorage.setItem("gm_ws","0")}catch(e){}}
 function msg(t){const e=$("#wsmsg");if(e)e.textContent=t}
 function wire(){const d=$("#ws");
  d.addEventListener("input",e=>{const t=e.target;if(t.dataset.w==null||t.tagName==="SELECT"||t.type==="checkbox")return;let v=t.value;if(t.type==="number"){if(v==="")return;v=+v;if(!isFinite(v))return}sp(M[WS.cur].root(),t.dataset.w,v);rr();touch()});
@@ -3504,7 +3513,7 @@ function wire(){const d=$("#ws");
   if(a==="pr2pay"){const u=window.prToTPx();rr();msg("Aktarıldı: yıllık "+fU(u)+" — Payback modülünde 'Personel (payroll modülü)' gideri olarak güncellendi.");touch();return}
  });
  /* klasik görünümden çalışma alanına dönüş düğmesi */
- const vb=document.querySelector("#vbar .vb");if(vb){const b=document.createElement("button");b.type="button";b.className="btn";b.textContent="Çalışma alanı";b.addEventListener("click",open);vb.insertBefore(b,vb.firstChild)}
+ const vb=document.querySelector("#vbar .vb");if(vb){const b=document.createElement("button");b.type="button";b.className="btn";b.textContent="Çalışma alanı";b.addEventListener("click",()=>{if(isCL(WS.cur))WS.cur="pay";open()});vb.insertBefore(b,vb.firstChild)}
  else{const b=document.createElement("button");b.type="button";b.className="btn";b.textContent="Çalışma alanı";b.style.cssText="position:fixed;right:12px;bottom:12px;z-index:45";b.addEventListener("click",open);document.body.appendChild(b)}}
 build();wire();
 window.GMWS={open,close,show,state:WS,render:()=>{rl();rr()}};
