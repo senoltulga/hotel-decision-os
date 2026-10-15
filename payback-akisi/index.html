@@ -54,6 +54,17 @@ svg text{fill:var(--muted);font:11px var(--mono)}
 .sens td,.sens th{text-align:right}
 .sens td:first-child,.sens th:first-child{text-align:left}
 .sens td.cur{font-weight:600;background:var(--accent-soft)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted);margin:0 0 8px}
+.legend i{display:inline-block;vertical-align:middle;margin-right:6px}
+.rep{border-top:1px solid var(--line);margin-top:18px;padding-top:16px;display:grid;gap:10px;max-width:78ch}
+.rep h3{margin:8px 0 0;font-size:15px;font-weight:600}
+.rep h3:first-child{margin-top:0}
+.rep p{margin:0}
+.rep code{font:12.5px var(--mono);background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+.rep .eq{font:13px var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:nowrap}
+.rep .tw{max-width:none}
+.rep table td,.rep table th{font-size:13px}
+.rep ul{margin:0;padding-left:20px;display:grid;gap:4px}
 </style>
 </head>
 <body>
@@ -66,8 +77,9 @@ svg text{fill:var(--muted);font:11px var(--mono)}
  <aside class="panel"><h2>Girdiler (USD)</h2><div class="inputs" id="inputs"></div></aside>
  <main style="display:grid;gap:20px;min-width:0">
   <section class="kpis" id="kpis" aria-live="polite"></section>
+  <section class="panel"><h2>Yatırım nasıl geri dönüyor</h2><div class="tw"><div id="chart" style="min-width:640px"></div></div><p class="note" id="chnote"></p>
+   <div class="rep" id="rep"></div></section>
   <section class="panel"><h2>P&amp;L akışı · stabilize yıl</h2><div class="tw"><table id="pl"></table></div><p class="note" id="plnote"></p></section>
-  <section class="panel"><h2>Yatırım nasıl geri dönüyor</h2><div id="chart"></div><p class="note" id="chnote"></p></section>
   <section class="panel"><h2>Doluluk değişirse geri dönüş</h2><div class="tw"><table class="sens" id="sens"></table></div><p class="note">Doluluk, rampa yılları ve stabilize yıl için aynı puan kadar kaydırılır.</p></section>
  </main>
 </div>
@@ -122,22 +134,84 @@ function draw(){
  const mx=S.gross||1;
  document.getElementById('pl').innerHTML='<thead><tr><th>Kalem</th><th>Hesap</th><th class="n">Tutar</th><th class="n">Brüt gelire %</th><th style="width:140px">Pay</th></tr></thead><tbody>'+rows.map(r=>`<tr class="${r[3]?'sub':''}"><td class="lab ${r[4]?'in':''}">${r[0]}</td><td class="how">${r[1]}</td><td class="n ${r[2]<0?'neg':''}">${usd(r[2])}</td><td class="n">${nf1.format(pct(r[2],S.gross))}%</td><td><span class="bar" style="width:${Math.max(0,Math.min(100,Math.abs(r[2])/mx*100))}%"></span></td></tr>`).join('')+'</tbody>';
  document.getElementById('plnote').textContent=`Stabilize yıl 3. yıldır. İlk iki yıl rampa dönemidir: net nakit 1. yıl ${usd(R.rows[0].net)}, 2. yıl ${usd(R.rows[1].net)}.`;
- chart(R);sens();
+ chart(R);report(R);sens();
 }
 function chart(R){
  const inv=R.inv,N=R.pay==null?40:Math.min(40,Math.max(10,Math.ceil(R.pay)+3)),rows=R.rows.slice(0,N);
- const W=680,H=260,L=64,Rr=16,T=16,B=32,cw=W-L-Rr,ch=H-T-B;
- const ymax=Math.max(inv*1.08,rows[rows.length-1].cum*1.02,1);
- const x=y=>L+y/N*cw,y_=v=>T+ch-v/ymax*ch;
- let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Kümülatif net nakit ve toplam yatırım, yıllara göre">`;
- for(let i=0;i<=4;i++){const v=ymax/4*i;s+=`<line x1="${L}" x2="${W-Rr}" y1="${y_(v)}" y2="${y_(v)}" stroke="var(--line)"/><text x="${L-6}" y="${y_(v)+4}" text-anchor="end">${nf1.format(v/1e6)} M</text>`}
- const step=N>20?5:N>12?2:1;for(let yv=0;yv<=N;yv+=step)s+=`<text x="${x(yv)}" y="${H-10}" text-anchor="middle">${yv}</text>`;
- s+=`<line x1="${L}" x2="${W-Rr}" y1="${y_(inv)}" y2="${y_(inv)}" stroke="var(--neg)" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-Rr}" y="${y_(inv)-6}" text-anchor="end" style="fill:var(--neg)">yatırım ${nf1.format(inv/1e6)} M</text>`;
+ const W=760,H=400,L=104,Rr=24,T=34,B=96,cw=W-L-Rr,ch=H-T-B;
+ const ymax=Math.max(inv*1.1,rows[rows.length-1].cum*1.03,1);
+ const x=y=>L+y/N*cw,y_=v=>T+ch-v/ymax*ch,bw=Math.max(4,cw/N*0.5);
+ const fm=v=>nf1.format(v/1e6)+' M',fk=v=>nf.format(Math.round(v/1000));
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Kümülatif net nakit, yıllık net nakit ve toplam yatırım; yıllara göre geri kazanılan yatırım yüzdesi">`;
+ // rampa bandı
+ s+=`<rect x="${x(0)}" y="${T}" width="${x(2)-x(0)}" height="${ch}" fill="var(--accent-soft)"/><text x="${(x(0)+x(2))/2}" y="${T+14}" text-anchor="middle" style="fill:var(--accent)">Rampa dönemi</text>`;
+ // yatay ızgara: yatırımın %25 adımları
+ const gs=[5e5,1e6,2e6,2.5e6,5e6,1e7].find(g=>ymax/g<=6)||2e7;for(let v=0;v<=ymax;v+=gs){s+=`<line x1="${L}" x2="${W-Rr}" y1="${y_(v)}" y2="${y_(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y_(v)+4}" text-anchor="end">${fm(v)}</text>`}
+ s+=`<text x="${L-8}" y="${T-14}" text-anchor="end">USD</text>`;
+ // yıllık net nakit çubukları
+ rows.forEach(r=>{s+=`<rect x="${x(r.y)-bw/2}" y="${y_(r.net)}" width="${bw}" height="${Math.max(0,T+ch-y_(r.net))}" fill="var(--bar)"><title>${r.y}. yıl net nakit ${usd(r.net)}</title></rect>`});
+ // yatırım çizgisi
+ s+=`<line x1="${L}" x2="${W-Rr}" y1="${y_(inv)}" y2="${y_(inv)}" stroke="var(--neg)" stroke-dasharray="6 4" stroke-width="1.6"/><text x="${L+6}" y="${y_(inv)-7}" style="fill:var(--neg)">Toplam yatırım ${fm(inv)} (${usd(inv)})</text>`;
+ // stabilize yıl çizgisi
+ s+=`<line x1="${x(3)}" x2="${x(3)}" y1="${T}" y2="${T+ch}" stroke="var(--muted)" stroke-dasharray="2 4"/><text x="${x(3)+5}" y="${T+14}">Stabilize yıl (3)</text>`;
+ // kümülatif çizgi ve noktalar
  const pts=[[0,0]].concat(rows.map(r=>[r.y,r.cum]));
- s+=`<polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${pts.map(p=>x(p[0])+','+y_(p[1])).join(' ')}"/>`;
- if(R.pay!=null&&R.pay<=N){const px=x(R.pay);s+=`<line x1="${px}" x2="${px}" y1="${T}" y2="${T+ch}" stroke="var(--accent)" stroke-dasharray="3 3"/><circle cx="${px}" cy="${y_(inv)}" r="5" fill="var(--accent)"/><text x="${px+8}" y="${T+14}" style="fill:var(--accent)">${nf1.format(R.pay)} yıl</text>`}
- s+='</svg>';document.getElementById('chart').innerHTML=s;
- document.getElementById('chnote').textContent='Çizgi, yıllık net nakitlerin birikimidir. Kesikli çizgiyi geçtiği an yatırım geri dönmüş olur. Eğim üçüncü yıldan sonra gelir ve gider artışıyla değişir.';
+ s+=`<polyline fill="none" stroke="var(--accent)" stroke-width="2.6" points="${pts.map(p=>x(p[0])+','+y_(p[1])).join(' ')}"/>`;
+ const st=N>20?5:N>12?2:1;
+ rows.forEach(r=>{s+=`<circle cx="${x(r.y)}" cy="${y_(r.cum)}" r="3.2" fill="var(--accent)"><title>${r.y}. yıl sonu kümülatif ${usd(r.cum)} (yatırımın %${nf1.format(pct(r.cum,inv))})</title></circle>`;
+  if(r.y%st===0||r.y<=3)s+=`<text x="${x(r.y)}" y="${y_(r.cum)-9}" text-anchor="middle" style="fill:var(--fg)">${fm(r.cum)}</text>`});
+ // geri dönüş işareti
+ if(R.pay!=null&&R.pay<=N){const px=x(R.pay),py=y_(inv),an=px>W-140?'end':'start',lx=an==='end'?px-4:px+12;
+  s+=`<line x1="${px}" x2="${px}" y1="${py}" y2="${T+ch}" stroke="var(--accent)" stroke-dasharray="3 3"/><circle cx="${px}" cy="${py}" r="6.5" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.6"/>`+
+  `<text x="${lx}" y="${py+30}" text-anchor="${an}" style="fill:var(--accent);font-weight:600">Geri dönüş ${nf1.format(R.pay)} yıl</text><text x="${lx}" y="${py+44}" text-anchor="${an}" style="fill:var(--accent)">(${Math.floor(R.pay)} yıl ${Math.round((R.pay%1)*12)} ay)</text>`}
+ // alt satırlar
+ const by=T+ch;
+ s+=`<line x1="${L}" x2="${W-Rr}" y1="${by}" y2="${by}" stroke="var(--muted)"/>`;
+ s+=`<text x="${L-8}" y="${by+18}" text-anchor="end">Yıl</text><text x="${L-8}" y="${by+36}" text-anchor="end">Net, bin $</text><text x="${L-8}" y="${by+54}" text-anchor="end">Geri alınan</text>`;
+ rows.forEach(r=>{if(r.y%st===0||r.y<=3||(R.pay!=null&&r.y===Math.ceil(R.pay))){
+  s+=`<text x="${x(r.y)}" y="${by+18}" text-anchor="middle" style="fill:var(--fg)">${r.y}</text><text x="${x(r.y)}" y="${by+36}" text-anchor="middle">${fk(r.net)}</text><text x="${x(r.y)}" y="${by+54}" text-anchor="middle" style="${r.cum>=inv?'fill:var(--pos)':''}">%${nf.format(Math.min(999,pct(r.cum,inv)))}</text>`}});
+ s+='</svg>';
+ document.getElementById('chart').innerHTML=`<div class="legend"><span><i style="width:18px;height:3px;background:var(--accent)"></i>Kümülatif net nakit</span><span><i style="width:10px;height:12px;background:var(--bar)"></i>Yıllık net nakit</span><span><i style="width:18px;height:0;border-top:2px dashed var(--neg)"></i>Toplam yatırım</span><span><i style="width:12px;height:12px;background:var(--accent-soft);border:1px solid var(--line)"></i>Rampa dönemi (1–2. yıl)</span></div>`+s;
+ document.getElementById('chnote').textContent='Çizgi üzerindeki değerler yıl sonu kümülatif net nakittir. Alttaki satırlar o yılın net nakdini ve yatırımın ne kadarının geri alındığını gösterir. Noktaların üstüne gelince tam tutar görünür.';
+}
+function report(R){
+ const inv=R.inv,S=R.rows[2],r1=R.rows[0],r2=R.rows[1],pay=R.pay,sp=S.net>0?inv/S.net:null;
+ const at=n=>R.rows[n-1],rec=n=>pct(at(n).cum,inv);
+ const ramp=2*S.net-(r1.net+r2.net);
+ const sh=[-10,10].map(d=>({d,pay:run(P,d,40).pay}));
+ const yrs=R.rows.slice(0,pay==null?12:Math.min(40,Math.ceil(pay)+1));
+ const fp=v=>v==null?'40 yıldan uzun':nf1.format(v)+' yıl';
+ const tail=pay!=null&&R.rows[19]?`Yirminci yıl sonunda kümülatif net nakit ${usd(R.rows[19].cum)}, yani yatırımın %${nf.format(rec(20))}'i geri alınmış olur.`:'';
+ document.getElementById('rep').innerHTML=`
+ <h3>Teknik rapor: yatırım geri dönüş grafiği</h3>
+ <h3>1. Amaç</h3>
+ <p>Grafik, ${usd(inv)} tutarındaki toplam yatırımın yıllık net nakitlerle ne zaman geri alındığını gösterir. Hesap USD cinsindendir, nominaldir ve iskontosuzdur.</p>
+ <h3>2. Yöntem</h3>
+ <p>Her yıl için net nakit, brüt gelirden departman giderleri, dağıtılmamış giderler, malik gideri ve FF&amp;E rezervi düşülerek bulunur. Kümülatif net nakit yıllık değerlerin toplamıdır. Geri dönüş, kümülatif toplamın yatırımı ilk kez geçtiği yılda doğrusal olarak ara değerlenir.</p>
+ <div class="eq">C(t) = Σ net(i), i = 1…t<br>geri dönüş = (k − 1) + (Yatırım − C(k − 1)) / net(k), k: C(k) ≥ Yatırım olan ilk yıl<br>basit geri dönüş = Yatırım / net(stabilize yıl)</div>
+ <h3>3. Girdiler</h3>
+ <ul>
+  <li>Yatırım: satın alma ${usd(P.buy)}, renovasyon ${usd(P.reno)}, işletme sermayesi ${usd(P.wc)}.</li>
+  <li>Oda geliri: ${P.units} birim; 1. yıl %${nf1.format(P.o1)} × $${nf.format(P.a1)}, 2. yıl %${nf1.format(P.o2)} × $${nf.format(P.a2)}, stabilize %${nf1.format(P.occ)} × $${nf.format(P.adr)}.</li>
+  <li>Kira geliri ${usd(P.com+P.rest)} / yıl. Büyüme: gelir %${P.g}, sabit gider %${P.f} (3. yıldan sonra).</li>
+ </ul>
+ <h3>4. Bulgular</h3>
+ <ul>
+  <li>Kümülatif geri dönüş: <b>${fp(pay)}</b>${pay!=null?` (${Math.floor(pay)}. yılın ${Math.round((pay%1)*12)}. ayı).`:'.'}</li>
+  <li>Basit geri dönüş: ${sp?fp(sp):'hesaplanamaz'}. ${sp&&pay!=null?(pay>sp?'Kümülatif değer daha uzundur çünkü ilk iki yıl rampa dönemidir.':'Kümülatif değer daha kısadır çünkü 3. yıldan sonra gelir büyümektedir.'):''}</li>
+  <li>Rampa etkisi: ilk iki yılda net nakit stabilize düzeyin ${usd(Math.max(0,ramp))} altında kalır (1. yıl ${usd(r1.net)}, 2. yıl ${usd(r2.net)}, stabilize ${usd(S.net)}).</li>
+  <li>Geri alınan oran: 3. yıl sonu %${nf.format(rec(3))}, 5. yıl sonu %${nf.format(rec(5))}, 10. yıl sonu %${nf.format(rec(10))}. ${tail}</li>
+  <li>Doluluk −10 puan olursa geri dönüş ${fp(sh[0].pay)}, +10 puan olursa ${fp(sh[1].pay)}.</li>
+ </ul>
+ <div class="tw"><table><thead><tr><th>Yıl</th><th class="n">Doluluk</th><th class="n">ADR</th><th class="n">Net nakit</th><th class="n">Kümülatif</th><th class="n">Geri alınan</th></tr></thead><tbody>${yrs.map(r=>`<tr><td>${r.y}</td><td class="n">%${nf1.format(r.occ)}</td><td class="n">$${nf.format(r.adr)}</td><td class="n">${usd(r.net)}</td><td class="n">${usd(r.cum)}</td><td class="n">%${nf.format(pct(r.cum,inv))}</td></tr>`).join('')}</tbody></table></div>
+ <h3>5. Varsayımlar ve sınırlar</h3>
+ <ul>
+  <li>Paranın zaman değeri hesaba katılmaz; iskontolu geri dönüş bundan uzundur.</li>
+  <li>Sezon dağılımı yoktur; yıl boyunca düz doluluk varsayılır. Aylık nakit akışı gösterilmez.</li>
+  <li>Kredi, vergi, KDV ve enflasyon ayrıca modellenmez. Büyüme oranları yalnızca 3. yıldan sonra uygulanır.</li>
+  <li>İşletme sermayesi yatırıma dahildir ve sonradan geri alınmaz. Mülkün satış değeri hesaba katılmaz.</li>
+  <li>Girdiler tahmindir. Sonuçlar en çok doluluk, ADR ve yatırım tutarına duyarlıdır.</li>
+ </ul>`;
 }
 function sens(){
  const sh=[-10,-5,0,5,10],inv=P.buy+P.reno+P.wc;
