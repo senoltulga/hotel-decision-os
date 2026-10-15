@@ -1,0 +1,23 @@
+// Payback Akışı v1.0 regresyon testi. Çalıştırma: NODE_PATH=$(npm root -g) node regression.js [dosya yolu]
+const {chromium}=require('playwright');const path=require('path');
+const file=process.argv[2]||path.join(__dirname,'index.html');
+(async()=>{const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium',args:['--no-sandbox']});
+const pg=await (await b.newContext({viewport:{width:1280,height:1000}})).newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
+await pg.goto('file://'+path.resolve(file));await pg.waitForTimeout(500);
+const T=[];const ok=(n,c)=>{T.push([n,!!c]);console.log((c?'OK   ':'HATA ')+n)};
+const kp=()=>pg.evaluate(()=>[...document.querySelectorAll('.kpi b')].map(x=>x.textContent));
+let k=await kp();
+ok('Sürüm etiketi v1.0',await pg.evaluate(()=>document.getElementById('ver').textContent==='v1.0'));
+ok('Brüt gelir 1.611.150',k[0]==='$1.611.150');ok('GOP 1.005.661',k[1]==='$1.005.661');ok('NOI 935.661',k[2]==='$935.661');ok('Net nakit 871.215',k[3]==='$871.215');
+ok('Yatırım 10.750.000',k[4]==='$10.750.000');ok('Geri dönüş 11,7 yıl',k[5]==='11,7 yıl');
+ok('Bölüm sırası: grafik P&L\'den önce',await pg.evaluate(()=>{const h=[...document.querySelectorAll('main h2')].map(x=>x.textContent);return h[0].startsWith('Yatırım')&&h[1].startsWith('P&L')}));
+ok('Teknik rapor var',await pg.evaluate(()=>document.getElementById('rep').innerText.includes('Teknik rapor')));
+await pg.fill('#i-reno','0');k=await kp();ok('Renovasyon 0 → 9,4 yıl',k[5]==='9,4 yıl');
+await pg.click('#reset');k=await kp();ok('Sıfırla → 11,7 yıl',k[5]==='11,7 yıl');
+const drag=async(sel,dx,dy)=>{const bb=await pg.locator(sel).boundingBox(),x=bb.x+bb.width/2,y=bb.y+bb.height/2;await pg.mouse.move(x,y);await pg.mouse.down();await pg.mouse.move(x+dx,y+dy,{steps:8});await pg.mouse.up();await pg.waitForTimeout(80)};
+await drag('[data-h="inv"]',0,40);k=await kp();ok('Yatırım tutamacı geri dönüşü kısaltır',parseFloat(k[5])<11.7);
+await pg.click('#reset');await drag('[data-h="y3"]',0,-30);ok('3. yıl tutamacı doluluğu artırır',await pg.evaluate(()=>P.occ>65));
+await pg.click('#reset');await pg.selectOption('#pmode','occ');await drag('[data-h="pay"]',-60,0);ok('Geri dönüş tutamacı doluluğu ayarlar',await pg.evaluate(()=>P.occ>65));
+await pg.click('#reset');
+ok('Sayfa hatası yok',errs.length===0);
+const f=T.filter(t=>!t[1]).length;console.log(f?'BAŞARISIZ: '+f:'HEPSİ GEÇTİ ('+T.length+')');await b.close();process.exit(f?1:0)})();
