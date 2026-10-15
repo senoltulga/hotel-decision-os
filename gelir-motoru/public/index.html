@@ -2249,7 +2249,7 @@ XP["dc:tv"]=()=>{const c=dcfCalc(),N=c.N,Yv=c.Yv,r=c.r;const v=[Yv[N].noi/((+c.P
  an:[`Yöntemler arasında en düşük ${U(lo)}, en yüksek ${U(hi)}; aralık ${lo?dcN((hi/lo-1)*100):"–"}%.`,`Seçili yöntem (${TVN[c.P.tvm]}) brüt ${U(c.tvGross)}, net ${U(c.tvNet)}; bu, alış fiyatının ${dcN(c.tvGross/(INV.buy+rtot())*100)}%'i.`,hi/lo>1.4?"Yöntemler birbirinden belirgin ayrışıyor; çıkış varsayımını gözden geçirin.":"Yöntemler birbirine makul yakınlıkta."]}};
 
 /* ===== Proje: kaydet / aç / çoğalt / yerel kayıtlar ===== */
-const MODEL_VERSION="2.1",SCHEMA_VERSION=1,LS_AUTO="gm_autosave_v1",LS_LIST="gm_projects_v1";
+const MODEL_VERSION="2.3",SCHEMA_VERSION=1,LS_AUTO="gm_autosave_v1",LS_LIST="gm_projects_v1";
 let PJ={name:"Yokuşbaşı (rapor verileri)"};
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){return false}};
@@ -3035,7 +3035,7 @@ function csv(){const c=pbCalc(),r=[["Kalem","Tutar USD","Brüt gelire %"]],A=(n,
  A("Oda geliri",c.room);c.rv.forEach(x=>A(x.n,x.v));A("Brüt gelir",c.gross);A("Departman giderleri",-c.dept);A("Departman kârı",c.dp);c.u.forEach(x=>A(x.n,-x.v));A("GOP",c.gop);c.w.forEach(x=>A(x.n,-x.v));A("NOI",c.noi);c.s.forEach(x=>A(x.n,-x.v));A("Net nakit",c.net);
  const s=r.map(x=>x.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(";")).join("\n");const b=new Blob(["﻿"+s],{type:"text/csv"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=(PB.name||"pl")+".csv";document.body.appendChild(a);a.click();a.remove()}
 function renderPB(){const p=document.getElementById("pbp");if(!p)return;p.innerHTML=pbIn();pbRes()}
-window.renderPB=renderPB;window.PBc=pbCalc;
+window.renderPB=renderPB;window.PBc=pbCalc;window.pbToTPx=pbToTP;
 /* kabuk */
 const host=document.getElementById("tpwrap");
 if(host&&!document.getElementById("plbwrap")){const w=document.createElement("div");w.id="plbwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="pbp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
