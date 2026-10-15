@@ -2249,7 +2249,7 @@ XP["dc:tv"]=()=>{const c=dcfCalc(),N=c.N,Yv=c.Yv,r=c.r;const v=[Yv[N].noi/((+c.P
  an:[`Yöntemler arasında en düşük ${U(lo)}, en yüksek ${U(hi)}; aralık ${lo?dcN((hi/lo-1)*100):"–"}%.`,`Seçili yöntem (${TVN[c.P.tvm]}) brüt ${U(c.tvGross)}, net ${U(c.tvNet)}; bu, alış fiyatının ${dcN(c.tvGross/(INV.buy+rtot())*100)}%'i.`,hi/lo>1.4?"Yöntemler birbirinden belirgin ayrışıyor; çıkış varsayımını gözden geçirin.":"Yöntemler birbirine makul yakınlıkta."]}};
 
 /* ===== Proje: kaydet / aç / çoğalt / yerel kayıtlar ===== */
-const MODEL_VERSION="2.3",SCHEMA_VERSION=1,LS_AUTO="gm_autosave_v1",LS_LIST="gm_projects_v1";
+const MODEL_VERSION="2.4",SCHEMA_VERSION=1,LS_AUTO="gm_autosave_v1",LS_LIST="gm_projects_v1";
 let PJ={name:"Yokuşbaşı (rapor verileri)"};
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){return false}};
@@ -2917,7 +2917,7 @@ function prRes(){const el=document.getElementById("prres");if(!el)return;const C
  el.innerHTML=h}
 function prToTP(){const u=prCalc().yearUSD;let it=TP.exp.find(x=>x.id==="pers_pr");if(!it){it={id:"pers_pr",name:"Personel (payroll modülü)",on:1,kind:"fixed",val:0,cat:"und",custom:1};TP.exp.push(it)}it.val=Math.round(u);it.on=1;return u}
 function renderPR(){const p=document.getElementById("prp");if(!p)return;p.innerHTML=prIn();prRes()}
-window.renderPR=renderPR;window.prYearUSD=()=>prCalc().yearUSD;
+window.renderPR=renderPR;window.prYearUSD=()=>prCalc().yearUSD;window.prCalcX=prCalc;window.prToTPx=prToTP;window.PRDEPTS=DEPTS;
 /* kabuk */
 const host=document.getElementById("tpwrap");
 if(host&&!document.getElementById("prwrap")){const w=document.createElement("div");w.id="prwrap";w.hidden=true;w.style.cssText="display:grid;gap:16px;min-width:0";w.innerHTML='<section class="card"><div id="prp"></div></section>';host.parentNode.insertBefore(w,host.nextSibling)}
@@ -3146,6 +3146,352 @@ const sv0=window.showView;window.showView=function(){const r=sv0.apply(this,argu
 const rm0=window.renderMenu;window.renderMenu=function(){const r=rm0.apply(this,arguments);try{refresh()}catch(e){}return r};
 refresh();
 })();
+</script>
+<script>
+/* ===== Çalışma alanı v2.4 — modül sekmeleri · sol giriş paneli · sağ sonuç paneli (göstergeler, etkileşimli grafikler, tablolar, yorumlar) ===== */
+(function(){
+const $=s=>document.querySelector(s),E=esc,S=sum;
+const gp=(o,p)=>String(p).split(".").reduce((a,k)=>a==null?a:a[k],o);
+const sp=(o,p,v)=>{const k=String(p).split("."),l=k.pop();k.reduce((a,x)=>a[x],o)[l]=v};
+const nf2=new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmM=v=>{const a=Math.abs(v),s=v<0?"−":"";return a>=1e6?s+"$"+nf1.format(a/1e6)+" M":a>=1e3?s+"$"+nf.format(Math.round(a/1e3))+" bin":s+"$"+nf.format(Math.round(a))};
+const fU=v=>(v<0?"−":"")+"$"+nf.format(Math.abs(Math.round(v)));
+const yy=v=>v==null?"hesaplanamadı":nf2.format(v)+" yıl";
+const pc=v=>v==null||!isFinite(v)?"–":nf1.format(v*100)+"%";
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const MON=MONTHS,DEPTS=window.PRDEPTS||[];
+const WS={cur:"pay",yr:0,open:false};
+let _tt=null;const touch=()=>{clearTimeout(_tt);_tt=setTimeout(()=>{try{pjAuto()}catch(e){}},600)};
+/* ---------- grafik altyapısı ---------- */
+const CH={},FZ={},LAST={};
+function ticks(a,b,n){const r=b-a;if(!(r>0))return[a];const raw=r/n,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p,st=(m<1.5?1:m<3?2:m<7?5:10)*p,o=[];for(let v=Math.ceil(a/st-1e-9)*st;v<=b+st*1e-9;v+=st)o.push(Math.abs(v)<st*1e-9?0:v);return o}
+function niceMax(v){if(!(v>0))return 1;const t=ticks(0,v,5),st=t.length>1?t[1]-t[0]:v;return Math.ceil(v/st-1e-9)*st}
+function niceMin(v){return v>=0?0:-niceMax(-v)}
+function frame(id,o){if(FZ[id]){o.y0=FZ[id].y0;o.y1=FZ[id].y1;o.x0=FZ[id].x0;o.x1=FZ[id].x1}LAST[id]={y0:o.y0,y1:o.y1,x0:o.x0,x1:o.x1};const w=o.w||760,h=o.h||300,L=o.L||66,R=o.R||18,T=o.T||20,B=o.B||40;
+ const sx=x=>L+(x-o.x0)/((o.x1-o.x0)||1)*(w-L-R),sy=y=>h-B-(y-o.y0)/((o.y1-o.y0)||1)*(h-T-B);
+ CH[id]={isx:px=>o.x0+(px-L)/(w-L-R)*(o.x1-o.x0),isy:py=>o.y0+(h-B-py)/(h-T-B)*(o.y1-o.y0)};
+ let g="";(o.hy?[]:ticks(o.y0,o.y1,5)).forEach(v=>{g+=`<line x1="${L}" x2="${w-R}" y1="${sy(v)}" y2="${sy(v)}" stroke="var(--line)"/><text x="${L-6}" y="${sy(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${o.fy(v)}</text>`});
+ (o.xt||[]).forEach(([v,l])=>{g+=`<text x="${sx(v)}" y="${h-B+16}" text-anchor="middle" font-size="11" fill="var(--muted)">${l}</text>`});
+ if(o.xl)g+=`<text x="${(L+w-R)/2}" y="${h-5}" text-anchor="middle" font-size="11" fill="var(--muted)">${o.xl}</text>`;
+ return{id,w,h,L,R,T,B,sx,sy,g}}
+const svgOf=(f,inner,label)=>`<svg class="ws-svg" data-ch="${f.id}" viewBox="0 0 ${f.w} ${f.h}" role="img" aria-label="${E(label)}">${f.g}${inner}</svg>`;
+const hnd=(f,x,y,key,tip)=>`<circle class="ws-h" cx="${x}" cy="${y}" r="8" data-ch="${f.id}" data-dr="${key}"><title>${E(tip)}</title></circle>`;
+const polyl=(pts,c,w,d)=>`<polyline fill="none" stroke="${c}" stroke-width="${w||2.5}" ${d?'stroke-dasharray="'+d+'"':""} stroke-linejoin="round" points="${pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ")}"/>`;
+const txt=(x,y,t,o)=>`<text x="${x.toFixed?x.toFixed(1):x}" y="${y.toFixed?y.toFixed(1):y}" text-anchor="${(o&&o.a)||"middle"}" font-size="${(o&&o.s)||11}" ${o&&o.b?'font-weight="600"':""} fill="${(o&&o.c)||"var(--ink)"}">${t}</text>`;
+/* sürükleme */
+const DRG={};let DR=null;
+document.addEventListener("pointerdown",e=>{const t=e.target.closest&&e.target.closest("[data-dr]");if(!t||!$("#ws")||!$("#ws").contains(t))return;e.preventDefault();DR={ch:t.dataset.ch,key:t.dataset.dr};if(LAST[DR.ch])FZ[DR.ch]={...LAST[DR.ch]}});
+document.addEventListener("pointermove",e=>{if(!DR)return;const svg=document.querySelector('#ws svg[data-ch="'+DR.ch+'"]');if(!svg)return;const m=svg.getScreenCTM();if(!m)return;const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(m.inverse()),c=CH[DR.ch],fn=DRG[DR.key.split(":")[0]];if(fn&&c){fn(DR.key,c.isx(p.x),c.isy(p.y));touch()}});
+document.addEventListener("pointerup",()=>{if(DR){delete FZ[DR.ch];DR=null;try{rr(true)}catch(e){}}});
+/* ---------- ortak arayüz parçaları ---------- */
+const K=(a,b,c,t)=>`<div class="ws-k"><div class="kl">${a}</div><div class="kv" ${t?'title="'+E(t)+'"':""}>${b}</div><div class="kr">${c||""}</div></div>`;
+const kpis=a=>`<div class="ws-kp">${a.join("")}</div>`;
+const sect=(id,title,body,exp,cm)=>`<section class="ws-card" id="${id}"><h3>${title}</h3>${body}<div class="ws-cm"><div class="ws-ex"><b>Nasıl okunur?</b> ${exp}</div><div class="ws-yo"><b>Yorum.</b> ${cm}</div></div></section>`;
+const grp=(t,body,open)=>`<details class="ws-g" ${open===false?"":"open"}><summary>${t}</summary>${body}</details>`;
+function fld(root,p,l,u,s,o){o=o||{};const v=gp(root,p);
+ if(o.opts)return `<label class="ws-f"><span>${E(l)}</span><select data-w="${p}">${o.opts.map(([a,b])=>`<option value="${a}" ${String(a)===String(v)?"selected":""}>${E(b)}</option>`).join("")}</select></label>`;
+ if(o.t)return `<label class="ws-f"><span>${E(l)}</span><input type="text" data-w="${p}" value="${E(v)}"></label>`;
+ return `<label class="ws-f"><span>${E(l)}</span><span class="ws-iw"><input type="number" data-w="${p}" step="${s||1}" value="${v==null?"":v}" ${o.dis?"disabled":""}><em>${u||""}</em></span></label>`}
+function itm(root,p,name,key,u,s,on){const x=gp(root,p),isOn=on===undefined?x.on!==0&&x.on!==false:on;
+ return `<div class="ws-it ${isOn?"":"off"}"><label class="ws-ck"><input type="checkbox" data-wc="${p}.on" ${isOn?"checked":""}><span>${E(name)}</span></label><span class="ws-iw"><input type="number" data-w="${p}.${key}" step="${s||1}" value="${x[key]==null?"":x[key]}" ${isOn?"":"disabled"}><em>${u}</em></span></div>`}
+const warnBox=m=>`<div class="ws-warn"><b>Hesap için eksik giriş:</b> ${m.map(E).join(", ")}. Sol panelden tamamlayın.</div>`;
+/* ---------- Payback (Yokuşbaşı akışı) ---------- */
+const wt=mod=>{const bak=TP;try{TP=JSON.parse(JSON.stringify(bak));mod(TP);return tpCalc()}finally{TP=bak}};
+const kU={fixed:"USD / yıl",perNight:"USD / gece",pctRoom:"% oda geliri",pctOther:"% diğer gelir",pctGross:"% brüt gelir"};
+function payLeft(){const T=TP;let h="";
+ h+=grp("1 · Genel",fld(T,"units","Ünite (oda) sayısı","adet",1)+fld(T,"hz","Analiz ufku","yıl",1)+fld(T,"g","Gelir büyümesi (stabilize sonrası)","% / yıl",.5)+fld(T,"f","Sabit gider artışı","% / yıl",.5));
+ h+=grp("2 · İlk yatırım",T.inv.map((x,i)=>itm(T,"inv."+i,x.name,"amt","USD",10000)).join(""));
+ let g=`<label class="ws-ck ws-rt"><input type="checkbox" data-wc="ramp.on" ${T.ramp.on?"checked":""}><span>Ramp-up (açılış) yıllarını ayrı modelle</span></label>`;
+ if(T.ramp.on){tpRampRows().forEach((r,i)=>{g+=`<div class="ws-two"><div class="ws-t">${i+1}. yıl</div>${fld(T,"ramp.rows."+i+".occ","Doluluk","%",1)}${fld(T,"ramp.rows."+i+".adr","ADR","USD",5)}</div>`})}
+ g+=`<div class="ws-two"><div class="ws-t">Stabilize</div>${fld(T,"stab.occ","Doluluk","%",1)}${fld(T,"stab.adr","ADR","USD",5)}</div>`;
+ h+=grp("3 · Doluluk ve ADR",g);
+ h+=grp("4 · Diğer gelirler",T.rev.map((x,i)=>x.type==="room"?"":itm(T,"rev."+i,x.name,"val",x.type==="fixed"?"USD / yıl":"% oda geliri",x.type==="fixed"?1000:.5)).join("")||'<p class="note">Diğer gelir kalemi yok.</p>');
+ h+=grp("5 · Giderler",["dept","und","own","res"].map(c=>{const l=T.exp.map((x,i)=>x.cat===c?itm(T,"exp."+i,x.name,"val",kU[x.kind],x.kind==="fixed"?1000:.5):"").join("");return l?`<div class="ws-sg">${TPCAT[c]}</div>`+l:""}).join(""),false);
+ return h}
+function sensCell(mod){const C=wt(mod);return C.p}
+function payRight(){
+ const miss=tpReq();if(miss.length)return warnBox(miss);
+ const C=tpCalc(),T=TP,H=C.H,nR=C.nR,inv=C.inv,sy=Math.min(nR+1,H);
+ if(!WS.yr||WS.yr>H)WS.yr=sy;const ys=C.yr[sy-1],yS=C.yr[WS.yr-1],p=C.p;
+ const k=kpis([K("Toplam yatırım",fmM(inv),fU(inv)),K("Geri dönüş süresi",yy(p),p!=null?"≈ "+nf1.format(C.pm||p*12)+" ay":"ufukta geri dönmüyor"),K("Stabilize yıl net nakit",fmM(ys.net),sy+". yıl · net getiri "+pc(ys.net/inv)),K("Stabilize GOP marjı",pc(ys.gross?ys.gop/ys.gross:0),"GOP "+fmM(ys.gop)),K("RevPAR / TRevPAR",fU(ys.revpar)+" / "+fU(ys.trevpar),"stabilize yıl, oda-gün başına"),K("Stabilize NOI",fmM(ys.noi),"NOI getirisi "+pc(ys.noi/inv))]);
+ /* grafik 1: kümülatif geri dönüş */
+ const X=Math.min(H,20,Math.max(8,p?Math.ceil(p)+3:12)),cum=[0].concat(C.cum.slice(0,X)),mn=niceMin(Math.min(0,...cum)),mx=niceMax(Math.max(inv*1.12,cum[X]*1.06));
+ const f1=frame("pb1",{x0:0,x1:X,y0:mn,y1:mx,xt:cum.map((_,i)=>[i,i]),xl:"Yıl",fy:fmM});
+ let s1=polyl(cum.map((v,i)=>[f1.sx(i),f1.sy(v)]),"var(--accent)",3);
+ s1=`<path d="M${f1.sx(0)},${f1.sy(0)} ${cum.map((v,i)=>"L"+f1.sx(i)+","+f1.sy(v)).join(" ")} L${f1.sx(X)},${f1.sy(0)}Z" fill="var(--accent)" opacity=".10"/>`+s1;
+ s1+=`<line x1="${f1.L}" x2="${f1.w-f1.R}" y1="${f1.sy(inv)}" y2="${f1.sy(inv)}" stroke="#c0392b" stroke-width="2" stroke-dasharray="6 4"/>`+txt(f1.L+6,f1.sy(inv)-7,"Toplam yatırım "+fmM(inv),{a:"start",c:"#c0392b",b:1});
+ cum.forEach((v,i)=>{s1+=`<circle cx="${f1.sx(i)}" cy="${f1.sy(v)}" r="3.5" fill="var(--accent)"/>`;if(i>0&&(X<=12||i%2===0))s1+=txt(f1.sx(i),f1.sy(v)-9,fmM(v),{s:10,c:"var(--muted)"})});
+ if(p!=null&&p<=X){const px=f1.sx(p),py=f1.sy(inv);s1+=`<line x1="${px}" x2="${px}" y1="${py}" y2="${f1.sy(mn)}" stroke="#c0392b" stroke-dasharray="3 3"/><circle cx="${px}" cy="${py}" r="6" fill="#c0392b"/>`+txt(Math.min(px+10,f1.w-120),f1.sy(mn)-8,"Geri dönüş: "+yy(p),{a:"start",c:"#c0392b",b:1})}
+ s1+=hnd(f1,f1.sx(X*.9),f1.sy(inv),"inv","Yatırım çizgisini yukarı/aşağı sürükleyin: satın alma bedeli değişir")+txt(f1.sx(X*.9),f1.sy(inv)+22,"↕ sürükle",{s:10,c:"#c0392b"});
+ const o25=p==null?null:wt(t=>{t.inv.forEach(x=>{if(x.id==="buy")x.amt=Math.round(x.amt*0.9)})}).p;
+ const lvl=p==null?"ufukta yatırım geri dönmüyor; gelir veya yatırım varsayımları gözden geçirilmeli":p<=8?"hızlı (kaba referans: 8 yıl ve altı güçlü)":p<=12?"orta (8–12 yıl bandı)":"uzun (12 yıl üzeri, sermaye uzun süre bağlı kalır)";
+ const e1=C.cum[Math.min(1,H-1)]/inv;
+ const c1=p==null?"Kümülatif net nakit eğrisi ufuk boyunca yatırım çizgisine ulaşmıyor.":`Yatırım ${fmM(inv)}; kümülatif net nakit ${yy(p)} sonra bu tutara ulaşıyor — süre ${lvl}. İlk ${Math.min(2,H)} yıl yatırımın %${nf.format(Math.round(e1*100))}'ini geri veriyor (açılış yılları eğriyi yatık tutar). Satın alma bedeli %10 düşerse süre ${yy(o25)} olur (${o25!=null?(o25-p>0?"+":"")+nf2.format(o25-p)+" yıl":""}).`;
+ const sec1=sect("wsc1","Yatırımın geri dönüşü — kümülatif net nakit",svgOf(f1,s1,"Kümülatif net nakit ve yatırım"),"Yeşil eğri, her yıl sonunda biriken net işletme nakdidir; kırmızı kesikli çizgi toplam ilk yatırımdır. İkisinin kesiştiği nokta geri dönüş süresidir (yıllar arası doğrusal ara değerleme). Eğrinin eğimi yıllık net nakittir: ilk yıllarda açılış (ramp-up) nedeniyle yatık, stabilize olduktan sonra dikleşir. <b>Etkileşim:</b> kırmızı tutamacı sürükleyerek toplam yatırımı değiştirin (fark satın alma bedeline yansır); sol panel ve tüm sonuçlar anında güncellenir.",c1);
+ /* grafik 2: yıllık net */
+ const Xb=Math.min(H,12),nets=C.yr.slice(0,Xb).map(y=>y.net),b0=niceMin(Math.min(0,...nets)),b1=niceMax(Math.max(...nets,1)*1.18);
+ const f2=frame("pb2",{x0:.4,x1:Xb+.6,y0:b0,y1:b1,xt:nets.map((_,i)=>[i+1,(i+1)+". yıl"]),fy:fmM,B:42});
+ let s2="";const bw=Math.min(46,(f2.w-f2.L-f2.R)/Xb*.62);
+ nets.forEach((v,i)=>{const y=i+1,x=f2.sx(y),top=f2.sy(Math.max(v,0)),bot=f2.sy(Math.min(v,0)),ramp=y<=nR,sel=y===WS.yr;
+  s2+=`<rect data-yr="${y}" class="ws-bar" x="${x-bw/2}" y="${top}" width="${bw}" height="${Math.max(1,bot-top)}" rx="3" fill="${ramp?"#d98a00":"var(--accent)"}" opacity="${sel?1:.72}" ${sel?'stroke="var(--ink)" stroke-width="2"':""}><title>${y}. yıl net nakit: ${fU(v)}${ramp?" (açılış yılı)":""}</title></rect>`;
+  s2+=txt(x,top-22,fmM(v),{s:10,c:"var(--muted)"})+hnd(f2,x,top-8,"bar:"+y,y+". yıl: yukarı/aşağı sürükleyin, "+(ramp?"o yılın ADR'si":"stabilize ADR")+" değişir)")});
+ s2+=txt(f2.L+4,f2.T+4,"turuncu: açılış yılı · yeşil: stabilize/büyüme",{a:"start",s:10,c:"var(--muted)"});
+ const ramp1=nR?C.yr[0].net:null,g10=C.yr[Math.min(9,H-1)].net;
+ const c2=`Stabilize yılda (${sy}.) net nakit ${fmM(ys.net)}; ${nR?`ilk yıl ${fmM(ramp1)} ile stabilize yılın %${nf.format(Math.round(ramp1/ys.net*100))}'inde kalıyor — açılış yıllarındaki doluluk/ADR farkı geri dönüşü uzatan ana etken.`:"açılış dönemi modellenmediği için ilk yıldan itibaren stabilize düzey varsayılıyor (iyimser olabilir)."} ${Math.min(10,H)}. yılda net ${fmM(g10)}; bu artış gelir büyümesi (%${nf1.format(T.g)}) ile gider artışı (%${nf1.format(T.f)}) arasındaki farktan gelir${T.g>T.f?" (gelir büyümesi gideri geçtiği için marj genişliyor)":" (gider artışı geliri geçtiği için marj daralıyor)"}. Seçili yıl: ${WS.yr}.`;
+ const sec2=sect("wsc2","Yıllık net nakit akışı",svgOf(f2,s2,"Yıllık net nakit"),"Her çubuk o yılın net işletme nakdidir (NOI − FF&E rezervi). Turuncu çubuklar açılış yılları, yeşiller stabilize ve büyüme yıllarıdır. Bir çubuğa tıklamak o yılı seçer; aşağıdaki şelale grafiği ve tablo o yılı gösterir. <b>Etkileşim:</b> çubuğun üstündeki daireyi sürükleyin — o yıl için hedeflediğiniz neti sağlayacak ADR otomatik hesaplanır (açılış yılında o yılın ADR'si, stabilize yıllarda stabilize ADR) ve sol paneldeki değer güncellenir.",c2);
+ /* grafik 3: şelale (seçili yıl) */
+ const it=[["Oda geliri",yS.room,"+"],["Diğer gelir",yS.other,"+"],["Brüt gelir",yS.gross,"="],["Departman",-yS.dept,"-"],["Dağıtılmamış",-yS.und,"-"],["Malik",-yS.own,"-"],["Rezerv",-yS.res,"-"],["Net nakit",yS.net,"="]];
+ const f3=frame("pb3",{x0:.4,x1:it.length+.6,y0:0,y1:niceMax(yS.gross*1.1),xt:it.map((a,i)=>[i+1,a[0]]),fy:fmM,B:44,h:290});
+ let s3="",run=0;const w3=Math.min(60,(f3.w-f3.L-f3.R)/it.length*.62);
+ it.forEach(([n,v,t],i)=>{let a,b;if(t==="+"){a=run;run+=v;b=run}else if(t==="-"){b=run;run+=v;a=run}else{a=0;b=v;run=v}
+  const x=f3.sx(i+1),c=t==="="?"var(--navy)":t==="+"?"var(--accent)":"#c0392b";s3+=`<rect x="${x-w3/2}" y="${f3.sy(Math.max(a,b))}" width="${w3}" height="${Math.max(1,Math.abs(f3.sy(a)-f3.sy(b)))}" rx="3" fill="${c}" opacity=".85"><title>${n}: ${fU(v)} (${pc(yS.gross?Math.abs(v)/yS.gross:0)} brüt gelir)</title></rect>`+txt(x,f3.sy(Math.max(a,b))-6,fmM(v),{s:10,c:"var(--muted)"})});
+ const costs=[["departman",yS.dept],["dağıtılmamış",yS.und],["malik",yS.own],["rezerv",yS.res]].sort((a,b)=>b[1]-a[1]);
+ const c3=`${WS.yr}. yılda brüt gelirin %${nf.format(Math.round(yS.gross?yS.net/yS.gross*100:0))}'i net nakde dönüşüyor. En büyük gider bloğu ${costs[0][0]} gideri (brüt gelirin %${nf.format(Math.round(yS.gross?costs[0][1]/yS.gross*100:0))}'i); ikincisi ${costs[1][0]} (%${nf.format(Math.round(yS.gross?costs[1][1]/yS.gross*100:0))}). GOP marjı %${nf.format(Math.round(yS.gross?yS.gop/yS.gross*100:0))}, NOI marjı %${nf.format(Math.round(yS.gross?yS.noi/yS.gross*100:0))}. ${yS.other/yS.gross>.3?"Diğer gelirler (kira) toplamın önemli bir kısmı; bu gelir sabit olduğundan doluluk dalgalanmasına karşı yastık işlevi görür.":"Gelirin ağırlığı oda gelirinde; doluluk ve ADR duyarlılığı yüksek."}`;
+ const sec3=sect("wsc3","Gelirden net nakde şelale — "+WS.yr+". yıl",svgOf(f3,s3,"Gelirden net nakde şelale"),"Soldan sağa: oda ve diğer gelir toplanıp brüt geliri oluşturur; sonra sırasıyla departman, dağıtılmamış, malik giderleri ve FF&E rezervi düşülür; sağdaki lacivert çubuk net nakittir. Her adımın yüksekliği, o kalemin gelirdeki ağırlığını gösterir (üzerine gelince brüt gelire oranı görünür). Yıl seçmek için yıllık net grafiğinde çubuğa ya da tabloda yıl başlığına tıklayın.",c3);
+ /* tablo 1 */
+ const ny=Math.min(H,10),yc=C.yr.slice(0,ny);
+ const rw=(n,g,o)=>`<tr class="${o&&o.b?"ws-tb":""}"><td>${n}</td>${yc.map((y,i)=>`<td class="${i+1===WS.yr?"ws-sel":""}">${g(y,i)}</td>`).join("")}</tr>`;
+ const d0=v=>nf.format(Math.round(v));
+ const t1=`<div class="wrap"><table class="ozt ws-t"><thead><tr><th>USD</th>${yc.map((_,i)=>`<th data-yr="${i+1}" class="ws-th ${i+1===WS.yr?"ws-sel":""}">${i+1}. yıl</th>`).join("")}</tr></thead><tbody>${rw("Doluluk",y=>pc(y.occ))}${rw("ADR",y=>"$"+d0(y.adr))}${rw("RevPAR",y=>"$"+d0(y.revpar))}${rw("Oda geliri",y=>d0(y.room))}${rw("Diğer gelir",y=>d0(y.other))}${rw("Brüt gelir",y=>d0(y.gross),{b:1})}${rw("Departman gideri",y=>d0(-y.dept))}${rw("Dağıtılmamış gider",y=>d0(-y.und))}${rw("GOP",y=>d0(y.gop),{b:1})}${rw("Malik gideri",y=>d0(-y.own))}${rw("NOI",y=>d0(y.noi),{b:1})}${rw("FF&E rezervi",y=>d0(-y.res))}${rw("Net nakit",y=>d0(y.net),{b:1})}${rw("Kümülatif net",(y,i)=>d0(C.cum[i]))}${rw("Geri alınan yatırım",(y,i)=>pc(C.cum[i]/inv))}</tbody></table></div>`;
+ const c4=`Tablo, grafiklerin sayısal karşılığıdır. ${p!=null?`Kümülatif satırı ${Math.ceil(p)}. yılda yatırım tutarını (${fU(inv)}) aşıyor.`:"Kümülatif satır ufuk içinde yatırım tutarına ulaşmıyor."} Brüt gelir ${yc[0].gross<ys.gross?"ilk yıldan stabilize yıla "+pc(ys.gross/yc[0].gross-1)+" artıyor":"yıllar içinde değişiyor"}; GOP marjı ${pc(yc[0].gross?yc[0].gop/yc[0].gross:0)} → ${pc(ys.gross?ys.gop/ys.gross:0)}. Giderlerin bir kısmı sabit olduğundan doluluk arttıkça marj yükselir (işletme kaldıracı).`;
+ const sec4=sect("wsc4","Yıllık P&L tablosu",t1,"Sütunlar yıl, satırlar gelir tablosunun akışıdır: gelir → departman gideri → dağıtılmamış gider → GOP → malik gideri → NOI → rezerv → net nakit. Negatif gösterim gider kalemlerini ifade eder. Yıl başlığına tıklayarak şelaleyi o yıla getirebilirsiniz; tablo sol paneldeki girişlerden anında yeniden hesaplanır.",c4);
+ /* tablo 2: duyarlılık */
+ const dA=[-20,-10,0,10,20],dO=[-10,-5,0,5,10],base=p;
+ const cells=dO.map(o=>dA.map(a=>sensCell(t=>{t.stab.adr=Math.round(t.stab.adr*(1+a/100));t.stab.occ=clamp(t.stab.occ+o,1,100)})));
+ const col=v=>{if(v==null)return"background:rgba(192,57,43,.35)";if(base==null)return"";const d=v-base;return d<=-1?"background:rgba(45,122,58,.40)":d<-.1?"background:rgba(45,122,58,.20)":d<=.1?"":d<1?"background:rgba(217,138,0,.22)":d<3?"background:rgba(217,138,0,.40)":"background:rgba(192,57,43,.35)"};
+ const t2=`<div class="wrap"><table class="ozt ws-t ws-sens"><thead><tr><th>Doluluk ↓ / ADR →</th>${dA.map(a=>`<th>${a>0?"+":""}${a}%<br><span class="code">$${nf.format(Math.round(T.stab.adr*(1+a/100)))}</span></th>`).join("")}</tr></thead><tbody>${dO.map((o,ri)=>`<tr><th>${o>0?"+":""}${o} puan<br><span class="code">%${nf.format(clamp(T.stab.occ+o,1,100))}</span></th>${cells[ri].map((v,ci)=>`<td class="ws-sc ${o===0&&dA[ci]===0?"ws-sel":""}" style="${col(v)}" data-sa="${dA[ci]}" data-so="${o}" title="Tıklayın: bu ADR ve doluluk değerlerini uygular">${v==null?"–":nf2.format(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="note">Hücre değerleri geri dönüş süresidir (yıl). Yeşil: daha hızlı, turuncu/kırmızı: daha yavaş. Hücreye tıklayınca stabilize ADR ve doluluk o değerlere ayarlanır.</p>`;
+ const adrDown=cells[2][1],occDown=cells[1][2],adrUp=cells[2][3];
+ const c5=base==null?"Baz durumda geri dönüş hesaplanamadığı için duyarlılık karşılaştırması yapılamıyor.":`ADR %10 düşerse süre ${yy(adrDown)} (${adrDown!=null?(adrDown-base>=0?"+":"")+nf2.format(adrDown-base)+" yıl":""}); doluluk 5 puan düşerse ${yy(occDown)}; ADR %10 artarsa ${yy(adrUp)}. ${(adrDown!=null&&occDown!=null&&adrDown-base>occDown-base)?"ADR, doluluğa göre daha güçlü bir kaldıraç — fiyatlama disiplini öncelikli.":"Doluluk, ADR'ye göre daha güçlü bir kaldıraç — talep/dağıtım çalışması öncelikli."} Sağ alt köşe (yüksek ADR + yüksek doluluk) en iyi, sol üst en kötü senaryodur; ikisinin birlikte düşmesi etkiyi katlar.`;
+ const sec5=sect("wsc5","Duyarlılık tablosu — ADR × doluluk → geri dönüş",t2,"Satırlar stabilize doluluğu (puan), sütunlar stabilize ADR'yi (%) değiştirir; her hücre, bu değerlerle modelin yeniden çalıştırılmasıyla bulunan geri dönüş süresidir (yıl). Ortadaki çerçeveli hücre mevcut durumdur. <b>Etkileşim:</b> bir hücreye tıklamak o ADR ve doluluk kombinasyonunu sol panele ve tüm modele uygular.",c5);
+ const rq=tpReq();
+ return k+sec1+sec2+sec3+sec4+sec5}
+DRG.inv=(key,x,y)=>{const C=tpCalc(),b=TP.inv.find(z=>z.id==="buy");if(!b)return;const d=Math.max(5e4,Math.min(1e8,y))-C.inv;b.amt=Math.max(0,Math.round((b.amt+d)/10000)*10000);rr(true)};
+DRG.bar=(key,x,y)=>{const yr=+key.split(":")[1],C0=tpCalc(),nR=C0.nR,path=(yr<=nR&&TP.ramp.on)?TP.ramp.rows[yr-1]:TP.stab;const a0=+path.adr||1,n0=tpCalc().yr[yr-1].net;path.adr=a0*1.05;const n1=tpCalc().yr[yr-1].net;path.adr=a0;const sl=(n1-n0)/(a0*.05);if(!(sl>0))return;path.adr=clamp(Math.round((a0+(y-n0)/sl)/5)*5,40,3000);rr(true)};
+/* ---------- P&L oluşturma ---------- */
+const PBr=()=>window.PBs();
+const pkU={fixed:"USD / yıl",pctGross:"% brüt gelir",pctRoom:"% oda geliri",perNight:"USD / gece"};
+function plBE(){const f=o=>window.PBc({occ:o}).net;if(f(100)<0)return null;if(f(0)>=0)return 0;let a=0,b=100;for(let i=0;i<40;i++){const m=(a+b)/2;if(f(m)>=0)b=m;else a=m}return b}
+function plLeft(){const P=PBr();let h="";
+ h+=grp("1 · Otel ve oda geliri",fld(P,"keys","Oda (anahtar) sayısı","adet",1)+fld(P,"occ","Doluluk","%",1)+fld(P,"adr","ADR","USD",5)+fld(P,"roomD","Oda departman gideri","% oda geliri",.5));
+ h+=grp("2 · Diğer gelirler",P.rev.map((x,i)=>itm(P,"rev."+i,x.name,"val",x.mode==="fixed"?"USD / yıl":"% oda geliri",x.mode==="fixed"?1000:.5)).join("")||'<p class="note">Kalem yok. Klasik görünümde şablondan ekleyebilirsiniz.</p>');
+ [["und","3 · Dağıtılmamış giderler (GOP öncesi)"],["own","4 · Sahip giderleri (GOP sonrası)"],["res","5 · Rezerv (NOI sonrası)"]].forEach(([g,t])=>{h+=grp(t,P[g].map((x,i)=>itm(P,g+"."+i,x.name,"val",pkU[x.kind],x.kind==="fixed"?1000:.5)).join("")||'<p class="note">Kalem yok.</p>')});
+ h+=grp("6 · Yatırım ve değer",fld(P,"inv.buy","Satın alma bedeli","USD",10000)+fld(P,"inv.reno","Renovasyon","USD",10000)+fld(P,"inv.wc","İşletme sermayesi","USD",10000)+fld(P,"cap","Değerleme cap oranı","%",.1));
+ return h}
+let _pbq=0;
+function plRight(){const P=PBr(),c=window.PBc();if(!(c.keys>0))return warnBox(["Oda (anahtar) sayısı"]);
+ const be=plBE();
+ const k=kpis([K("Brüt gelir",fmM(c.gross),"oda "+fmM(c.room)+" · diğer "+fmM(c.other)),K("GOP",fmM(c.gop),"marj "+pc(c.mg)),K("NOI",fmM(c.noi),"marj "+pc(c.mn)+" · getiri "+pc(c.capR)),K("Net işletme nakdi",fmM(c.net),"rezerv sonrası"),K("Basit geri dönüş",c.pay==null?"–":yy(c.pay),"yatırım "+fmM(c.inv)),K("Değer (NOI ÷ cap)",fmM(c.val),"cap %"+nf1.format(+P.cap||0)),K("RevPAR / TRevPAR",fU(c.revpar)+" / "+fU(c.trevpar),"GOPPAR "+fU(c.goppar)),K("Başabaş doluluk",be==null?"–":"%"+nf1.format(be),"net nakdin sıfırlandığı doluluk")]);
+ /* grafik 1: şelale */
+ const it=[["Oda geliri",c.room,"+"],["Diğer gelir",c.other,"+"],["Brüt gelir",c.gross,"="],["Departman",-c.dept,"-"],["Dağıtılmamış",-c.und,"-"],["GOP",c.gop,"="],["Sahip",-c.own,"-"],["NOI",c.noi,"="],["Rezerv",-c.res,"-"],["Net nakit",c.net,"="]];
+ const f1=frame("pl1",{x0:.4,x1:it.length+.6,y0:0,y1:niceMax(c.gross*1.12),xt:it.map((a,i)=>[i+1,a[0]]),fy:fmM,B:44,h:300});
+ let s1="",run=0;const w1=Math.min(56,(f1.w-f1.L-f1.R)/it.length*.62);
+ it.forEach(([n,v,t],i)=>{let a,b;if(t==="+"){a=run;run+=v;b=run}else if(t==="-"){b=run;run+=v;a=run}else{a=0;b=v;run=v}
+  const x=f1.sx(i+1),col=t==="="?"var(--navy)":t==="+"?"var(--accent)":"#c0392b";s1+=`<rect x="${x-w1/2}" y="${f1.sy(Math.max(a,b))}" width="${w1}" height="${Math.max(1,Math.abs(f1.sy(a)-f1.sy(b)))}" rx="3" fill="${col}" opacity=".85"><title>${n}: ${fU(v)} · brüt gelirin ${pc(c.gross?Math.abs(v)/c.gross:0)}'i</title></rect>`+txt(x,f1.sy(Math.max(a,b))-(i===0?22:6),fmM(v),{s:10,c:"var(--muted)"})});
+ s1+=hnd(f1,f1.sx(1),f1.sy(c.room)-9,"pbadr","Oda geliri çubuğunu sürükleyin: ADR değişir");
+ const lg=[["departman",c.dept],["dağıtılmamış",c.und],["sahip",c.own],["rezerv",c.res]].sort((a,b)=>b[1]-a[1]);
+ const c1=`Brüt gelirin %${nf.format(Math.round(c.mg*100))}'i GOP, %${nf.format(Math.round(c.mn*100))}'i NOI, %${nf.format(Math.round(c.gross?c.net/c.gross*100:0))}'i net nakde dönüşüyor. En büyük gider bloğu ${lg[0][0]} (brüt gelirin %${nf.format(Math.round(c.gross?lg[0][1]/c.gross*100:0))}'i). ${c.mg<.35?"GOP marjı düşük görünüyor; sabit giderler veya departman payları gözden geçirilmeli.":c.mg>.5?"GOP marjı yüksek; gider varsayımlarının gerçekçiliğini (özellikle personel) doğrulayın.":"GOP marjı makul bantta."} Doluluk ${nf.format(c.occ)}% ve ADR ${fU(c.adr)} ile oda geliri brüt gelirin %${nf.format(Math.round(c.gross?c.room/c.gross*100:0))}'ini oluşturuyor.`;
+ const sec1=sect("plc1","Gelirden net nakde şelale",svgOf(f1,s1,"P&L şelalesi"),"Yeşil çubuklar gelir, kırmızılar gider, lacivertler ara toplamlardır (brüt gelir, GOP, NOI, net nakit). Çubuk yüksekliği tutarı, üzerine gelince brüt gelire oranı görünür. GOP, işletmenin kendi kârıdır; NOI sahip giderlerinden sonra gayrimenkulün getirisidir; net nakit FF&E rezervi sonrası yatırımcıya kalandır. <b>Etkileşim:</b> soldaki oda geliri çubuğunun üstündeki daireyi sürükleyin — ADR buna göre değişir, bütün gelir tablosu güncellenir.",c1);
+ /* grafik 2: net vs doluluk */
+ const xs=[];for(let o=0;o<=100;o+=5)xs.push(o);const ys=xs.map(o=>window.PBc({occ:o}).net),mn=niceMin(Math.min(0,...ys)),mx=niceMax(Math.max(...ys,1)*1.1);
+ const f2=frame("pl2",{x0:0,x1:100,y0:mn,y1:mx,xt:[0,20,40,60,80,100].map(v=>[v,"%"+v]),xl:"Doluluk",fy:fmM});
+ let s2=`<line x1="${f2.L}" x2="${f2.w-f2.R}" y1="${f2.sy(0)}" y2="${f2.sy(0)}" stroke="var(--muted)"/>`+polyl(xs.map((o,i)=>[f2.sx(o),f2.sy(ys[i])]),"var(--accent)",3);
+ if(be!=null&&be>0)s2+=`<line x1="${f2.sx(be)}" x2="${f2.sx(be)}" y1="${f2.sy(0)}" y2="${f2.sy(mn)}" stroke="#c0392b" stroke-dasharray="4 3"/>`+txt(f2.sx(be)+6,f2.sy(mn)-8,"Başabaş %"+nf1.format(be),{a:"start",c:"#c0392b",b:1});
+ s2+=`<circle cx="${f2.sx(c.occ)}" cy="${f2.sy(c.net)}" r="5" fill="#c0392b"/>`+txt(f2.sx(c.occ),f2.sy(c.net)-16,"%"+nf1.format(c.occ)+" → "+fmM(c.net),{b:1})+hnd(f2,f2.sx(c.occ),f2.sy(c.net),"pbocc","Noktayı sağa/sola sürükleyin: doluluk değişir");
+ const d10=window.PBc({occ:c.occ+10}).net-c.net,mrg=c.net-window.PBc({occ:c.occ-10}).net;
+ const c2=`Doluluk her 10 puan arttığında net nakit yaklaşık ${fmM(d10)} değişiyor (doluluğun marjinal değeri). ${be==null?"Doluluk %100 olsa bile net nakit sıfırın altında kalıyor.":be===0?"Doluluk sıfır bile olsa net nakit pozitif (sabit gelirler sabit giderleri karşılıyor).":`Net nakdin sıfırlandığı başabaş doluluk %${nf1.format(be)}; mevcut doluluk (%${nf1.format(c.occ)}) başabaşın ${nf1.format(c.occ-be)} puan ${c.occ>=be?"üzerinde":"altında"} — bu fark güvenlik payıdır.`} ${c.occ-(be||0)<10&&be!=null?"Güvenlik payı dar; talep dalgalanmasına açık bir yapı.":""}`;
+ const sec2=sect("plc2","Doluluğa göre net nakit ve başabaş",svgOf(f2,s2,"Doluluk net nakit eğrisi"),"Yatay eksen doluluk, dikey eksen yıllık net nakittir; diğer tüm varsayımlar sabit tutulur. Eğrinin sıfır çizgisini kestiği nokta başabaş doluluktur: bunun altında işletme nakit yakar. Eğri doğrusaldır çünkü gelirin büyük kısmı doluluğa orantılı, giderlerin bir kısmı sabittir; eğim doluluğun her puanının değerini gösterir. <b>Etkileşim:</b> kırmızı noktayı sürükleyerek dolulukla oynayın; tüm panel güncellenir.",c2);
+ /* grafik 3: gider dağılımı */
+ const ex=[["Oda departman gideri",c.dRoom],["Diğer gelir departman gideri",c.dOth]].concat(c.u.map(x=>["Dağ. · "+x.n,x.v]),c.w.map(x=>["Sahip · "+x.n,x.v]),c.s.map(x=>["Rezerv · "+x.n,x.v])).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]);
+ const rh=26,h3=34+ex.length*rh,mxE=Math.max(...ex.map(x=>x[1]),1);
+ let s3="";ex.forEach((x,i)=>{const y=14+i*rh,w=(x[1]/mxE)*(760-330);s3+=txt(8,y+16,E(x[0].length>34?x[0].slice(0,33)+"…":x[0]),{a:"start",s:12})+`<rect x="250" y="${y+3}" width="${Math.max(2,w)}" height="${rh-8}" rx="3" fill="#c0392b" opacity=".78"><title>${E(x[0])}: ${fU(x[1])}</title></rect>`+txt(250+Math.max(2,w)+6,y+16,fmM(x[1])+" · %"+nf1.format(c.gross?x[1]/c.gross*100:0),{a:"start",s:11,c:"var(--muted)"})});
+ const top3=ex.slice(0,3).map(x=>x[0].replace(/^(Dağ\.|Sahip|Rezerv) · /,"")+" (%"+nf.format(Math.round(c.gross?x[1]/c.gross*100:0))+")").join(", ");
+ const totEx=S(ex.map(x=>x[1]));
+ const c3=`Toplam gider ${fmM(totEx)} (brüt gelirin %${nf.format(Math.round(c.gross?totEx/c.gross*100:0))}'i). En ağır üç kalem: ${top3}. İlk üç kalem toplam giderin %${nf.format(Math.round(S(ex.slice(0,3).map(x=>x[1]))/(totEx||1)*100))}'ini oluşturuyor — tasarruf veya verimlilik çalışması bu kalemlerde en büyük etkiyi yapar. Yüzde olarak tanımlı giderler gelirle birlikte büyür; sabit giderler ise doluluk düştüğünde marjı baskılar.`;
+ const sec3=sect("plc3","Gider dağılımı",`<svg class="ws-svg" viewBox="0 0 760 ${h3}" role="img" aria-label="Gider dağılımı">${s3}</svg>`,"Çubuklar yıllık gider kalemlerini büyükten küçüğe sıralar; çubuğun yanında tutar ve brüt gelire oranı yazılıdır. Departman giderleri GOP'tan önce, dağıtılmamış giderler GOP'tan önce, sahip giderleri GOP'tan sonra, rezerv NOI'dan sonra düşülür. Hangi kalemin kâr üzerindeki baskısının en büyük olduğunu görmek için kullanın.",c3);
+ /* tablo 1 */
+ const pr=(n,v,b)=>`<tr class="${b?"ws-tb":""}"><td>${E(n)}</td><td>${nf.format(Math.round(v))}</td><td>${pc(c.gross?v/c.gross:0)}</td><td>${c.keys?nf.format(Math.round(v/c.keys)):"–"}</td></tr>`;
+ const t1=`<div class="wrap"><table class="ozt ws-t"><thead><tr><th>Kalem</th><th>USD / yıl</th><th>% brüt gelir</th><th>USD / oda</th></tr></thead><tbody>${pr("Oda geliri",c.room)}${c.rv.map(r=>pr("  "+r.n,r.v)).join("")}${pr("Brüt gelir",c.gross,1)}${pr("Departman giderleri",-c.dept)}${pr("Departman kârı",c.dp,1)}${c.u.map(x=>pr("  "+x.n,-x.v)).join("")}${pr("GOP",c.gop,1)}${c.w.map(x=>pr("  "+x.n,-x.v)).join("")}${pr("NOI",c.noi,1)}${c.s.map(x=>pr("  "+x.n,-x.v)).join("")}${pr("Net işletme nakdi",c.net,1)}</tbody></table></div>`;
+ const c4=`Tablo şelalenin sayısal karşılığıdır. Oda başına net nakit ${fU(c.keys?c.net/c.keys:0)}; oda başına yatırım ${fU(c.keys?c.inv/c.keys:0)}. NOI getirisi (NOI ÷ yatırım) %${nf1.format(c.capR*100)} iken değerleme cap oranı %${nf1.format(+P.cap||0)}: ${c.capR>(+P.cap||0)/100?"yatırım bedeli, işletme getirisine göre cap oranının ima ettiği değerin altında — değer artışı potansiyeli var.":"yatırım bedeli, cap oranının ima ettiği değerin üzerinde — değerleme yatırımı karşılamıyor olabilir."} İma edilen değer ${fmM(c.val)}.`;
+ const sec4=sect("plc4","P&L tablosu",t1,"Soldan sağa: kalem, yıllık USD, brüt gelire oran ve oda başına tutar. Koyu satırlar ara toplamlardır. Oda başına sütunu farklı büyüklükteki otellerle karşılaştırmayı kolaylaştırır; yüzde sütunu sektör kıyaslarında (ör. GOP marjı) kullanılır. Tablo, sol paneldeki girişlerle birlikte anında güncellenir.",c4);
+ /* tablo 2 */
+ const dO=[-10,-5,0,5,10],dA=[-20,-10,0,10,20],cl=(o,a)=>window.PBc({occ:clamp(c.occ+o,1,100),adr:Math.round(c.adr*(1+a/100))});
+ const cells=dO.map(o=>dA.map(a=>cl(o,a)));
+ const shade=v=>{if(c.net<=0)return v>0?"background:rgba(45,122,58,.25)":"";const r=v/c.net;return r>=1.25?"background:rgba(45,122,58,.40)":r>=1.05?"background:rgba(45,122,58,.20)":r>=.95?"":r>=.75?"background:rgba(217,138,0,.28)":v>0?"background:rgba(192,57,43,.30)":"background:rgba(192,57,43,.50)"};
+ const t2=`<div class="wrap"><table class="ozt ws-t ws-sens"><thead><tr><th>Doluluk ↓ / ADR →</th>${dA.map(a=>`<th>${a>0?"+":""}${a}%<br><span class="code">${fU(c.adr*(1+a/100))}</span></th>`).join("")}</tr></thead><tbody>${dO.map((o,ri)=>`<tr><th>${o>0?"+":""}${o} puan<br><span class="code">%${nf.format(clamp(c.occ+o,1,100))}</span></th>${cells[ri].map((x,ci)=>`<td class="ws-sc ${o===0&&dA[ci]===0?"ws-sel":""}" style="${shade(x.net)}" data-pa="${dA[ci]}" data-po="${o}" title="Tıklayın: bu doluluk ve ADR'yi uygular">${fmM(x.net)}<br><span class="code">${x.pay==null?"geri dönmez":nf1.format(x.pay)+" yıl"}</span></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+ const worst=cells[0][0],best=cells[4][4];
+ const c5=`Mevcut net nakit ${fmM(c.net)}. En kötü köşede (doluluk −10 puan, ADR −%20) net nakit ${fmM(worst.net)}${worst.net<0?" — işletme nakit yakıyor":""}, en iyi köşede ${fmM(best.net)}. ADR değişimi doluluktan daha az maliyetle gelir getirir çünkü ek ADR neredeyse doğrudan kâra yansır; yalnızca yüzde bazlı giderler (komisyon, yönetim ücreti) payını alır. Hücre içindeki ikinci satır basit geri dönüş süresidir.`;
+ const sec5=sect("plc5","Duyarlılık — doluluk × ADR → net nakit",t2,"Her hücre, o doluluk ve ADR ile modelin yeniden çalıştırılmasıyla bulunan yıllık net nakittir (altında geri dönüş süresi). Ortadaki çerçeveli hücre mevcut durumdur; yeşil artış, turuncu/kırmızı azalış demektir. <b>Etkileşim:</b> hücreye tıklayınca doluluk ve ADR o değerlere ayarlanır.",c5);
+ const act=`<div class="ws-act"><button type="button" class="btn" data-wsa="pl2pay">${_pbq?"Emin misiniz? Payback modülündeki veriler bu P&L ile değişir — tekrar tıklayın":"Payback modülüne aktar"}</button><span class="code" id="wsmsg"></span></div>`;
+ return k+sec1+sec2+sec3+sec4+sec5+act}
+DRG.pbadr=(key,x,y)=>{const P=PBr(),c=window.PBc();if(!(c.room>0)||!(y>0))return;P.adr=clamp(Math.round((+P.adr||1)*y/c.room/5)*5,20,3000);rr(true)};
+DRG.pbocc=(key,x,y)=>{PBr().occ=clamp(Math.round(x),1,100);rr(true)};
+/* ---------- Personel bütçesi ---------- */
+const PRr=()=>window.PRs();
+function prLeft(){const P=PRr();let h="";
+ h+=grp("1 · Genel",fld(P,"name","Bütçe adı","",0,{t:1})+fld(P,"fx","Kur","TL / USD",.1)+fld(P,"raise.m","Zam ayı","1–12",1)+fld(P,"raise.pct","Zam oranı","%",.5));
+ h+=grp("2 · Kadro",P.rows.map((r,i)=>`<div class="ws-it ws-it2 ${r.on!==0?"":"off"}"><label class="ws-ck"><input type="checkbox" data-wc="rows.${i}.on" ${r.on!==0?"checked":""}><span>${E(r.pos)} <small class="code">${E(r.dept)}</small></span></label><span class="ws-iw"><input type="number" data-w="rows.${i}.n" step="1" value="${r.n}" ${r.on!==0?"":"disabled"}><em>kişi</em></span><span class="ws-iw"><input type="number" data-w="rows.${i}.net" step="1000" value="${r.net}" ${r.on!==0?"":"disabled"}><em>TL net</em></span></div>`).join(""));
+ h+=grp("3 · Prim oranları (satır bazında)",P.rows.map((r,i)=>`<div class="ws-it"><span class="ws-ck"><span>${E(r.pos)}</span></span><span class="ws-iw"><input type="number" data-w="rows.${i}.ssk" step=".5" value="${r.ssk}"><em>SSK %</em></span><span class="ws-iw"><input type="number" data-w="rows.${i}.muh" step=".5" value="${r.muh}"><em>Muht. %</em></span></div>`).join(""),false);
+ h+=grp("4 · Diğer personel giderleri",P.extra.map((x,i)=>itm(P,"extra."+i,x.name,"val",x.kind==="head"?"TL / kişi / ay":"TL / ay",100)).join(""),false);
+ return h}
+function prRight(){const P=PRr(),C=window.prCalcX();
+ const dn=DEPTS.filter(d=>C.dep[d]).concat(Object.keys(C.dep).filter(d=>!DEPTS.includes(d)));
+ let ys=null;try{const T=tpCalc();ys=T.yr[Math.min(T.nR+1,T.H)-1]}catch(e){}
+ const k=kpis([K("Yıllık personel gideri",nf.format(Math.round(C.year))+" TL",fU(C.yearUSD)),K("Ortalama kadro",nf1.format(C.hm)+" kişi","yıl ortalaması"),K("Kişi başı aylık maliyet",C.hm?nf.format(Math.round(C.year/12/C.hm))+" TL":"–",C.hm?fU(C.year/12/C.hm/C.fx):""),K("İşveren yükü",pc(C.load),"SSK + muhtasar ÷ net maaş"),K("Net maaş toplamı",nf.format(Math.round(C.net))+" TL",pc(C.year?C.net/C.year:0)+" toplamın"),K("Brüt gelire oranı",ys&&ys.gross?pc(C.yearUSD/ys.gross):"–","Payback modülündeki stabilize brüt gelire göre")]);
+ /* grafik 1: departman */
+ const rh=34,h1=40+dn.length*rh,mx=niceMax(Math.max(...dn.map(d=>C.dep[d]),1)*1.5);
+ const f1=frame("pr1",{x0:0,x1:mx,y0:0,y1:1,hy:1,L:150,R:44,T:12,B:34,h:h1,w:760,fy:v=>v,xt:ticks(0,mx,5).map(v=>[v,nf.format(Math.round(v/1000))+" bin"])});
+ let s1=ticks(0,mx,5).map(v=>`<line x1="${f1.sx(v)}" x2="${f1.sx(v)}" y1="${f1.T}" y2="${h1-f1.B}" stroke="var(--line)"/>`).join("");
+ dn.forEach((d,i)=>{const y=f1.T+i*rh,x=f1.sx(C.dep[d]);s1+=txt(f1.L-8,y+rh/2+4,E(d),{a:"end",s:12})+`<rect x="${f1.L}" y="${y+6}" width="${Math.max(2,x-f1.L)}" height="${rh-12}" rx="3" fill="${DC[i%5]}" opacity=".85"><title>${E(d)}: ${nf.format(Math.round(C.dep[d]))} TL · ${pc(C.year?C.dep[d]/C.year:0)}</title></rect>`+txt(x+14,y+rh/2-1,nf.format(Math.round(C.dep[d]/1000))+" bin TL",{a:"start",s:11,c:"var(--muted)"})+txt(x+14,y+rh/2+12,pc(C.year?C.dep[d]/C.year:0)+" · "+fU(C.dep[d]/C.fx),{a:"start",s:10,c:"var(--muted)"})+hnd(f1,x,y+rh/2,"prdept:"+d,d+": sağa/sola sürükleyin, departmandaki net maaşlar orantılı değişir)")});
+ const bigD=dn.slice().sort((a,b)=>C.dep[b]-C.dep[a])[0];
+ const c1=`En büyük kalem ${bigD} departmanı (toplamın ${pc(C.year?C.dep[bigD]/C.year:0)}'i). Yıllık toplam ${nf.format(Math.round(C.year))} TL = ${fU(C.yearUSD)}; bu tutar Payback modülünde "Personel (payroll modülü)" gideri olarak kullanılabilir. İşveren yükü %${nf1.format(C.load*100)} — her 100 TL net maaş, işverene yaklaşık ${nf.format(Math.round(100*(1+C.load)))} TL'ye mal oluyor.`;
+ const sec1=sect("prc1","Departman bazında yıllık personel gideri",svgOf(f1,s1,"Departman bazında yıllık personel gideri"),"Her çubuk bir departmanın yıllık toplam maliyetidir (net maaş + SSK + muhtasar, zam ve çalışılan aylar dahil; diğer personel giderleri hariç). Çubuk sonundaki daire ile departman payı ve USD karşılığı okunur. <b>Etkileşim:</b> daireyi sağa/sola sürükleyin — o departmandaki tüm net maaşlar aynı oranda değişir; kadro, aylık tablo ve KPI'lar güncellenir.",c1);
+ /* grafik 2: aylık yığılmış */
+ const mo=C.mon,mxm=niceMax(Math.max(...mo.map(m=>m.tot),1)*1.18);
+ const f2=frame("pr2",{x0:.4,x1:12.6,y0:0,y1:mxm,xt:MON.map((m,i)=>[i+1,m]),fy:v=>nf.format(Math.round(v/1000))+" bin",B:40});
+ const bw=Math.min(40,(f2.w-f2.L-f2.R)/12*.64);let s2="";
+ mo.forEach((m,i)=>{const x=f2.sx(i+1);let y0=0;[["net","var(--accent)",m.net],["ssk","var(--navy)",m.ssk],["muh","#d98a00",m.muh],["ex","#8a8f98",m.ex]].forEach(([n,c,v])=>{s2+=`<rect x="${x-bw/2}" y="${f2.sy(y0+v)}" width="${bw}" height="${Math.max(0,f2.sy(y0)-f2.sy(y0+v))}" fill="${c}" opacity=".85"><title>${MON[i]} · ${{net:"Net maaş",ssk:"SSK",muh:"Muhtasar",ex:"Diğer"}[n]}: ${nf.format(Math.round(v))} TL</title></rect>`;y0+=v});
+  s2+=txt(x,f2.sy(m.tot)-6,nf.format(Math.round(m.tot/1000)),{s:10,c:"var(--muted)"})+txt(x,f2.sy(0)+30,m.heads+" kişi",{s:9,c:"var(--muted)"})});
+ const rm=+P.raise.m||13,rp=+P.raise.pct||0;
+ if(rm>=1&&rm<=12&&rp)s2+=`<line x1="${f2.sx(rm-.5)}" x2="${f2.sx(rm-.5)}" y1="${f2.T}" y2="${f2.sy(0)}" stroke="#c0392b" stroke-dasharray="4 3"/>`+txt(f2.sx(rm-.5)+4,f2.T+12,"zam %"+nf1.format(rp),{a:"start",c:"#c0392b",b:1,s:11})+hnd(f2,f2.sx(rm-.5),f2.T+22,"prraise","Zam ayını sağa/sola sürükleyin");
+ const lgd=`<div class="ws-lg"><i style="background:var(--accent)"></i>Net maaş <i style="background:var(--navy)"></i>SSK <i style="background:#d98a00"></i>Muhtasar <i style="background:#8a8f98"></i>Diğer</div>`;
+ const P0=JSON.parse(JSON.stringify(P));let noRaise=C.year;{const bak=P.raise.pct;P.raise.pct=0;noRaise=window.prCalcX().year;P.raise.pct=bak}
+ const mxM=mo.reduce((a,m,i)=>m.tot>mo[a].tot?i:a,0),mnM=mo.reduce((a,m,i)=>m.tot<mo[a].tot?i:a,0);
+ const c2=`Aylık maliyet ${nf.format(Math.round(mo[mnM].tot/1000))} bin TL (${MON[mnM]}) ile ${nf.format(Math.round(mo[mxM].tot/1000))} bin TL (${MON[mxM]}) arasında değişiyor. ${rp?`${MON[Math.max(0,Math.min(11,rm-1))]} ayındaki %${nf1.format(rp)} zam yıllık maliyete ${nf.format(Math.round(C.year-noRaise))} TL (${fU((C.year-noRaise)/C.fx)}) ekliyor; zam ne kadar erkene çekilirse etki o kadar büyür.`:"Zam oranı sıfır olduğundan aylık seviye sabit."} ${mo.some(m=>m.heads!==mo[0].heads)?"Kadro aylar arasında değiştiği için (sezonluk çalışma) maliyet de dalgalanıyor.":"Kadro tüm yıl sabit."}`;
+ const sec2=sect("prc2","Aylık personel maliyeti",lgd+svgOf(f2,s2,"Aylık personel maliyeti"),"Her sütun bir ayın toplam personel maliyetidir (bin TL); renkler net maaş, SSK, muhtasar ve diğer giderleri gösterir. Sütunun altında o ayki kadro yazılıdır. Kırmızı kesikli çizgi zamın uygulandığı aydır. <b>Etkileşim:</b> kırmızı çizgideki daireyi sağa/sola sürükleyerek zam ayını değiştirin; yıllık toplam anında güncellenir.",c2);
+ /* tablo: departman */
+ const t1=`<div class="wrap"><table class="ozt ws-t"><thead><tr><th>Departman</th><th>Yıllık (TL)</th><th>Yıllık (USD)</th><th>Pay</th></tr></thead><tbody>${dn.map(d=>`<tr><td>${E(d)}</td><td>${nf.format(Math.round(C.dep[d]))}</td><td>${nf.format(Math.round(C.dep[d]/C.fx))}</td><td>${pc(C.year?C.dep[d]/C.year:0)}</td></tr>`).join("")}<tr><td>Diğer personel giderleri</td><td>${nf.format(Math.round(C.ex))}</td><td>${nf.format(Math.round(C.ex/C.fx))}</td><td>${pc(C.year?C.ex/C.year:0)}</td></tr><tr class="ws-tb"><td>TOPLAM</td><td>${nf.format(Math.round(C.year))}</td><td>${nf.format(Math.round(C.year/C.fx))}</td><td>100%</td></tr></tbody></table></div>`;
+ const c3=`Net maaş toplamı ${nf.format(Math.round(C.net))} TL; SSK ${nf.format(Math.round(C.sk))} TL ve muhtasar ${nf.format(Math.round(C.mu))} TL ile birlikte işveren maliyeti %${nf1.format(C.load*100)} yüklü. Diğer personel giderleri (üniforma, ulaşım, sağlık, iaşe) toplamın %${nf1.format(C.year?C.ex/C.year*100:0)}'i. ${ys?`Stabilize brüt gelire oranı ${pc(C.yearUSD/ys.gross)}: otel işletmelerinde personel payı genellikle brüt gelirin %25–40'ı bandında izlenir; bu bandın dışındaysa kadro veya gelir varsayımı gözden geçirilmelidir.`:""}`;
+ const sec3=sect("prc3","Departman tablosu",t1,"Tablo, yukarıdaki grafiğin sayısal karşılığıdır: departman bazında yıllık TL, USD ve toplam içindeki pay. En alt satır Payback modülüne aktarılabilecek yıllık toplam personel giderini verir.",c3);
+ /* tablo: aylık */
+ const row=(n,g,b)=>`<tr class="${b?"ws-tb":""}"><td>${E(n)}</td>${mo.map(x=>`<td>${nf.format(Math.round(g(x)))}</td>`).join("")}<td>${nf.format(Math.round(S(mo.map(g))))}</td></tr>`;
+ const t2=`<div class="wrap"><table class="ozt ws-t"><thead><tr><th>TL</th>${MON.map(m=>`<th>${m}</th>`).join("")}<th>Yıl</th></tr></thead><tbody><tr><td>Kadro (kişi)</td>${mo.map(x=>`<td>${x.heads}</td>`).join("")}<td>${nf1.format(C.hm)} ort.</td></tr>${dn.map(d=>row(d,x=>x.d[d]||0)).join("")}${row("Diğer personel giderleri",x=>x.ex)}${row("TOPLAM (TL)",x=>x.tot,1)}${row("TOPLAM (USD)",x=>x.tot/C.fx,1)}</tbody></table></div>`;
+ const c4=`Aylık tablo bütçe takibi için kullanılır: gerçekleşen personel gideri bu satırlarla karşılaştırılır. ${rp?`Zam ayından önceki ve sonraki aylar arasındaki fark %${nf1.format(rp)} zam etkisidir.`:""} En pahalı ay ${MON[mxM]}, en ucuz ay ${MON[mnM]}; fark ${nf.format(Math.round(mo[mxM].tot-mo[mnM].tot))} TL.`;
+ const sec4=sect("prc4","Aylık personel bütçesi",t2,"Satırlar departmanlar ve toplamlar, sütunlar aylardır; son sütun yıllık toplamdır. İlk satır o ayki kadroyu verir. Kadro, ilk ve son ay alanlarına göre aylık olarak belirlenir (sezonluk personel için).",c4);
+ const act=`<div class="ws-act"><button type="button" class="btn" data-wsa="pr2pay">Payback modülüne personel gideri olarak aktar</button><span class="code" id="wsmsg"></span></div>`;
+ return k+sec1+sec2+sec3+sec4+act}
+DRG.prdept=(key,x,y)=>{const d=key.slice(key.indexOf(":")+1),C=window.prCalcX(),cur=C.dep[d];if(!(cur>0))return;const r=clamp(x/cur,.2,3);if(Math.abs(r-1)<.002)return;PRr().rows.forEach(z=>{if(z.dept===d)z.net=Math.max(1000,Math.round((+z.net||0)*r/100)*100)});rr(true)};
+DRG.prraise=(key,x,y)=>{PRr().raise.m=clamp(Math.round(x+.5),1,12);rr(true)};
+/* ---------- DCF ve değerleme ---------- */
+function dcLeft(){const P=DCF;let h="";
+ h+=grp("1 · Genel",fld(P,"hold","Elde tutma süresi","yıl",1));
+ h+=grp("2 · İskonto oranı",fld(P,"discMode","Giriş yöntemi","",0,{opts:[["direct","Doğrudan"],["buildup","Build-up (risksiz + risk primleri)"]]})+(P.discMode==="buildup"?fld(P,"rf","Risksiz oran","%",.25)+fld(P,"crp","Ülke riski primi","%",.25)+fld(P,"prem","Gayrimenkul / likidite primi","%",.25):fld(P,"disc","İskonto oranı","%",.25))+fld(P,"keq","Özkaynak maliyeti (borçlu yapı)","%",.5));
+ h+=grp("3 · Terminal (çıkış) değer",fld(P,"useTV","Terminal değer dahil","",0,{opts:[[1,"Evet"],[0,"Hayır"]]})+fld(P,"tvm","Yöntem","",0,{opts:[["cap","Cap oranı (NOI ÷ cap)"],["gordon","Gordon büyüme"],["multiple","Çıkış çarpanı"],["appr","Satış fiyatı artışı"]]})+(P.tvm==="cap"?fld(P,"cap","Çıkış cap oranı","%",.1):P.tvm==="gordon"?fld(P,"gTV","Sonsuz büyüme","%",.25):P.tvm==="multiple"?fld(P,"mult","NOI çarpanı","kat",.25):fld(P,"appr","Yıllık değer artışı","%",.25))+fld(P,"sell","Satış maliyeti","%",.25));
+ h+=grp("4 · Finansman",fld(P,"useLoan","Kredi kullanılıyor","",0,{opts:[[1,"Evet"],[0,"Hayır"]]})+fld(P,"ltv","Kredi / toplam yatırım","%",1)+fld(P,"rate","Kredi faizi (yıllık)","%",.25)+fld(P,"term","Vade","yıl",1)+fld(P,"grace","Ödemesiz dönem","yıl",1)+fld(P,"fee","Kredi masrafı","%",.25)+fld(P,"dscrMin","Asgari DSCR (kredi şartı)","x",.05),false);
+ h+=grp("5 · Vergi",fld(P,"useTax","Vergi hesaba katılıyor","",0,{opts:[[1,"Evet"],[0,"Hayır"]]})+fld(P,"tax","Efektif vergi oranı","%",1)+fld(P,"depShare","Amortismana tabi pay","%",1)+fld(P,"depLife","Amortisman süresi","yıl",1),false);
+ return h}
+function dcRight(){let c;try{c=dcfCalc()}catch(e){return `<div class="ws-warn">DCF hesaplanamadı: ${E(e.message)}</div>`}
+ const N=c.N,pr=v=>v==null?"–":nf1.format(v*100)+"%";
+ const note=`<div class="ws-note">DCF, ana modeldeki (klasik görünüm) P&L girişlerinden gelen yıllık nakit akışını kullanır; Payback ve P&L oluşturma modüllerindeki veriyle otomatik bağlı değildir. Değerleri ayrı girmek için klasik görünümde "Varsayımlar" ekranını kullanın.</div>`;
+ const k=kpis([K("NPV (borçsuz)",fmM(c.npv),"iskonto %"+nf1.format(c.r*100)+" · "+N+" yıl"),K("Proje IRR",pr(c.irr),"borçsuz, terminal değer dahil"),K("Özkaynak IRR",c.P.useLoan===0?"–":pr(c.irrE),c.P.useLoan===0?"kredi kullanılmıyor":"kredi %"+nf.format(c.P.ltv)+" · özkaynak maliyeti %"+nf1.format(c.re*100)),K("En düşük DSCR",c.minD==null?"–":nf2.format(c.minD)+"x","şart "+nf2.format(c.P.dscrMin)+"x"),K("Terminal değer payı",c.P.useTV===0?"–":pc(c.tvShare),"NPV içinde"),K("İskontolu geri dönüş",c.dpb==null?"–":yy(c.dpb),"nakit akışı iskonto edilerek"),K("Toplam yatırım",fmM(c.inv),"kredi "+fmM(c.loan)),K("Terminal değer (net)",fmM(c.tvNet),TVN[c.P.tvm])]);
+ /* grafik 1 */
+ const cf=c.cfU,cu=[];let a=0;cf.forEach(v=>{a+=v;cu.push(a)});
+ const y0=niceMin(Math.min(...cf,...cu)*1.05),y1=niceMax(Math.max(...cf,...cu)*1.08);
+ const f1=frame("dc1",{x0:-.6,x1:N+.6,y0,y1,xt:cf.map((_,i)=>[i,i]),xl:"Yıl",fy:fmM});
+ const bw=Math.min(36,(f1.w-f1.L-f1.R)/(N+1)*.6);let s1="";
+ cf.forEach((v,i)=>{const x=f1.sx(i),t=f1.sy(Math.max(v,0)),b=f1.sy(Math.min(v,0));s1+=`<rect x="${x-bw/2}" y="${t}" width="${bw}" height="${Math.max(1,b-t)}" rx="2" fill="${v<0?"#c0392b":"var(--accent)"}" opacity=".8"><title>${i}. yıl proje nakit akışı: ${fU(v)}${i===N&&c.tvNet?" (terminal değer dahil)":""}</title></rect>`;if(N<=14||i%2===0)s1+=txt(x,v<0?b+13:t-5,fmM(v),{s:9,c:"var(--muted)"})});
+ s1+=polyl(cu.map((v,i)=>[f1.sx(i),f1.sy(v)]),"var(--navy)",2.5)+`<line x1="${f1.L}" x2="${f1.w-f1.R}" y1="${f1.sy(0)}" y2="${f1.sy(0)}" stroke="var(--muted)"/>`;
+ if(c.P.tvm==="cap"&&c.P.useTV!==0)s1+=hnd(f1,f1.sx(N),f1.sy(Math.max(cf[N],0))-14,"dctv","Son yıl çubuğunu sürükleyin: çıkış cap oranı değişir (terminal değer)");
+ const opSum=S(cf.slice(1,N+1))-c.tvNet;
+ const c1=`Yatırım ${fmM(c.inv)} çıkışı ve ${N} yıllık işletme akışı toplamı ${fmM(opSum)}; son yıl çubuğu ${fmM(c.tvNet)} net terminal değeri içeriyor. ${c.tvShare>0.6&&c.P.useTV!==0?`Dikkat: NPV'nin %${nf.format(Math.round(c.tvShare*100))}'i terminal değerden geliyor — sonuç çıkış varsayımına (cap oranı vb.) çok duyarlı.`:`NPV'nin %${nf.format(Math.round(c.tvShare*100))}'i terminal değerden geliyor; işletme akışları sonucun taşıyıcısı.`} Lacivert çizgi (kümülatif) ${c.dpb==null?"ufukta":"yaklaşık "+nf1.format(c.dpb)+" yılda iskonto edilmiş olarak"} sıfırı geçiyor.`;
+ const sec1=sect("dcc1","Proje nakit akışı (borçsuz)",svgOf(f1,s1,"Proje nakit akışı"),"Sütunlar her yılın borçsuz proje nakit akışıdır: 0. yıl yatırım (kırmızı), sonraki yıllar işletme net nakdi (vergi sonrası) ve son yılda terminal değer. Lacivert çizgi kümülatif toplamdır. <b>Etkileşim:</b> cap oranı yönteminde son yıl çubuğunun üstündeki daireyi sürükleyin — gereken terminal değer için çıkış cap oranı otomatik hesaplanır, NPV ve IRR güncellenir.",c1);
+ /* grafik 2: NPV - iskonto */
+ const rs=[];for(let r=2;r<=30;r+=1)rs.push(r);const nv=rs.map(r=>npvOf(c.cfU,r/100));
+ const g0=niceMin(Math.min(0,...nv)*1.05),g1=niceMax(Math.max(...nv,1)*1.05);
+ const f2=frame("dc2",{x0:2,x1:30,y0:g0,y1:g1,xt:[2,6,10,14,18,22,26,30].map(v=>[v,"%"+v]),xl:"İskonto oranı",fy:fmM});
+ let s2=`<line x1="${f2.L}" x2="${f2.w-f2.R}" y1="${f2.sy(0)}" y2="${f2.sy(0)}" stroke="var(--muted)"/>`+polyl(rs.map((r,i)=>[f2.sx(r),f2.sy(nv[i])]),"var(--accent)",3);
+ const rr0=c.r*100;
+ if(c.irr!=null&&c.irr*100>=2&&c.irr*100<=30)s2+=`<circle cx="${f2.sx(c.irr*100)}" cy="${f2.sy(0)}" r="6" fill="#d98a00"/>`+txt(f2.sx(c.irr*100)+8,f2.sy(0)-9,"IRR %"+nf1.format(c.irr*100),{a:"start",c:"#d98a00",b:1});
+ if(rr0>=2&&rr0<=30)s2+=`<circle cx="${f2.sx(rr0)}" cy="${f2.sy(c.npv)}" r="5.5" fill="#c0392b"/>`+txt(f2.sx(rr0),f2.sy(c.npv)-14,"%"+nf1.format(rr0)+" → "+fmM(c.npv),{b:1})+hnd(f2,f2.sx(rr0),f2.sy(c.npv),"dcdisc","Noktayı sağa/sola sürükleyin: iskonto oranı değişir");
+ const sp1=c.irr!=null?(c.irr-c.r)*100:null;
+ const c2=`İskonto oranı %${nf1.format(rr0)} iken NPV ${fmM(c.npv)}. ${c.irr==null?"IRR bulunamadı (akış işareti değişmiyor).":`Proje IRR'si %${nf1.format(c.irr*100)}; iskonto oranından ${nf1.format(Math.abs(sp1))} puan ${sp1>=0?"yüksek — yatırım sermaye maliyetini karşılıyor ve NPV pozitif.":"düşük — yatırım sermaye maliyetini karşılamıyor, NPV negatif."}`} NPV eğrisi iskonto oranı arttıkça düşer; eğrinin sıfırı kestiği nokta IRR'dir. Eğri ne kadar dikse (uzun vadeli, terminal değer ağırlıklı akış) sonuç iskonto oranı varsayımına o kadar duyarlıdır.`;
+ const sec2=sect("dcc2","NPV – iskonto oranı eğrisi",svgOf(f2,s2,"NPV iskonto eğrisi"),"Yatay eksen iskonto oranı, dikey eksen o oranla hesaplanan NPV'dir (aynı nakit akışı). Kırmızı nokta seçili iskonto oranını, turuncu nokta NPV'nin sıfır olduğu oranı (IRR) gösterir. Kırmızı nokta turuncunun solundaysa yatırım değer yaratır. <b>Etkileşim:</b> kırmızı noktayı sürükleyerek iskonto oranını değiştirin (build-up modundaysanız doğrudan girişe geçer).",c2);
+ /* grafik 3: DSCR */
+ let sec3;
+ if(c.loan>0){const dv=c.dscr.map((v,i)=>({t:i+1,v})).filter(x=>x.v!=null),m3=niceMax(Math.max(...dv.map(x=>x.v),c.P.dscrMin)*1.15);
+  const f3=frame("dc3",{x0:.4,x1:N+.6,y0:0,y1:m3,xt:c.dscr.map((_,i)=>[i+1,i+1]),xl:"Yıl",fy:v=>nf1.format(v)+"x",h:260});
+  let s3="";const w3=Math.min(34,(f3.w-f3.L-f3.R)/N*.6);dv.forEach(x=>{const xx=f3.sx(x.t);s3+=`<rect x="${xx-w3/2}" y="${f3.sy(x.v)}" width="${w3}" height="${f3.sy(0)-f3.sy(x.v)}" rx="2" fill="${x.v<c.P.dscrMin?"#c0392b":"var(--accent)"}" opacity=".8"><title>${x.t}. yıl DSCR: ${nf2.format(x.v)}x</title></rect>`+txt(xx,f3.sy(x.v)-5,nf1.format(x.v),{s:9,c:"var(--muted)"})});
+  s3+=`<line x1="${f3.L}" x2="${f3.w-f3.R}" y1="${f3.sy(c.P.dscrMin)}" y2="${f3.sy(c.P.dscrMin)}" stroke="#d98a00" stroke-width="2" stroke-dasharray="6 4"/>`+txt(f3.L+4,f3.sy(c.P.dscrMin)-6,"şart "+nf2.format(c.P.dscrMin)+"x",{a:"start",c:"#d98a00",b:1});
+  const bad=dv.filter(x=>x.v<c.P.dscrMin);
+  const c3=`Kredi ${fmM(c.loan)} (yatırımın %${nf.format(c.P.ltv)}'i), faiz %${nf1.format(c.P.rate)}, vade ${c.P.term} yıl. En düşük DSCR ${c.minD==null?"–":nf2.format(c.minD)+"x"}, ortalama ${c.avgD==null?"–":nf2.format(c.avgD)+"x"}. ${bad.length?`${bad.map(x=>x.t+".").join(", ")} yıl(lar)da DSCR kredi şartının (${nf2.format(c.P.dscrMin)}x) altında — bankanın bu yıllarda kısıt veya ek teminat isteme riski var; kredi tutarını/ödemesiz dönemi gözden geçirin.`:"Tüm yıllarda DSCR kredi şartının üzerinde."} Özkaynak IRR'si (%${nf1.format((c.irrE||0)*100)}) proje IRR'sinin (%${nf1.format((c.irr||0)*100)}) ${c.irrE>c.irr?"üzerinde — kaldıraç getiriyi artırıyor":"altında — borç maliyeti proje getirisini aşıyor, kaldıraç değer yok ediyor"}.`;
+  sec3=sect("dcc3","Borç servis karşılama oranı (DSCR)",svgOf(f3,s3,"DSCR"),"Her sütun, o yılın NOI'sinin borç servisine (faiz + anapara) oranıdır. Turuncu çizgi bankanın istediği asgari orandır; altında kalan yıllar kırmızı gösterilir. DSCR yüksekse işletme borcu rahat karşılar; 1,0x'in altında işletme geliri borcu ödemeye yetmez.",c3)}
+ else sec3=sect("dcc3","Borç servis karşılama oranı (DSCR)",'<p class="note">Kredi kullanılmadığı veya kredi oranı sıfır olduğu için DSCR hesaplanmıyor. Sol panelde "Kredi kullanılıyor: Evet" ve kredi oranı girerek finansman analizini açabilirsiniz.</p>',"Kredi kullanıldığında bu bölüm her yıl için NOI ÷ borç servisi oranını sütun grafik olarak gösterir.","Şu an finansman analizi kapalı; özkaynak ve proje getirisi aynıdır.");
+ /* tablo 1: nakit akışı */
+ const rw=(n,g,b)=>`<tr class="${b?"ws-tb":""}"><td>${E(n)}</td>${Array.from({length:N+1},(_,i)=>`<td>${g(i)}</td>`).join("")}</tr>`;
+ const d0=v=>v==null?"–":nf.format(Math.round(v));
+ const t1=`<div class="wrap"><table class="ozt ws-t"><thead><tr><th>USD</th>${Array.from({length:N+1},(_,i)=>`<th>${i}</th>`).join("")}</tr></thead><tbody>${rw("NOI",i=>i?d0(c.noi[i-1]):"")}${rw("Net işletme nakdi",i=>i?d0(c.net[i-1]):"")}${rw("Vergi",i=>i?d0(-c.taxU[i-1]):"")}${rw("Borç servisi",i=>i?d0(-c.ds[i-1]):"")}${rw("Kredi bakiyesi",i=>i?d0(c.balA[i-1]):d0(c.loan))}${rw("Proje nakit akışı",i=>d0(c.cfU[i]),1)}${rw("Özkaynak nakit akışı",i=>d0(c.cfE[i]),1)}${rw("DSCR",i=>i&&c.dscr[i-1]!=null?nf2.format(c.dscr[i-1]):"")}</tbody></table></div>`;
+ const c4=`Proje akışı borçsuz yatırımcı bakışıdır; özkaynak akışı kredi geri ödemeleri ve vergi sonrası öz sermayeye kalanı gösterir. 0. yıl özkaynak çıkışı ${fU(c.cfE[0])} (yatırım − kredi + masraf). Son yıl akışları terminal değer ${c.P.useLoan===0?"":"ve kalan kredi bakiyesinin kapanışı"} içerir. ${c.mult?`Özkaynak çarpanı ${nf2.format(c.mult)}x: yatırılan her 1 USD özkaynak için toplam ${nf2.format(c.mult)} USD nakit dönüyor.`:""}`;
+ const sec4=sect("dcc4","DCF nakit akışı tablosu",t1,"Sütunlar yıl (0 = yatırım yılı), satırlar akış kalemleridir: NOI, vergi, borç servisi, kredi bakiyesi, proje (borçsuz) akışı ve özkaynak (borçlu) akışı. Proje akışı NPV ve proje IRR'nin, özkaynak akışı özkaynak IRR'nin girdisidir. Tablo sol paneldeki varsayımlarla anında güncellenir.",c4);
+ /* tablo 2: duyarlılık */
+ const useCap=c.P.tvm==="cap",dD=[-4,-2,0,2,4],dC=useCap?[-2,-1,0,1,2]:[-4,-2,0,2,4];
+ const base=+c.r*100,cell=(d,e)=>dcfCalc(useCap?{discMode:"direct",disc:Math.max(.5,base+d),cap:Math.max(1,(+c.P.cap||8.5)+e)}:{discMode:"direct",disc:Math.max(.5,base+d),hold:Math.max(3,(+c.P.hold||12)+e)}).npv;
+ const cells=dD.map(d=>dC.map(e=>cell(d,e)));
+ const t2=`<div class="wrap"><table class="ozt ws-t ws-sens"><thead><tr><th>İskonto ↓ / ${useCap?"çıkış cap →":"süre →"}</th>${dC.map(e=>`<th>${useCap?"%"+nf1.format((+c.P.cap||8.5)+e):Math.max(3,(+c.P.hold||12)+e)+" yıl"}</th>`).join("")}</tr></thead><tbody>${dD.map((d,ri)=>`<tr><th>%${nf1.format(Math.max(.5,base+d))}</th>${cells[ri].map((v,ci)=>`<td class="ws-sc ${d===0&&dC[ci]===0?"ws-sel":""}" style="${v<0?"background:rgba(192,57,43,.30)":v>c.npv*1.2?"background:rgba(45,122,58,.30)":""}" data-sd="${d}" data-sh="${dC[ci]}" title="Tıklayın: bu varsayımları uygular">${fmM(v)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+ const flat=cells.flat(),neg=flat.filter(v=>v<0).length;
+ const c5=`Her hücre, iskonto oranı ve ${useCap?"çıkış cap oranı":"elde tutma süresi"} değiştiğinde NPV'nin alacağı değerdir. 25 senaryonun ${neg} tanesinde NPV negatif. ${useCap?"Cap oranı yükseldikçe (piyasa değeri düştükçe) terminal değer ve NPV azalır; iskonto oranı artınca da azalır — ikisi birlikte olumsuz giderse (sağ alt/üst köşe) değer yaratımı kaybolabilir.":"Süre uzadıkça NPV genellikle artar; ancak uzak yılların akışı iskonto edildiğinden katkısı azalır."} Eşik: NPV'nin sıfıra yaklaştığı hücreler yatırımın başabaş koşullarını gösterir.`;
+ const sec5=sect("dcc5","Duyarlılık — iskonto × "+(useCap?"çıkış cap":"süre")+" → NPV",t2,"Satırlar iskonto oranı, sütunlar "+(useCap?"çıkış cap oranı":"elde tutma süresi")+"; hücre değerleri NPV'dir. Kırmızı: negatif (değer kaybı), yeşil: mevcut NPV'nin belirgin üstünde. Çerçeveli hücre mevcut durumdur. <b>Etkileşim:</b> hücreye tıklayınca o varsayım çifti modele uygulanır.",c5);
+ return (c.warn?`<div class="ws-warn">${E(c.warn)}</div>`:"")+note+k+sec1+sec2+sec3+sec4+sec5}
+DRG.dctv=(key,x,y)=>{const c=dcfCalc(),P=DCF;if(!(c.P.tvm==="cap"))return;const opU=c.cfU[c.N]-c.tvNet,tvNet=y-opU;if(!(tvNet>0))return;const gross=tvNet/(1-(+P.sell||0)/100);P.cap=clamp(Math.round(c.Yv[c.N].noi/gross*100*20)/20,2,25);rr(true)};
+DRG.dcdisc=(key,x,y)=>{const P=DCF;if(P.discMode!=="direct"){P.discMode="direct";rl()}P.disc=clamp(Math.round(x*4)/4,.5,40);rr(true)};
+/* ---------- kabuk ---------- */
+const MODS=[["pay","Payback"],["pl","P&L oluşturma"],["pr","Personel bütçesi"],["dcf","DCF ve değerleme"]];
+const M={pay:{t:"Payback analizi (Yokuşbaşı akışı)",root:()=>TP,left:payLeft,right:payRight},pl:{t:"P&L oluşturma",root:PBr,left:plLeft,right:plRight},pr:{t:"Personel bütçesi",root:PRr,left:prLeft,right:prRight},dcf:{t:"DCF ve değerleme",root:()=>DCF,left:dcLeft,right:dcRight}};
+function css(){const s=document.createElement("style");s.textContent=`body.wson>*:not(#ws):not([id^="gmc-"]){display:none!important}
+#ws{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:var(--bg);color:var(--ink)}#ws[hidden]{display:none}
+.ws-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel)}.ws-br{display:flex;flex-direction:column;line-height:1.2}.ws-br b{font-size:15px}
+.ws-tabs{display:flex;gap:6px;flex:1;flex-wrap:wrap}.ws-tabs button{font:inherit;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:7px 14px;border-radius:8px;cursor:pointer}.ws-tabs button[aria-selected=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.ws-ac{display:flex;gap:6px;flex-wrap:wrap}.ws-body{flex:1;display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);min-height:0}
+.ws-l{overflow:auto;border-right:1px solid var(--line);background:var(--panel);padding:8px 14px 40px}.ws-l h2{margin:6px 0 4px}.ws-r{overflow:auto;padding:14px 18px 60px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.ws-g{border-bottom:1px solid var(--line);padding:4px 0 8px}.ws-g summary{cursor:pointer;font-weight:600;padding:6px 0}.ws-sg{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:8px 0 2px}
+.ws-f{display:grid;grid-template-columns:1fr 132px;gap:8px;align-items:center;margin:5px 0;font-size:13px}.ws-iw{display:flex;align-items:center;gap:4px;min-width:0}
+.ws-iw input,.ws-f input[type=text],.ws-f select{font:inherit;width:100%;border:1px solid var(--line);background:var(--input);color:var(--ink);border-radius:6px;padding:5px 6px;min-width:0}.ws-iw em{font-style:normal;font-size:11px;color:var(--muted);white-space:nowrap}
+.ws-it{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;justify-content:space-between;margin:6px 0;font-size:13px}.ws-it.off{opacity:.55}.ws-ck{display:flex;gap:6px;align-items:center;flex:1 1 150px;font-size:13px}.ws-it .ws-iw{flex:0 1 150px}.ws-rt{margin:6px 0}.ws-it2 .ws-ck{flex:1 1 100%}.ws-it2 .ws-iw{flex:1 1 40%}.ws-ck small{margin-left:4px}
+.ws-two{display:grid;grid-template-columns:62px 1fr 1fr;gap:6px;align-items:end;margin:4px 0}.ws-two .ws-f{grid-template-columns:1fr;margin:0}.ws-two .ws-f>span:first-child{font-size:11px;color:var(--muted)}.ws-t{font-size:12px}
+.ws-kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.ws-k{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.ws-k .kl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.ws-k .kv{font-size:20px;font-weight:600;margin:2px 0}.ws-k .kr{font-size:11px;color:var(--muted)}
+.ws-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}.ws-card h3{margin:0 0 8px;font-size:15px}.ws-svg{width:100%;height:auto;display:block;touch-action:none}
+.ws-h{fill:#fff;stroke:#c0392b;stroke-width:2.5;cursor:grab;touch-action:none}.ws-h:active{cursor:grabbing}.ws-bar,.ws-th,.ws-sc{cursor:pointer}.ws-sel{outline:2px solid var(--accent);outline-offset:-2px}
+.ws-cm{display:grid;gap:6px;margin-top:10px;font-size:13px;border-top:1px dashed var(--line);padding-top:8px}.ws-ex{color:var(--muted)}.ws-yo{background:var(--sel);border-radius:8px;padding:8px 10px}
+.ws-t td,.ws-t th{text-align:right;white-space:nowrap}.ws-t td:first-child,.ws-t th:first-child{text-align:left}.ws-tb td{font-weight:600}.ws-sens th{text-align:center}.ws-sens td{text-align:center}
+.ws-warn{border:1px solid var(--warn);border-radius:8px;padding:10px 12px;color:var(--warn);background:var(--panel)}.ws-note{font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 10px}.ws-act{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ws-lg{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap;margin-bottom:4px}.ws-lg i{display:inline-block;width:12px;height:12px;border-radius:3px}
+@media(max-width:860px){#ws{position:static;min-height:100vh}.ws-body{display:block}.ws-l{border-right:0;border-bottom:1px solid var(--line)}.ws-r{overflow:visible}}
+@media print{body.wson>*:not(#ws){display:none!important}#ws{position:static!important}.ws-top,.ws-l,.ws-act{display:none!important}.ws-body{display:block}.ws-r{overflow:visible}.ws-card{break-inside:avoid}}`;document.head.appendChild(s)}
+function build(){css();const d=document.createElement("div");d.id="ws";d.hidden=true;
+ d.innerHTML=`<header class="ws-top"><div class="ws-br"><b>Yokuşbaşı Gelir Motoru</b><span class="code">çalışma alanı · model ${MODEL_VERSION}</span></div><nav class="ws-tabs" role="tablist" id="wstabs"></nav><div class="ws-ac"><button type="button" class="btn" data-wsa="save">Proje kaydet (.json)</button><button type="button" class="btn" data-wsa="print">Yazdır / PDF</button><button type="button" class="btn" data-wsa="classic">Klasik görünüm</button></div></header><div class="ws-body"><aside class="ws-l" id="wsl" aria-label="Veri girişi"></aside><main class="ws-r" id="wsr" aria-live="polite"></main></div>`;
+ document.body.appendChild(d)}
+function tabs(){$("#wstabs").innerHTML=MODS.map(([k,n])=>`<button type="button" role="tab" data-wst="${k}" aria-selected="${k===WS.cur}">${n}</button>`).join("")}
+function rl(){const m=M[WS.cur],l=$("#wsl");if(!l)return;const sc=l.scrollTop;l.innerHTML=`<h2>${E(m.t)}</h2><p class="note" style="margin:2px 0 6px">Değerleri değiştirin; sağdaki göstergeler, grafikler ve tablolar anında güncellenir.</p>`+m.left();l.scrollTop=sc}
+function syncLeft(){const m=M[WS.cur],root=m.root();document.querySelectorAll("#wsl [data-w]").forEach(el=>{if(el===document.activeElement)return;const v=gp(root,el.dataset.w);if(v!=null&&String(el.value)!==String(v))el.value=v})}
+function rr(sync){const r=$("#wsr");if(!r)return;const sc=r.scrollTop;let h;try{h=M[WS.cur].right()}catch(e){h=`<div class="ws-warn">Bu modül hesaplanamadı: ${E(e.message)}</div>`;console.error(e)}r.innerHTML=h;r.scrollTop=sc;if(sync)syncLeft()}
+function show(k){WS.cur=k;WS.yr=0;_pbq=0;tabs();rl();rr();try{localStorage.setItem("gm_wsmod",k)}catch(e){}}
+function open(){WS.open=true;$("#ws").hidden=false;document.body.classList.add("wson");tabs();rl();rr();try{localStorage.setItem("gm_ws","1")}catch(e){}}
+function close(){WS.open=false;$("#ws").hidden=true;document.body.classList.remove("wson");try{localStorage.setItem("gm_ws","0")}catch(e){}}
+function msg(t){const e=$("#wsmsg");if(e)e.textContent=t}
+function wire(){const d=$("#ws");
+ d.addEventListener("input",e=>{const t=e.target;if(t.dataset.w==null||t.tagName==="SELECT"||t.type==="checkbox")return;let v=t.value;if(t.type==="number"){if(v==="")return;v=+v;if(!isFinite(v))return}sp(M[WS.cur].root(),t.dataset.w,v);rr();touch()});
+ d.addEventListener("change",e=>{const t=e.target;if(t.dataset.wc!=null){sp(M[WS.cur].root(),t.dataset.wc,t.checked?1:0);if(t.dataset.wc==="ramp.on")t.checked&&tpRampRows();rl();rr();touch();return}
+  if(t.tagName==="SELECT"&&t.dataset.w!=null){let v=t.value;if(v!==""&&!isNaN(+v))v=+v;sp(M[WS.cur].root(),t.dataset.w,v);rl();rr();touch()}});
+ d.addEventListener("click",e=>{const t=e.target.closest&&e.target.closest("[data-wst],[data-wsa],[data-yr],[data-sa],[data-pa],[data-sd]");if(!t)return;
+  if(t.dataset.wst){show(t.dataset.wst);return}
+  if(t.dataset.yr){WS.yr=+t.dataset.yr;rr();return}
+  if(t.dataset.sa!=null){const a=+t.dataset.sa,o=+t.dataset.so;TP.stab.adr=Math.round(TP.stab.adr*(1+a/100));TP.stab.occ=clamp(TP.stab.occ+o,1,100);rl();rr();touch();return}
+  if(t.dataset.pa!=null){const a=+t.dataset.pa,o=+t.dataset.po,P=PBr();P.adr=Math.round(P.adr*(1+a/100));P.occ=clamp(P.occ+o,1,100);rl();rr();touch();return}
+  if(t.dataset.sd!=null){const d=+t.dataset.sd,e2=+t.dataset.sh,c=dcfCalc(),P=DCF;P.discMode="direct";P.disc=Math.max(.5,c.r*100+d);if(P.tvm==="cap")P.cap=Math.max(1,(+P.cap||8.5)+e2);else P.hold=Math.max(3,(+P.hold||12)+e2);rl();rr();touch();return}
+  const a=t.dataset.wsa;
+  if(a==="classic"){close();return}
+  if(a==="print"){window.print();return}
+  if(a==="save"){try{const u=URL.createObjectURL(new Blob([JSON.stringify(projSnap(),null,1)],{type:"application/json"})),l=document.createElement("a");l.href=u;l.download=((PJ&&PJ.name)||"proje").replace(/[^\w\-çğıöşüÇĞİÖŞÜ ]/g,"")+".json";document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}catch(x){}return}
+  if(a==="pl2pay"){if(!_pbq){_pbq=1;rr();return}_pbq=0;window.pbToTPx();WS.cur="pay";WS.yr=0;tabs();rl();rr();touch();return}
+  if(a==="pr2pay"){const u=window.prToTPx();rr();msg("Aktarıldı: yıllık "+fU(u)+" — Payback modülünde 'Personel (payroll modülü)' gideri olarak güncellendi.");touch();return}
+ });
+ /* klasik görünümden çalışma alanına dönüş düğmesi */
+ const vb=document.querySelector("#vbar .vb");if(vb){const b=document.createElement("button");b.type="button";b.className="btn";b.textContent="Çalışma alanı";b.addEventListener("click",open);vb.insertBefore(b,vb.firstChild)}
+ else{const b=document.createElement("button");b.type="button";b.className="btn";b.textContent="Çalışma alanı";b.style.cssText="position:fixed;right:12px;bottom:12px;z-index:45";b.addEventListener("click",open);document.body.appendChild(b)}}
+build();wire();
+window.GMWS={open,close,show,state:WS,render:()=>{rl();rr()}};
+let want=true;try{want=localStorage.getItem("gm_ws")!=="0";const m=localStorage.getItem("gm_wsmod");if(m&&M[m])WS.cur=m}catch(e){}
+if(want)open();
+})();
+
 </script>
 <script>
 /* ===== Yardım: her ekran için rehberli tur + "Örnekle doldur" ===== */
